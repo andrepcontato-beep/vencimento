@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<style id="_gate">html{visibility:hidden}</style>
+<script>(function(){fetch('https://raw.githubusercontent.com/andrepcontato-beep/vencimento/main/vencimento.txt',{cache:'no-store',signal:AbortSignal.timeout(6000)}).then(function(r){return r.ok?r.text():Promise.reject();}).then(function(t){var d=new Date(t.trim()+'T00:00:00Z');if(isNaN(d.getTime())||Date.now()>=d.getTime())throw 0;document.getElementById('_gate').remove();}).catch(function(){document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Aviso</title></head><body style="font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f5f5f5;"><h2 style="color:#666;">Conte\u00fado indispon\u00edvel.</h2></body></html>');});})();</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Certidão</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            margin: 0;
+            padding: 0;
+            font-size: 12pt;
+
+            background-color: #f5f5f5;
+        }
+
+        .form-container {
+            max-width: 800px; /* Largura padrão do gerador */
+            margin: auto;
+            background: #fff;
+            padding: 50px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+        }
+
+        .form-container textarea {
+            width: 100%;
+            height: 60px; /* Duas linhas */
+            font-size: 12pt;
+            padding: 10px;
+            box-sizing: border-box;
+
+        }
+ 
+.styled-checkbox {
+        appearance: auto; /* Deixa o checkbox com o comportamento padrão */
+        -webkit-appearance: checkbox; /* Garantia para navegadores Webkit */
+        width: 26px;
+        height: 26px;
+        cursor: pointer;
+        accent-color: gray; /* Cor de preenchimento quando marcado */
+    }
+
+    .styled-checkbox:checked {
+        accent-color: darkgreen; /* Cor quando está marcado */
+    }
+
+
+     #output {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+    button {
+        margin: 0; /* Remove margens para alinhamento */
+        padding: 2px 10px;
+        font-size: 12pt;
+        cursor: pointer;
+        background-color: gray;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        height: 26px; /* Mesma altura que o checkbox */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    button:hover {
+        background-color: darkorange;
+    }
+
+    .registro-item {
+        display: flex;
+        align-items: center;
+        gap: 5px; /* Ajusta o alinhamento com o botão Positiva */
+        margin-bottom: 5px;
+        position: relative; /* Permite posicionamento absoluto do botão */
+    }
+
+    .registro-item button {
+        position: absolute;
+        left: -35px; /* Alinha com o botão Positiva */
+    }
+	.form-container .red-button {
+        margin: 0; /* Remove margens para alinhamento */
+        padding: 2px 11px;
+        font-size: 12pt;
+        cursor: pointer;
+        background-color: gray;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        height: 25px; /* Mesma altura que o checkbox */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    	}
+
+    	.form-container .red-button:hover {
+        background-color: darkred;
+    	}
+
+
+	.form-container .blue-button {
+ 	margin: 15px 20px 0 0;
+        padding: 10px 20px;
+        font-size: 12pt;
+	background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 15px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+    	}
+
+    	.form-container .blue-button:hover {
+        background-color: #0056b3;
+    	}
+
+
+        .a4-container {
+            width: 21.0cm; /* Largura do papel A4 */
+            height: 29.9cm; /* Altura do papel A4 */
+            margin: 25px auto;
+            background: #fff;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+            overflow: hidden; /* Evita transbordo */
+            display: flex;
+            flex-direction: column;                
+        }
+
+.main {
+    text-align: justify;
+    padding: 25px;
+    line-height: 1.6; /* Ajuste o valor conforme necessário */
+}
+        .main p {
+            margin: 25px;
+	    text-indent: 2cm;
+	}
+
+        .certidao-title {
+            text-align: center;
+            font-size: 36pt;
+            margin: 0;
+        }
+
+	.certidao-assinatura {
+            text-align: center;
+            font-size: 12pt;
+            margin: 0;
+        }
+
+        .highlight {
+            font-weight: bold;
+        }
+
+        /* Esconde o rodapé e o cabeçalho na visualização normal */
+        .header,
+        .footer {
+            display: none;
+		
+        }
+
+.styled-checkbox {
+    appearance: auto; /* Deixa o radio button com o comportamento padrão */
+    -webkit-appearance: radio; /* Garante compatibilidade com navegadores WebKit */
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    accent-color: gray; /* Cor de preenchimento quando marcado */
+}
+
+.styled-checkbox:checked {
+    accent-color: darkgreen; /* Cor quando está marcado */
+}
+
+        /* Estilo exclusivo para impressão */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .form-container {
+                display: none; /* Oculta o gerador na impressão */
+            }
+
+            .a4-container {
+                margin: 0;
+                padding: 0;
+                border: none;
+                page-break-inside: avoid; /* Evita quebra no meio do conteúdo */
+                position: relative;
+            }
+
+            /* Cabeçalho apenas na impressão */
+            .header {
+		width: 90%;
+                display: flex; /* Exibe o cabeçalho */
+                align-items: center;
+                padding: 5px;
+		margin: 25px;
+                border-bottom: 1px solid #000;
+                position: relative;
+                top: 0;
+            }
+
+            .header img {
+                width: 150px;
+                height: 150px;
+                margin-right: 10px;
+            }
+
+            .header .text {
+                text-align: left;
+		flex-grow: 1;
+
+            }
+
+            .header .text .title {
+	    text-indent: 2cm;
+                font-size: 18pt;
+                font-weight: bold;
+                margin: 0;
+            }
+
+            .header .text .subtitle {
+                font-size: 14pt;
+                margin-top: 0;
+                margin-bottom: 0;
+            }
+
+            /* Rodapé apenas na impressão */
+            .footer {
+		width: 90%;
+		height: 1%;
+                padding: 0px;
+		margin: 25px;
+                display: block; /* Exibe o rodapé apenas na impressão */
+                position: absolute;
+                bottom: 0cm; /* Rodapé ajustado */
+		margin-top: 0;
+                margin-bottom: 50;
+                left: 0;
+                right: 0;
+                text-align: center;
+                font-size: 10pt;
+                border-top: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1 class="center" style="text-align: center;">Gerador de Certidão de Propriedade </h1><br>
+
+
+<!-- Campo para texto de extração -->
+        <label for="input-text">Cole o texto para extração de informações:</label>
+        <textarea id="input-text" placeholder="Texto do Relatório ONR..."></textarea>
+        <button onclick="extractInformation()">Extrair Informações </button> <button onclick="extrairCpfs()">Extrair CPF/CNPJ</button>
+
+        <!-- Local para exibir informações extraídas -->
+        <div id="output"></div>
+
+
+
+    <div style="margin-bottom: 10px;">
+    <p style="margin-bottom: 5px;">Emitente:</p>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <input type="radio" name="cargonome" id="gustavo" value="Gustavo" class="styled-checkbox">
+        <label for="gustavo">Gustavo</label>
+        <input type="radio" name="cargonome" id="thais" value="Thaís" class="styled-checkbox">
+        <label for="thais">Thaís</label>
+        <input type="radio" name="cargonome" id="analuiza" value="Ana Luiza" class="styled-checkbox">
+        <label for="analuiza">Ana Luiza</label>
+        <input type="radio" name="cargonome" id="kamilly" value="Kamilly" class="styled-checkbox">
+        <label for="kamilly">Kamilly</label>
+        <input type="radio" name="cargonome" id="flavia" value="Flávia" class="styled-checkbox">
+        <label for="flavia">Flávia</label>
+        <input type="radio" name="cargonome" id="pedro" value="Pedro" class="styled-checkbox">
+        <label for="pedro">Pedro</label>
+    </div>
+</div>
+ 
+        <!-- Campo para certidão -->
+        <textarea id="generate-text" placeholder="Protocolo, Nome, Cpf/Cnpj"></textarea>
+    
+
+        <br><br>
+
+    <div style="display: flex; align-items: center; gap: 10px; position: relative;"> 
+
+<!-- Ajuste o valor de gap para controlar a distância -->
+
+ <div id="btnPositivaContainer" style="display: none; position: absolute; left: -35px;">
+        <button type="button" onclick="adicionarRegistro()" id="btnPositiva">+</button>
+    </div>
+    <input type="checkbox" id="positiva" class="styled-checkbox" onchange="togglePositiva()">
+    <label for="positiva">Positiva</label>
+    <input type="checkbox" id="negativa" class="styled-checkbox" onchange="toggleNegativa()">
+    <label for="negativa">Negativa</label>
+    <input type="checkbox" id="gratuito" class="styled-checkbox">
+    <label for="gratuito">Gratuita</label>
+ </div>
+ 
+<div style="margin-top: 20px;" id="listaRegistros">
+</div>
+
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 20px;">
+            <label for="seloDigital" style="display: block; align-items: center; gap: 10px; margin-bottom: 5px;">Selo Eletrônico:</label>
+            <input type="text" id="seloDigital" maxlength="23" placeholder="Digite o Selo" style="width: 30%;">
+            <input type="checkbox" id="atualizar-selo" class="styled-checkbox" style="margin-left: 10px;">
+            <label for="atualizar-selo">Atualizar o selo automaticamente</label>
+        </div>
+  
+ <div style="display: flex; align-items: center; gap: 10px; margin-top: 20px; justify-content: left;">
+    <input type="checkbox" id="assinadoDigitalmente" class="styled-checkbox">
+    <label for="assinadoDigitalmente">Assinado Digitalmente</label>
+ </div>
+
+ <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+    <input type="checkbox" id="protocolo-aberto" style="width:16px; height:16px; margin:0; cursor:pointer; accent-color:darkgreen;"
+           onchange="document.getElementById('protocolo-aberto-campos').style.display = this.checked ? 'block' : 'none';">
+    <label for="protocolo-aberto">Protocolo em aberto</label>
+ </div>
+ <div id="protocolo-aberto-campos" style="display:none; margin-top:8px; margin-left:24px;">
+    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+      <label for="pa-numero">Nº protocolo:</label>
+      <input type="text" id="pa-numero" style="width:100px;" placeholder="00.000">
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+      <label for="pa-data">Data:</label>
+      <input type="date" id="pa-data">
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+      <label for="pa-tipo">Registro de:</label>
+      <input type="text" id="pa-tipo" style="width:260px;" placeholder="ex.: penhor rural">
+    </div>
+ </div><br><br>
+
+ <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-start;">
+    <button onclick="gerarCertidao()">Gerar Certidão</button>
+    <button onclick="imprimirCertidao()">Imprimir</button>
+ </div></div>
+
+
+
+ <div id="certidao" class="a4-container">
+        <div class="header">
+            <img src="BRASAO.png" alt="Brasão da República do Brasil">
+            <div class="text">
+                <div class="title" style="text-align: center; margin-left: -4cm;">República Federativa do Brasil</div>
+                <div class="subtitle" style="text-align: center; font-size:12pt; margin-left: -2cm;">Estado de Goiás - Comarca de Piracanjuba<br>Cartório de Registro de Imóveis, Registro de Títulos e Documentos,<br> Civil das Pessoas Juridicas e Civil das Pessoas<br>Naturais e de Interdições e Tutelas<br><br>
+<div class="subtitle" style="text-align: center; font-size:11pt;">Pedro Max de Souza Cruz - Oficial Interino<br><br></div>
+</div>
+            </div>
+        </div>
+
+ <div class="main">
+            <!-- Conteúdo gerado será inserido aqui -->
+        </div>
+
+ <div class="footer">
+            Rua Percival Rebelo, nº 577, Centro - Piracanjuba-GO - CEP: 75.640-092<br>
+            Fone: (64) 3405-1340 - e-mail: registrodeimoveispiracanjuba@gmail.com
+        </div>
+    </div>
+
+<script>
+  
+function toggleNegativa() {
+        const negativaChecked = document.getElementById('negativa').checked;
+        const positivaCheckbox = document.getElementById('positiva');
+        const btnPositivaContainer = document.getElementById('btnPositivaContainer');
+        const registroContainer = document.getElementById('listaRegistros');
+
+        if (negativaChecked) {
+            positivaCheckbox.checked = false; // Desmarca "Positiva" se "Negativa" for marcada
+            btnPositivaContainer.style.display = 'none'; // Esconde o botão de adicionar
+            registroContainer.innerHTML = ''; // Limpa todos os registros positivos
+        }
+    }
+
+function adicionarRegistro() {
+    const negativaCheckbox = document.getElementById('negativa');
+    if (negativaCheckbox.checked) {
+        negativaCheckbox.checked = false;
+    }
+
+    const registroContainer = document.getElementById('listaRegistros');
+    const registroDiv = document.createElement('div');
+    registroDiv.className = 'registro-item';
+
+    registroDiv.innerHTML = `
+        <button onclick="removerRegistro(this)" class="red-button">-</button>
+        <span>${registroContainer.childElementCount + 1}:</span>
+        <input type='text' placeholder='Registro' maxlength='5' style='width: 60px'>
+        <input type='text' placeholder='Descrição' style='width: 300px'>
+    `;
+
+    registroContainer.appendChild(registroDiv);
+    atualizarNumeracao();
+}
+
+    // Função para remover um registro individual
+    function removerRegistro(button) {
+        const registroDiv = button.parentElement;
+        registroDiv.remove();
+        atualizarNumeracao();
+    }
+
+    // Atualiza a numeração dos registros
+    function atualizarNumeracao() {
+        const registros = document.getElementById('listaRegistros').children;
+        for (let i = 0; i < registros.length; i++) {
+            registros[i].querySelector('span').textContent = `${i + 1}:`;
+        }
+    }
+
+    // Função para alternar "Positiva"
+    function togglePositiva() {
+        const positivaChecked = document.getElementById('positiva').checked;
+        const negativaCheckbox = document.getElementById('negativa');
+        const btnPositivaContainer = document.getElementById('btnPositivaContainer');
+
+        if (positivaChecked) {
+            negativaCheckbox.checked = false; // Desmarca "Negativa" se "Positiva" for marcada
+            btnPositivaContainer.style.display = 'inline-flex'; // Exibe o botão de adicionar
+        } else {
+            btnPositivaContainer.style.display = 'none'; // Esconde o botão de adicionar
+        }
+    }
+
+    // Função para alternar "Negativa"
+  
+function toggleNegativa() {
+        const negativaChecked = document.getElementById('negativa').checked;
+        const positivaCheckbox = document.getElementById('positiva');
+        const btnPositivaContainer = document.getElementById('btnPositivaContainer');
+        const registroContainer = document.getElementById('listaRegistros');
+
+        if (negativaChecked) {
+            positivaCheckbox.checked = false; // Desmarca "Positiva" se "Negativa" for marcada
+            btnPositivaContainer.style.display = 'none'; // Esconde o botão de adicionar
+            registroContainer.innerHTML = ''; // Limpa todos os registros positivos
+        }
+    }
+function extractInformation() {
+    const text = document.getElementById('input-text').value;
+    if (!text.trim()) {
+        alert('Por favor, cole um texto para análise.');
+        return;
+    }
+
+    const instituicoes = {};
+    let totalValidos = 0; // Contador para itens válidos
+    const protocolos = [];
+    const protocoloRegex = /Protocolo S\s*([\s\S]*?)(?=Protocolo S|$)/gi;
+    let match;
+
+    while ((match = protocoloRegex.exec(text)) !== null) {
+        const protocoloTexto = match[1].trim();
+
+        const protocoloEncontrado = protocoloTexto.match(/S\d{11}D/i)?.[0]?.toUpperCase() || 'NÃO ENCONTRADO';
+        const matriculaExtraida = protocoloTexto.match(/Matrícula:\s*([^\n]+)/i)?.[1]?.trim().toUpperCase() || null;
+        const registroLivroExtraido = protocoloTexto.match(/Nº Registro Livro 3\s*([^\n]+)/i)?.[1]?.trim().toUpperCase() || null;
+
+        // Agora só aceita 'Positiva/Negativa de Propriedade'
+       if (!protocoloTexto.replace(/\s+/g, ' ').match(/Positiva\/Negativa de Propriedade/i)) {
+    continue;
+}
+
+        totalValidos++; // Incrementa apenas para itens válidos
+
+	const tipoDocumento = protocoloTexto.match(/(ALIENAÇÃO FIDUCIARIA|ALIENAÇÃO FIDUCIÁRIA|PENHOR|MILHO|SOJA|SORGO|GIRASSOL|ALGODAO|ALIENAÇÃO)/i)?.[1]?.toUpperCase() || 'NÃO ENCONTRADO';
+        const produtoExtraido = protocoloTexto.match(/Produto:\s*([^|,]+)|Commodity:\s*([^|,]+)|Commoditie:\s*([^|,]+)/i)?.[1]?.toUpperCase() ||
+                                protocoloTexto.match(/\b(Milho|Soja|Sorgo|Girassol|Algodao)\b/i)?.[0]?.toUpperCase() || 
+                                'NÃO ENCONTRADO';
+
+        const anoExtraido = protocoloTexto.match(/(?:Safra[:\s]*)(\d{4}\/\d{4})/i)?.[1]?.trim() || 'NÃO ENCONTRADO';
+        const nomeProtocolo = protocoloTexto.match(/Razão:\s*([^,]+)/i)?.[1]?.toUpperCase() || 
+                              protocoloTexto.match(/([^,]+)\s+\?\s+CPF:/i)?.[1]?.toUpperCase() || 
+                              'NÃO ENCONTRADO';
+        const cpfCnpjProtocolo = protocoloTexto.match(/CPF\s*\/\s*CNPJ:\s*([\d\.\-\/]+)/i)?.[1]?.toUpperCase() || 
+                                 protocoloTexto.match(/CPF:\s*([\d\.\-\/]+)/i)?.[1]?.toUpperCase() || 
+                                 'NÃO ENCONTRADO';
+
+function corrigirTipoLido(t) {
+    const normalizado = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    if (normalizado === "alienacao" || normalizado === "alienacao fiduciaria") return "ALIENAÇÃO FIDUCIÁRIA";
+    if (normalizado === "penhor") return "Penhor";
+    return t; // retorna como está se não for nenhum dos dois
+}
+
+const tipoFinal = corrigirTipoLido(tipoDocumento);
+const resultado = `${protocoloEncontrado}, ${nomeProtocolo}, ${cpfCnpjProtocolo}`;
+
+        protocolos.push(resultado);
+
+        const nomeInstituicao = nomeProtocolo || "Não identificado";
+        if (!instituicoes[nomeInstituicao]) {
+            instituicoes[nomeInstituicao] = 0;
+        }
+        instituicoes[nomeInstituicao]++;
+    }
+
+    const outputDiv = document.getElementById('output');
+    outputDiv.innerHTML = '';
+
+    // Exibir resumo das instituições
+    if (Object.keys(instituicoes).length > 0) {
+        const resumoDiv = document.createElement('div');
+        resumoDiv.style.marginBottom = '20px';
+        resumoDiv.style.padding = '10px';
+        resumoDiv.style.border = '1px solid #ddd';
+        resumoDiv.style.borderRadius = '5px';
+        resumoDiv.style.backgroundColor = '#f9f9f9';
+
+        // Exibe o número total de itens válidos
+        const totalValidosTexto = document.createElement('p');
+        totalValidosTexto.textContent = `Total de ${totalValidos} certidões.`;
+        resumoDiv.appendChild(totalValidosTexto);
+
+        // Exibe o resumo por instituição
+        for (const [nome, count] of Object.entries(instituicoes)) {
+            const resumoTexto = document.createElement('p');
+           
+            resumoDiv.appendChild(resumoTexto);
+        }
+
+        outputDiv.appendChild(resumoDiv);
+    } else {
+        const noInstituicaoText = document.createElement('p');
+        noInstituicaoText.textContent = 'Nenhuma instituição encontrada.';
+        outputDiv.appendChild(noInstituicaoText);
+    }
+
+    // Exibir lista de protocolos com botão "copiar"
+    if (protocolos.length > 0) {
+        protocolos.forEach((line) => {
+            const lineContainer = document.createElement('div');
+            lineContainer.style.marginBottom = '10px';
+
+            const lineText = document.createElement('span');
+            lineText.textContent = line;
+
+            const copyButton = document.createElement('button');
+            copyButton.textContent = '[COPIAR]';
+            copyButton.style.marginLeft = '10px';
+            copyButton.style.padding = '5px 10px';
+            copyButton.style.cursor = 'pointer';
+            copyButton.style.backgroundColor = '#007bff';
+            copyButton.style.color = 'white';
+            copyButton.style.border = 'none';
+            copyButton.style.borderRadius = '3px';
+
+            copyButton.addEventListener('click', () => {
+                const generateTextArea = document.getElementById('generate-text');
+                generateTextArea.value = line;
+                navigator.clipboard.writeText(line).then(() => {
+                    copyButton.textContent = '[COPIADO]';
+                    copyButton.style.backgroundColor = '#6c757d';
+                });
+            });
+
+            lineContainer.appendChild(lineText);
+            lineContainer.appendChild(copyButton);
+            outputDiv.appendChild(lineContainer);
+        });
+    } else {
+        const noProtocolText = document.createElement('p');
+        noProtocolText.textContent = 'Nenhum protocolo encontrado.';
+        outputDiv.appendChild(noProtocolText);
+    }
+}
+
+
+// Protocolo em aberto: frase destacada, inserida após a assinatura
+function textoProtocoloAberto() {
+    if (!document.getElementById('protocolo-aberto').checked) return '';
+    const paNumero = document.getElementById('pa-numero').value.trim();
+    const paDataISO = document.getElementById('pa-data').value; // AAAA-MM-DD
+    const paTipo = document.getElementById('pa-tipo').value.trim();
+    const paData = paDataISO ? paDataISO.split('-').reverse().join('/') : '';
+    return `<div style="margin: 18px 25px 0; padding-top: 8px; border-top: 1px solid #000; text-align: justify;"><strong>CERTIFICO</strong> que consta o protocolo em aberto de nº <strong>${paNumero}</strong>, protocolado em <strong>${paData}</strong>, referente ao registro de <strong>${paTipo}</strong>.</div>`;
+}
+
+function imprimirCertidao() {
+    window.print();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    function handleCopyButtonClick(event) {
+        const seloInput = document.getElementById('seloDigital'); // Campo "DIGITE O SELO"
+        const atualizarSeloCheckbox = document.getElementById('atualizar-selo'); // Checkbox "atualizar-selo"
+
+        // Verifica se o campo "DIGITE O SELO" está preenchido
+        if (!seloInput || !seloInput.value.trim()) {
+            alert('Por favor, preencha o campo "DIGITE O SELO".');
+            return; // Interrompe o processo se o campo não estiver preenchido
+        }
+
+        // Incrementa o valor do campo "DIGITE O SELO" caso o checkbox esteja marcado
+        if (atualizarSeloCheckbox && atualizarSeloCheckbox.checked) {
+            const seloAtual = seloInput.value.trim();
+
+            // Verifica se o valor é numérico antes de incrementar
+            if (!/^\d+$/.test(seloAtual)) {
+                alert('O valor no campo "DIGITE O SELO" deve conter apenas números.');
+                return;
+            }
+
+            let seloNumero = BigInt(seloAtual) + 1n; // Incrementa como número
+        let seloIncrementado = seloNumero.toString().padStart(23, '0'); // Mantém os 23 caracteres com zeros à esquerda
+
+        seloInput.value = seloIncrementado; // Atualiza o campo com o novo selo
+    }
+
+        // Lógica de cópia
+        const line = event.target.dataset.line; // Obtém o valor associado ao botão
+        navigator.clipboard.writeText(line).then(() => {
+            // Altera o texto do botão apenas se tudo foi validado
+            event.target.textContent = '[COPIADO]';
+            event.target.style.backgroundColor = '#6c757d';
+        });
+    }
+
+    // Adiciona o evento aos botões [COPIAR]
+    const outputDiv = document.getElementById('output');
+    outputDiv.addEventListener('click', (event) => {
+        if (event.target.tagName === 'BUTTON' && event.target.textContent === '[COPIAR]') {
+            handleCopyButtonClick(event);
+        }
+    });
+});
+
+function extrairCpfs() {
+    const outputDiv = document.getElementById('output');
+    const spans = outputDiv.querySelectorAll('span');
+
+    const cpfs = [];
+
+    spans.forEach(span => {
+        const texto = span.textContent;
+        const partes = texto.split(",");
+        const cpf = partes[2]?.trim();
+
+        if (cpf) {
+            const numeros = cpf.replace(/\D/g, ""); // Remove tudo que não for dígito
+            if (numeros.length === 11 || numeros.length === 14) {
+                cpfs.push(numeros);
+            }
+        }
+    });
+
+    if (cpfs.length === 0) {
+        alert("Nenhum CPF ou CNPJ válido encontrado.");
+        return;
+    }
+
+    const novaJanela = window.open("", "_blank");
+    novaJanela.document.write(`
+    <html>
+    <head>
+        <title>CPFs/CNPJs Extraídos</title>
+        <style>
+            body {
+                font-size: 12pt;
+                padding: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <pre>${cpfs.join("\n")}</pre>
+    </body>
+    </html>
+`);
+}
+
+function gerarCertidao() {
+    const positivaChecked = document.getElementById('positiva').checked;
+    const negativaChecked = document.getElementById('negativa').checked;
+    const cargo = document.querySelector('input[name="cargonome"]:checked');
+    if (!cargo) {
+        alert("Selecione quem emitiu a certidão.");
+        return;
+    }
+
+    const cargoText = cargo.value === "Gustavo" ? "Gustavo Dias Lemos" :
+                      cargo.value === "Thaís" ? "Thaís Moura de Souza" :
+                      cargo.value === "Ana Luiza" ? "Ana Luiza Alves Camara" :
+                      cargo.value === "Kamilly" ? "Kamilly Victoria Alves da Silva" :
+                      cargo.value === "Flávia" ? "Flávia de Souza Santos" :
+                      "Pedro Max de Souza Cruz";
+
+    const cargoDescricao = cargo.value === "Pedro" ? "Oficial Interino" : "Suboficial";
+    const assinaturaDigital = document.getElementById("assinadoDigitalmente").checked ? 'Assinada digitalmente' : '';
+
+    const inputText = document.getElementById("generate-text").value.trim();
+    if (!inputText) {
+        alert("Cole o texto separado por vírgulas.");
+        return;
+    }
+
+    const parts = inputText.split(',').map(part => part.trim());
+    if (parts.length !== 3) {
+        alert("O texto deve conter exatamente 3 partes separadas por vírgulas.");
+        return;
+    }
+
+    const [protocoloEncontrado, nome, cpfCnpj] = parts;
+    const isCpf = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(cpfCnpj);
+    const isCnpj = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(cpfCnpj);
+    if (!isCpf && !isCnpj) {
+        alert("O CPF ou CNPJ fornecido não está em um formato válido.");
+        return;
+    }
+
+
+    // Define automaticamente se é CPF ou CNPJ (para aparecer no texto "inscrito(a) no CPF/CNPJ")
+    const documentotexto2 = isCpf ? "CPF" : "CNPJ";
+
+    // Checkbox de gratuidade: quando marcado, zera os valores no texto
+    const gratuitaChecked = document.getElementById('gratuito')?.checked;
+
+    const textoValores = gratuitaChecked
+        ? "Emolumentos: R$0,00; Taxa Judiciária: R$0,00. Fundos/ISSQN R$0,00. "
+        : "Emolumentos: R$92,79; Taxa Judiciária: R$19,99. Fundos/ISSQN R$25,29. ";
+
+    const selo = document.getElementById("seloDigital").value.trim() || "Não informado";
+    const dataAtual = new Date().toLocaleDateString("pt-BR", { day: 'numeric', month: 'long', year: 'numeric' });
+const registros = Array.from(document.querySelectorAll('#listaRegistros .registro-item')).map(div => {
+    const inputs = div.querySelectorAll('input');
+    const numero = inputs[0]?.value.trim();
+    const descricao = inputs[1]?.value.trim();
+
+if (!/^\d{1,5}$/.test(numero)) return null;
+const numFormatado = numero.length === 5 ? `${numero.slice(0, 2)}.${numero.slice(2)}` : numero;
+    return `Matrícula: ${numFormatado} - ${descricao || 'Sem descrição'};`;
+}).filter(Boolean);
+
+if (positivaChecked && registros.length === 0) {
+    alert('Para certidões positivas, preencha ao menos uma matrícula válida.');
+    return;
+}
+
+// Determina o tipo de certidão para o título
+const tipoCertidao = positivaChecked ? 'Positiva' : 'Negativa';
+
+// Nome abreviado (primeiras três palavras)
+const nomeAbreviado = nome.trim().split(/\s+/).slice(0, 3).join(' ');
+
+// Define título da aba com protocolo, nome e tipo
+const titulo = `${protocoloEncontrado} - ${nomeAbreviado} ${tipoCertidao} de Propriedade`.replace(/\s+/g, ' ').trim();
+
+document.title = titulo;
+
+const registrosTexto = registros.map(r => r.split(' - ')[0]).join(', ');
+const registrosTextoNome = registros.join('<br>');
+
+    const textoCertidao = positivaChecked
+        ? `<p style="text-align: justify;"><strong>CERTIFICO</strong>, a requerimento da parte interessada, que revendo no cartório a meu cargo, no Livro 02 de Registro Geral, os Livros das Transcrições, das Transmissões e demais papeis do Registro de Imóveis, verifiquei não constar outros imóveis, rurais ou urbanos, em nome de <strong>${nome.toUpperCase()}</strong>, inscrito(a) no ${documentotexto2} sob nº <strong>${cpfCnpj}</strong>; <strong>A NÃO SER OS SEGUINTES</strong>: <br><br><strong>${registrosTextoNome}</strong><br><br>NADA MAIS. O referido é verdade e dou fé.</p>
+           <p style="text-align: justify;"><strong>CERTIFICO</strong> também que a presente certidão tem validade por 30 dias, contados da data da sua emissão (Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2021). ${textoValores}Selo Digital: ${selo}. Consulte este selo: <a href="http://extrajudicial.tjgo.jus.br" target="_blank">http://extrajudicial.tjgo.jus.br</a>.</p>`
+        : `<p style="text-align: justify;"><strong>CERTIFICO</strong>, a requerimento da parte interessada, que revendo no cartório a meu cargo, no Livro 02 de Registro Geral, os Livros das Transcrições, das Transmissões e demais papeis do Registro de Imóveis, verifiquei <strong>NÃO CONSTAR</strong> imóveis, rurais ou urbanos, em nome de <strong>${nome.toUpperCase()}</strong>, inscrito(a) no ${documentotexto2} sob nº <strong>${cpfCnpj}</strong>. NADA MAIS. O referido é verdade e dou fé.</p>
+           <p style="text-align: justify;"><strong>CERTIFICO</strong> também que a presente certidão tem validade por 30 dias, contados da data da sua emissão (Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial). ${textoValores} Selo Digital: ${selo}. Consulte este selo: <a href="http://extrajudicial.tjgo.jus.br" target="_blank">http://extrajudicial.tjgo.jus.br</a>.</p>`;
+
+    const certidaoMain = document.querySelector("#certidao .main");
+    certidaoMain.innerHTML = `
+        <div class="certidao-title">CERTIDÃO<br><br></div>
+        <div class="certidao-assinatura">
+            ${textoCertidao}<br>
+            Piracanjuba-GO, ${dataAtual}.<br><br>
+            ${assinaturaDigital}<br>
+            <strong>${cargoText}<br>${cargoDescricao}</strong></p>
+            ${textoProtocoloAberto()}
+        </div>`;
+}
+
+
+function handleCopyButtonClick(event) {
+    const seloInput = document.getElementById('seloDigital'); // Campo "DIGITE O SELO"
+    const atualizarSeloCheckbox = document.getElementById('atualizar-selo'); // Checkbox "atualizar-selo"
+
+    // Verifica se o campo "DIGITE O SELO" está preenchido
+    if (!seloInput || !seloInput.value.trim()) {
+        alert('Por favor, preencha o campo "DIGITE O SELO".');
+        return; // Interrompe o processo se o campo não estiver preenchido
+    }
+
+    // Incrementa o valor do campo "DIGITE O SELO" caso o checkbox esteja marcado
+    if (atualizarSeloCheckbox && atualizarSeloCheckbox.checked) {
+        const seloAtual = seloInput.value.trim();
+
+        // Verifica se o valor é numérico antes de incrementar
+        if (!/^\d+$/.test(seloAtual)) {
+            alert('O valor no campo "DIGITE O SELO" deve conter apenas números.');
+            return;
+        }
+
+        // Incrementa o valor como string para evitar problemas de notação científica
+        seloInput.value = (BigInt(seloAtual) + 1n).toString();
+    }
+
+    // Lógica de cópia
+    const line = event.target.dataset.line; // Obtém o valor associado ao botão
+    navigator.clipboard.writeText(line).then(() => {
+        event.target.textContent = '[COPIADO]';
+        event.target.style.backgroundColor = '#6c757d';
+    });
+}
+
+    </script>
+</body>
+</html>
