@@ -5,7 +5,7 @@
 <script>(function(){fetch('https://raw.githubusercontent.com/andrepcontato-beep/vencimento/main/vencimento.txt',{cache:'no-store',signal:AbortSignal.timeout(6000)}).then(function(r){return r.ok?r.text():Promise.reject();}).then(function(t){var d=new Date(t.trim()+'T00:00:00Z');if(isNaN(d.getTime())||Date.now()>=d.getTime())throw 0;document.getElementById('_gate').remove();}).catch(function(){document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Aviso</title></head><body style="font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f5f5f5;"><h2 style="color:#666;">Conteúdo indisponível.</h2></body></html>');});})();</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geradores de Certidão</title>
+  <title>ONRFácil - Geradores de Certidão</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 40px 16px; color: #333; }
     .box { max-width: 560px; margin: 0 auto; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 28px 32px; box-shadow: 0 0 8px rgba(0,0,0,0.08); }
@@ -30,32 +30,6 @@
     <div class="sep"></div>
 
     <a class="item" href="gerador-matriculas-testes.html">Certidão de Matrículas/Registro Auxiliar PRO <small>(em testes para ONR)</small></a>
-  </div>
-</body></html>');});})();</script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Geradores de Certidão</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 40px 16px; color: #333; }
-    .box { max-width: 560px; margin: 0 auto; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 28px 32px; box-shadow: 0 0 8px rgba(0,0,0,0.08); }
-    h1 { font-size: 22px; margin: 0 0 6px; text-align: center; }
-    p.sub { margin: 0 0 22px; color: #666; font-size: 14px; text-align: center; }
-    .sep { height: 1px; background: #ddd; margin: 18px 0 16px; }
-    a.item { display: block; background: gray; color: #fff; text-decoration: none; padding: 12px 16px; border-radius: 5px; margin-bottom: 10px; font-size: 15px; transition: background-color .2s; }
-    a.item:hover { background: darkorange; }
-    a.item small { font-size: 12px; opacity: .85; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h1>Geradores de Certidão</h1>
-    <p class="sub">Cartório de Registro de Imóveis de Piracanjuba/GO</p>
-
-    <a class="item" href="gerador-matriculas.html">Gerador de Certidão — Matrículas<small>Livro 2 / Livro 3 (carimbo sobre TIFF)</small></a>
-    <a class="item" href="gerador-matriculas-testes.html">Gerador de Certidão — Matrículas (em testes)<small>Lista de pedidos, busca na pasta, salvar TIFF</small></a>
-    <a class="item" href="onr-facil-safra.html">ONR Fácil — Safra<small>Penhor / Alienação Fiduciária</small></a>
-    <a class="item" href="onr-facil-propriedade.html">ONR Fácil — Propriedade<small>Positiva / Negativa de Propriedade</small></a>
-    <a class="item" href="recanto-do-bosque.html">Certidão — Recanto do Bosque<small>Lotes do loteamento</small></a>
   </div>
 </body>
 </html>
