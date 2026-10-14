@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<style id="_gate">html{visibility:hidden}</style>
+<script>(function(){fetch('https://raw.githubusercontent.com/andrepcontato-beep/vencimento/main/vencimento.txt',{cache:'no-store',signal:AbortSignal.timeout(6000)}).then(function(r){return r.ok?r.text():Promise.reject();}).then(function(t){var d=new Date(t.trim()+'T00:00:00Z');if(isNaN(d.getTime())||Date.now()>=d.getTime())throw 0;document.getElementById('_gate').remove();}).catch(function(){document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Aviso</title></head><body style="font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f5f5f5;"><h2 style="color:#666;">Conte\u00fado indispon\u00edvel.</h2></body></html>');});})();</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizador de Arquivos TIFF Renomeados</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+
+  #image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .image-box {
+  width: 210mm;
+  height: 297mm;
+  position: relative;
+  margin: 0 auto;
+  padding: 0;
+  border: none;
+}
+
+  .image-box canvas {
+  width: 210mm;
+  height: 297mm;
+  display: block;
+  object-fit: contain;
+}
+
+  .carimbo {
+  position: absolute;
+  bottom: 20mm;
+  left: 19mm;
+  font-size: 14px;
+  color: black;
+  background-color: white;
+  padding: 5px;
+  border: 1px solid red;
+  z-index: 9999;
+  width: 170mm;
+  box-sizing: border-box;
+  text-align: justify;
+  white-space: normal;
+  word-break: break-word;
+  hyphens: auto;
+  cursor: text;
+  outline: none;
+}
+
+  .carimbo:focus {
+    border: 1px dashed #0066cc;
+    box-shadow: 0 0 4px rgba(0,102,204,0.5);
+  }
+
+  .carimbo.editado-manualmente {
+    border: 1px solid darkorange;
+  }
+
+  #carimbo-status {
+    font-size: 12px;
+    color: darkorange;
+    margin-left: 6px;
+    font-style: italic;
+  }
+
+  .controls-fixed {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    z-index: 10000;
+  }
+
+  .controls-fixed button {
+    margin: 2px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  button#print-button {
+    background-color: gray;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 5px;
+    margin-top: 10px;
+  }
+
+  body.rosa-selected { background-color: #f2bfd0; }
+  body.livro3-selected { background-color: #bfe0c8; }
+  body.gratuito-selected { background-color: #d0e8f8; }
+
+  .checkbox-group input[type="radio"],
+  .checkbox-group input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    vertical-align: middle;
+    margin-right: 2px;
+  }
+
+  .styled-checkbox {
+    appearance: auto;
+    -webkit-appearance: checkbox;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: gray;
+  }
+
+  .styled-checkbox:checked {
+    accent-color: darkgreen;
+  }
+
+  .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-left: 20px;
+    margin-top: 10px;
+  }
+
+  .checkbox-group label {
+    width: auto;
+    white-space: nowrap;
+    margin-right: 15px;
+  }
+
+  #assinatura-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+input[type="radio"]:checked + span {
+  color: red;
+  font-weight: bold;
+}
+
+button {
+  background-color: gray;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 5px;
+  margin: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: darkorange;
+}
+
+#print-button:hover {
+  background-color: darkorange;
+}
+
+#upload-files {
+  font-size: 18px;
+  padding: 12px 20px;
+  border: 2px solid #888;
+  border-radius: 8px;
+  background-color: #f1f1f1;
+  cursor: pointer;
+}
+
+ .file-button {
+    display: inline-block;
+    background-color: gray;
+    color: white;
+    padding: 14px 28px; /* Aumenta altura e largura */
+    font-size: 16px;     /* Aumenta tamanho da fonte */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+  }
+
+  .file-button:hover {
+    background-color: darkorange;
+  }
+
+  #upload-files {
+    display: none;
+  }
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.input-wrapper input[type="text"] {
+  padding: 6px;
+  font-size: 14px;
+}
+
+.input-wrapper button {
+  background-color: gray;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.input-wrapper button:hover {
+  background-color: darkorange;
+}
+
+
+.botao-ajuste {
+  background-color: gray;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.botao-ajuste.mais:hover {
+  background-color: green;
+}
+
+.botao-ajuste.menos:hover {
+  background-color: red;
+}
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  @media print {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100%;
+    width: 100%;
+  }
+
+  .controls-fixed,
+  .file-button,
+  h1 {
+    display: none !important;
+  }
+
+  #image-container {
+    display: block !important;
+    width: 210mm;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .image-box {
+    display: block !important;
+    width: 210mm;
+    height: 297mm;
+    position: relative;
+    margin: 0 auto;
+    padding: 0;
+    border: none;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .image-box canvas,
+  .carimbo {
+    max-height: 297mm;
+    box-sizing: border-box;
+  }
+
+  .carimbo {
+    display: block !important;
+    position: absolute;
+    bottom: 20mm;
+    left: 19mm;
+    width: 170mm;
+    text-align: justify;
+    white-space: normal;
+    word-break: break-word;
+    hyphens: auto;
+    border: 1px solid red !important;
+    box-shadow: none !important;
+  }
+
+  #carimbo-status,
+  #edit-hint {
+    display: none !important;
+  }
+
+  .assinatura-nao-digital {
+    text-align: center !important;
+  }
+}
+
+</style>
+
+  <script src="tiff.min.js"></script>
+  <script src="html2canvas.min.js"></script>
+  <script src="UTIF.js"></script>
+  <script src="jspdf.umd.min.js"></script>
+  <script src="pdf.min.js"></script>
+
+</head>
+
+<body>
+
+<h1 style="font-size: 24px; text-align: left; margin: 30px; margin-top: 5px; color: #333;">
+  Visualizador de Matrícula / Registro Auxiliar
+</h1>
+
+<div id="image-container"></div>
+
+<div id="modal-fila-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:6px; padding:20px 24px; max-width:520px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+    <h2 style="margin-top:0; font-size:18px; color:#333;">📋 Resumo dos Pedidos</h2>
+    <p id="modal-fila-total" style="font-size:14px; color:#555;"></p>
+    <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+      <thead>
+        <tr style="text-align:left; border-bottom: 2px solid #ccc;">
+          <th style="padding: 4px 6px;">Solicitante</th>
+          <th style="padding: 4px 6px; text-align:center;">Qtd.</th>
+        </tr>
+      </thead>
+      <tbody id="modal-fila-tbody"></tbody>
+    </table>
+    <div style="text-align:right; margin-top:18px;">
+      <button type="button" id="modal-fila-copiar" style="margin-right:8px;">📋 Copiar lista</button>
+      <button type="button" id="modal-fila-fechar" style="margin-right:8px;">Fechar</button>
+      <button type="button" id="modal-fila-iniciar" style="font-weight:bold;">▶ Começar pelo 1º pedido</button>
+    </div>
+  </div>
+</div>
+
+<div class="controls-fixed">
+
+
+
+
+<div style="text-align: left; margin-left: 100px; margin-top: 10px;">
+  <label for="upload-files" class="file-button">📂 Escolher arquivos</label>
+  <input type="file" id="upload-files" multiple>
+</div>
+<br>
+
+<strong>Gerador de Certidão</strong><br><br>
+
+<div style="margin-bottom: 10px;">
+  <label for="upload-lista-pedidos" class="file-button">📋 Carregar Lista de Pedidos (PDF)</label>
+  <input type="file" id="upload-lista-pedidos" accept="application/pdf" style="display:none;">
+  <br>
+  <span id="fila-status" style="font-size: 13px; color: #444; display: inline-block; margin-top: 4px;"></span>
+  <br>
+  <button type="button" id="fila-anterior" style="display:none;" title="Carregar protocolo/matrícula do pedido anterior">⬅ Anterior</button>
+  <button type="button" id="fila-proximo" style="display:none;" title="Carregar protocolo/matrícula do próximo pedido">Próximo ➡</button>
+  <button type="button" id="fila-resumo" style="display:none;" title="Ver novamente a lista de solicitantes e quantidades">📊 Resumo</button>
+</div>
+
+<div style="margin-bottom: 10px;">
+  <input type="file" id="input-pasta-matriculas" webkitdirectory multiple style="display:none;">
+  <span id="pasta-status" style="font-size: 13px; color: #666; display:inline-block; margin-top: 4px;"></span>
+</div>
+
+<div class="input-wrapper">
+  <label for="protocolo"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Protocolo:</label>
+  <input type="text" id="protocolo" maxlength="13" style="width: 120px;" placeholder="S00000000000D" pattern="S\d{10}D" required>
+</div>
+<div class="input-wrapper">
+  <label for="matricula"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Matrícula:</label>
+  <input type="text" id="matricula" maxlength="6" style="width: 80px;" placeholder="00.000" pattern="[0-9]{0,5}" title="Máximo de 6 caracteres">
+  <button type="button" class="botao-ajuste mais" onclick="aM(1)">+</button>
+ <button type="button" class="botao-ajuste menos" onclick="aM(-1)">−</button>
+ <button type="button" id="buscar-matricula-button" title="Buscar automaticamente na pasta conectada os arquivos desta matrícula">🔎 Buscar arquivos</button>
+</div>
+<div class="input-wrapper">
+  <label for="selo"> &nbsp; &nbsp;Selo Digital:</label>
+  <input type="text" id="selo" maxlength="23" style="width: 190px;" placeholder="03800000000000000000000">
+  <button type="button" class="botao-ajuste mais" onclick="aS(1)">+</button>
+<button type="button" class="botao-ajuste menos" onclick="aS(-1)">−</button>
+</div>
+
+<hr style="border: none; height: 1px; background-color: #ccc; margin: 10px 0;">
+
+<strong>Certidão Livro 2 - Matriculas:</strong><br>
+
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$92,79; Taxa Judiciária: R$19,99. Fundos/ISSQN R$25,29."><span> ONR L2</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$0,00; Taxa Judiciária: R$0,00. Fundos/ISSQN R$0,00."> <span>Gratuito L2</span></label><br><br>
+
+Numero de Atos:<br>
+<label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$37,11; Taxa Judiciária: R$19,99. Fundos/ISSQN R$11,21."><span> 0</span></label>
+<label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$46,39; Taxa Judiciária: R$19,99. Fundos/ISSQN R$14,04."><span> 1</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$55,67; Taxa Judiciária: R$19,99. Fundos/ISSQN R$16,87."><span> 2</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$64,95; Taxa Judiciária: R$19,99. Fundos/ISSQN R$19,70."><span> 3</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$74,23; Taxa Judiciária: R$19,99. Fundos/ISSQN R$22,53."><span> 4</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$83,51; Taxa Judiciária: R$19,99. Fundos/ISSQN R$25,36."><span> 5</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$92,79; Taxa Judiciária: R$19,99. Fundos/ISSQN R$28,18."><span> 6</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$98,35; Taxa Judiciária: R$19,99. Fundos/ISSQN R$29,87."><span> 7</span></label><br>
+
+<br>
+
+Atos com desconto de primeiro Imóvel:<br>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$23,20; Taxa Judiciária: R$19,99. Fundos/ISSQN R$6,32."><span> 1</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$27,84; Taxa Judiciária: R$19,99. Fundos/ISSQN R$7,58."><span> 2</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$32,48; Taxa Judiciária: R$19,99. Fundos/ISSQN R$8,84."><span> 3</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$37,12; Taxa Judiciária: R$19,99. Fundos/ISSQN R$10,1."><span> 4</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$41,76; Taxa Judiciária: R$19,99. Fundos/ISSQN R$11,36."><span> 5</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$46,40; Taxa Judiciária: R$19,99. Fundos/ISSQN R$12,62."><span> 6</span></label>
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$49,18; Taxa Judiciária: R$19,99. Fundos/ISSQN R$13,38."><span> 7</span></label><br>
+
+<hr style="border: none; height: 1px; background-color: #ccc; margin: 10px 0;">
+
+<strong>Certidão Livro 3 - Registro Auxiliar:</strong><br>
+  
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$92,79; Taxa Judiciária: R$19,99. Fundos/ISSQN R$25,29"><span> ONR L3</span></label>
+
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$57,53; Taxa Judiciária: R$19,99. Fundos/ISSQN R$15,68."><span> Balcao L3</span></label>
+
+  <label><input type="radio" name="emolumentos" value="foi extraída por meio reprográfico nos termos do Art. 19, § 1º, da Lei 6.015 de 1973 e Art. 41 da Lei 8.935 de 18/11/1994 e está conforme o original. Certifico ainda que, de acordo com o Artigo 973 do Código de Normas e Procedimentos do Foro Extrajudicial 2024, a presente certidão tem validade de 30 dias, contados a partir da data de sua emissão. <strong>NADA MAIS</strong>. O referido é verdade e dou fé. Emolumentos: R$0,00; Taxa Judiciária: R$0,00. Fundos/ISSQN R$0,00."> <span>Gratuito L3</span></label>
+
+<hr style="border: none; height: 1px; background-color: #ccc; margin: 10px 0;">
+
+<strong>Quem assinou:</strong><br>
+  <label><input type="radio" name="assinante" value="Gustavo Dias Lemos - Suboficial"><span> Gustavo</span></label>
+  <label><input type="radio" name="assinante" value="Thaís Moura de Souza - Suboficial"><span> Thaís</span></label>
+  <label><input type="radio" name="assinante" value="Ana Luiza Alves Camara - Suboficial"><span> Ana Luiza</span></label><br>
+  <label><input type="radio" name="assinante" value="Kamilly Victoria Alves da Silva - Suboficial"><span> Kamilly</span></label>
+  <label><input type="radio" name="assinante" value="Flávia de Souza Santos - Suboficial"><span> Flávia</span></label>
+  <label><input type="radio" name="assinante" value="Pedro Max de Souza Cruz - Oficial Interino"><span> Pedro</span></label>
+<br>
+
+<hr style="border: none; height: 1px; background-color: #ccc; margin: 10px 0;">
+
+<div id="assinatura-label">
+  <input type="checkbox" id="assinatura" class="styled-checkbox">
+  <span>Incluir assinatura digital</span>
+
+</div>
+
+<div id="protocolo-aberto-label" style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+  <input type="checkbox" id="protocolo-aberto" class="styled-checkbox">
+  <span>Protocolo em aberto</span>
+</div>
+<div id="protocolo-aberto-campos" style="display:none; margin-top:6px; margin-left:24px;">
+  <div class="input-wrapper">
+    <label for="pa-numero">Nº protocolo:</label>
+    <input type="text" id="pa-numero" style="width: 100px;" placeholder="00.000">
+  </div>
+  <div class="input-wrapper">
+    <label for="pa-data">Data:</label>
+    <input type="date" id="pa-data" style="padding: 5px; font-size: 14px;">
+  </div>
+  <div class="input-wrapper">
+    <label for="pa-tipo">Registro de:</label>
+    <input type="text" id="pa-tipo" style="width: 220px;" placeholder="ex.: compra e venda">
+  </div>
+</div>
+
+<div style="margin-top: 10px;">
+<button id="print-button">Imprimir</button>
+<button id="save-tiff-button" title="Salva a(s) folha(s) com carimbo em .tiff, com o mesmo nome do arquivo original, para substituir o arquivo carregado">💾 Salvar TIFF</button>
+<button id="save-pdf-button" title="Salva o documento inteiro (todas as folhas) em um único PDF">📄 Salvar PDF</button>
+  <br>
+  <button onclick="mC('up')">↑</button>
+  <button onclick="mC('up10')">↑↑</button>
+  <button onclick="mC('down')">↓</button>
+  <button onclick="mC('down10')">↓↓</button>
+  <button id="update-carimbo-button" title="Substitui o texto do carimbo pelo texto gerado automaticamente com base nos campos preenchidos">🔁 Atualizar</button>
+  <span id="carimbo-status"></span>
+  <br>
+  <button onclick="mC('left')">← mover</button>
+  <button onclick="mC('right')">mover →</button>
+  <button onclick="mW(-5)" title="Diminuir a largura do carimbo">↔ −</button>
+  <button onclick="mW(5)" title="Aumentar a largura do carimbo">↔ +</button>
+  <br>
+  <span id="edit-hint" style="font-size: 12px; color: #666;">💡 Clique diretamente no texto do carimbo, na folha, para digitar ou editar.</span>
+
+</div>
+
+
+<script>
+
+function mC(direction) {
+  if (!window.cC) return;
+
+  const style = window.getComputedStyle(cC);
+  const bottom = parseFloat(style.bottom) || 0;
+  const left = parseFloat(style.left) || 0;
+
+  let verticalStep = 0;
+  let horizontalStep = 0;
+
+  switch (direction) {
+    case 'up': verticalStep = 10; break;
+    case 'up10': verticalStep = 50; break;
+    case 'down': verticalStep = -10; break;
+    case 'down10': verticalStep = -50; break;
+    case 'left': horizontalStep = -10; break;
+    case 'right': horizontalStep = 10; break;
+  }
+
+  cC.style.bottom = (bottom + verticalStep) + 'px';
+  cC.style.left = (left + horizontalStep) + 'px';
+}
+
+function mW(deltaMM) {
+  if (!window.cC) return;
+  const style = window.getComputedStyle(cC);
+  const larguraAtualPx = parseFloat(style.width) || 0;
+  const larguraAtualMM = larguraAtualPx * 25.4 / 96; // px de referência CSS -> mm (conversão exata)
+  let novaLarguraMM = larguraAtualMM + deltaMM;
+  novaLarguraMM = Math.min(190, Math.max(60, novaLarguraMM)); // limites de segurança dentro da folha A4
+  cC.style.width = novaLarguraMM.toFixed(0) + 'mm';
+}
+
+
+document.getElementById("matricula").addEventListener("input", function () {
+  let valor = this.value.replace(/\D/g, "");
+  valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+  this.value = valor;
+});
+
+async function processarArquivosCarregados(files) {
+  const iC = document.getElementById('image-container');
+  iC.innerHTML = '';
+
+  const regex = /^(\d+)\.(\d{3})([FVfv])$/;
+  let parsedFiles = files.map(file => {
+    let match = file.name.match(regex);
+    if (match) {
+      return {
+        file: file,
+        fullName: file.name,
+        docNumber: match[1],
+        seqNumber: parseInt(match[2], 10),
+        type: match[3].toUpperCase()
+      };
+    }
+    return null;
+  }).filter(file => file !== null);
+
+  parsedFiles.sort((a, b) => {
+    if (a.docNumber !== b.docNumber) return parseInt(a.docNumber) - parseInt(b.docNumber);
+    if (a.seqNumber !== b.seqNumber) return a.seqNumber - b.seqNumber;
+    return a.type === "F" ? -1 : 1;
+  });
+
+  for (let i = 0; i < parsedFiles.length; i++) {
+    const isLast = i === parsedFiles.length - 1;
+    await pF(parsedFiles[i].file, isLast);
+  }
+
+  if (parsedFiles.length > 0) {
+    document.title = parsedFiles[0].fullName;
+
+    const raw = parsedFiles[0].docNumber.replace(/^0+/, ''); // remove zeros à esquerda
+
+    let formatted = '';
+    if (raw.length <= 3) {
+      formatted = raw;
+    } else {
+      formatted = raw.slice(0, raw.length - 3) + '.' + raw.slice(-3);
+    }
+
+    document.getElementById('matricula').value = formatted;
+  }
+
+  return parsedFiles.length;
+}
+
+document.getElementById('upload-files').addEventListener('change', async function (e) {
+  await processarArquivosCarregados(Array.from(e.target.files));
+});
+
+
+async function pF(file, isLast) {
+  const reader = new FileReader();
+  const iC = document.getElementById('image-container');
+
+  return new Promise((resolve) => {
+    reader.onload = function (event) {
+      const arrayBuffer = event.target.result;
+
+      try {
+        if (typeof Tiff === 'undefined') throw new Error("❌ A biblioteca Tiff.js não está carregada.");
+
+        const tiff = new Tiff({ buffer: arrayBuffer });
+        const canvas = tiff.toCanvas();
+        if (!canvas) throw new Error("❌ Falha ao converter TIFF para Canvas.");
+
+        const imageBox = document.createElement('div');
+        imageBox.className = 'image-box';
+        imageBox.dataset.filename = file.name;
+        imageBox.appendChild(canvas);
+
+        if (isLast) {
+          const matricula = document.getElementById('matricula').value;
+          const selo = document.getElementById('selo').value;
+          const assinatura = document.getElementById('assinatura').checked;
+          const emolumentos = document.querySelector('input[name="emolumentos"]:checked')?.value || "";
+          const assinante = document.querySelector('input[name="assinante"]:checked')?.value || "";
+
+          let carimboText = "";
+const bodyClass = document.body.classList;
+const carimbo = document.createElement('div');
+carimbo.className = 'carimbo';
+carimbo.contentEditable = "true";
+carimbo.spellcheck = false;
+carimbo.style.left = '19mm';
+carimbo.style.bottom = '20mm';
+carimbo.style.width = '170mm';
+carimbo.innerHTML = carimboText;
+imageBox.appendChild(carimbo);
+window.cC = carimbo; // ✅ isso resolve
+window.carimboEditadoManualmente = false;
+atualizarStatusCarimbo();
+        }
+
+        iC.appendChild(imageBox);
+      } catch (error) {
+        console.error('⚠️ Erro ao processar o arquivo TIFF:', file.name, error);
+        alert('Erro ao processar o arquivo TIFF: ' + error.message);
+      }
+      resolve();
+    };
+
+    reader.onerror = function () {
+      alert("Erro ao ler o arquivo " + file.name);
+      resolve();
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function validarProtocoloEMatricula() {
+  const protocoloInput = document.getElementById('protocolo').value.trim();
+  const matriculaInput = document.getElementById('matricula').value.trim().replace(/\D/g, '').replace(/^0+/, '');
+
+  if (!protocoloInput || protocoloInput.length > 13) {
+    alert("⚠️ O protocolo deve ter entre 1 e 13 caracteres.");
+    return null;
+  }
+
+  const firstFileElement = document.querySelector(".image-box canvas");
+  if (!firstFileElement) {
+    alert("⚠️ Nenhum arquivo carregado.");
+    return null;
+  }
+
+  const firstFileNameRaw = document.title || '';
+  const fileMatch = firstFileNameRaw.match(/(\d+)/);
+  const fileNumber = fileMatch ? fileMatch[1].replace(/^0+/, '') : null;
+
+  if (fileNumber && fileNumber !== matriculaInput) {
+    alert(`⚠️ O número da matrícula (${matriculaInput}) é diferente do número no nome do arquivo (${fileNumber}).`);
+    return null;
+  }
+
+  return protocoloInput;
+}
+
+document.getElementById('print-button').addEventListener('click', function () {
+  // Só gera o carimbo automaticamente se ele ainda estiver vazio (nunca gerado)
+  // e nunca sobrescreve um texto já editado manualmente pelo usuário.
+  if (window.cC && !window.carimboEditadoManualmente && window.cC.innerHTML.trim() === '') {
+    uCT();
+  }
+
+  const protocoloInput = validarProtocoloEMatricula();
+  if (protocoloInput === null) return;
+
+  const newTitle = `${protocoloInput} ${document.getElementById('matricula').value}`;
+  const originalTitle = document.title;
+  document.title = newTitle;
+  window.print();
+  document.title = originalTitle;
+});
+
+// ===================== Exportação TIFF e PDF =====================
+
+// Gera um canvas em resolução nativa (igual à do arquivo TIFF original),
+// com o carimbo (texto + caixa) desenhado por cima, exatamente como aparece na tela.
+async function compositarCarimbo(imageBox) {
+  const canvasOriginal = imageBox.querySelector('canvas');
+  const carimboEl = imageBox.querySelector('.carimbo');
+  if (!canvasOriginal) return null;
+
+  const outputCanvas = document.createElement('canvas');
+  outputCanvas.width = canvasOriginal.width;
+  outputCanvas.height = canvasOriginal.height;
+  const ctx = outputCanvas.getContext('2d');
+  ctx.drawImage(canvasOriginal, 0, 0);
+
+  if (carimboEl) {
+    const boxRect = imageBox.getBoundingClientRect();
+    const escala = canvasOriginal.width / boxRect.width; // px nativos por px de tela
+
+    // Ajuste fino vertical, só pra compensar diferença entre o carimbo
+    // renderizado na tela e o carimbo renderizado na impressão real.
+    // Positivo = desce o carimbo. Altere esse valor em mm se precisar ajustar mais.
+    const AJUSTE_VERTICAL_MM = 33;
+    const pxPorMm = canvasOriginal.height / 297; // 297mm = altura da folha A4
+    const ajusteVerticalPx = AJUSTE_VERTICAL_MM * pxPorMm;
+
+    const carimboRect = carimboEl.getBoundingClientRect();
+    const relX = (carimboRect.left - boxRect.left) * escala;
+    const relY = (carimboRect.top - boxRect.top) * escala + ajusteVerticalPx;
+
+    const carimboCanvas = await html2canvas(carimboEl, {
+      scale: escala,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+
+    ctx.drawImage(carimboCanvas, relX, relY, carimboCanvas.width, carimboCanvas.height);
+  }
+
+  return outputCanvas;
+}
+
+document.getElementById('save-tiff-button').addEventListener('click', async function () {
+  const boxesComCarimbo = Array.from(document.querySelectorAll('.image-box')).filter(b => b.querySelector('.carimbo'));
+
+  if (boxesComCarimbo.length === 0) {
+    alert("⚠️ Nenhuma folha com carimbo para salvar.");
+    return;
+  }
+
+  if (window.cC && !window.carimboEditadoManualmente && window.cC.innerHTML.trim() === '') {
+    uCT();
+  }
+
+  const botao = this;
+  const textoOriginal = botao.textContent;
+  botao.textContent = '⏳ Gerando...';
+  botao.disabled = true;
+
+  try {
+    for (const box of boxesComCarimbo) {
+      const canvasFinal = await compositarCarimbo(box);
+      if (!canvasFinal) continue;
+
+      const ctx = canvasFinal.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, canvasFinal.width, canvasFinal.height);
+      const tiffBuffer = UTIF.encodeImage(imgData.data.buffer, canvasFinal.width, canvasFinal.height);
+      const blob = new Blob([tiffBuffer], { type: 'image/tiff' });
+
+      const nomeOriginal = box.dataset.filename || 'certidao.tiff';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nomeOriginal;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+
+      // pequena pausa entre downloads para evitar bloqueio do navegador
+      await new Promise(r => setTimeout(r, 300));
+    }
+  } catch (err) {
+    console.error(err);
+    alert('⚠️ Erro ao gerar o TIFF: ' + err.message);
+  } finally {
+    botao.textContent = textoOriginal;
+    botao.disabled = false;
+  }
+});
+
+document.getElementById('save-pdf-button').addEventListener('click', async function () {
+  const boxes = Array.from(document.querySelectorAll('.image-box'));
+  if (boxes.length === 0) {
+    alert("⚠️ Nenhum arquivo carregado.");
+    return;
+  }
+
+  if (window.cC && !window.carimboEditadoManualmente && window.cC.innerHTML.trim() === '') {
+    uCT();
+  }
+
+  const protocoloInput = validarProtocoloEMatricula();
+  if (protocoloInput === null) return;
+
+  const botao = this;
+  const textoOriginal = botao.textContent;
+  botao.textContent = '⏳ Gerando...';
+  botao.disabled = true;
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+    for (let i = 0; i < boxes.length; i++) {
+      const temCarimbo = boxes[i].querySelector('.carimbo');
+      const canvasFinal = temCarimbo ? await compositarCarimbo(boxes[i]) : boxes[i].querySelector('canvas');
+      if (!canvasFinal) continue;
+
+      const imgData = canvasFinal.toDataURL('image/jpeg', 0.9);
+      if (i > 0) pdf.addPage('a4', 'portrait');
+
+      // A altura sempre preenche a página inteira (0 a 297mm, sem deslocamento vertical) —
+      // o carimbo é desenhado relativo ao topo da folha, então mexer no eixo Y aqui bagunçaria
+      // a posição dele. Só a largura é ajustada, pra não esticar de lado quando a proporção
+      // da imagem escaneada não bater 100% com a de uma A4.
+      const PAGINA_LARGURA_MM = 210;
+      const PAGINA_ALTURA_MM = 297;
+      const aspectImagem = canvasFinal.width / canvasFinal.height;
+
+      const larguraMM = Math.min(PAGINA_LARGURA_MM, PAGINA_ALTURA_MM * aspectImagem);
+      const alturaMM = PAGINA_ALTURA_MM;
+      const offsetX = (PAGINA_LARGURA_MM - larguraMM) / 2;
+      const offsetY = 0;
+
+      pdf.addImage(imgData, 'JPEG', offsetX, offsetY, larguraMM, alturaMM);
+    }
+
+    const matricula = document.getElementById('matricula').value.trim();
+    const nomeArquivo = `${protocoloInput} ${matricula}`.trim() || 'certidao';
+    pdf.save(nomeArquivo + '.pdf');
+  } catch (err) {
+    console.error(err);
+    alert('⚠️ Erro ao gerar o PDF: ' + err.message);
+  } finally {
+    botao.textContent = textoOriginal;
+    botao.disabled = false;
+  }
+});
+
+const radios = document.querySelectorAll('input[name="emolumentos"]');
+radios.forEach(radio => {
+  radio.addEventListener('change', function () {
+    const valor = this.parentElement.textContent.trim();
+    document.body.classList.remove('onr-selected', 'livro3-selected', 'gratuito-selected', 'rosa-selected');
+
+if (valor.includes('Gratuito L3')) {
+  document.body.classList.add('gratuito-selected');
+  document.body.setAttribute("data-gratuito-tipo", "l3");
+} else if (valor.includes('Gratuito L2')) {
+  document.body.classList.add('gratuito-selected');
+  document.body.setAttribute("data-gratuito-tipo", "l2");
+} else if (valor.includes('ONR L3') || valor === 'Balcao L3') {
+  document.body.classList.add('livro3-selected');
+  document.body.removeAttribute("data-gratuito-tipo");
+} else {
+  document.body.classList.add('rosa-selected');
+  document.body.removeAttribute("data-gratuito-tipo");
+}
+
+ });
+});
+
+function atualizarStatusCarimbo() {
+  const status = document.getElementById('carimbo-status');
+  if (!status) return;
+  if (window.carimboEditadoManualmente) {
+    status.textContent = '✎ texto editado manualmente';
+    window.cC && window.cC.classList.add('editado-manualmente');
+  } else {
+    status.textContent = '';
+    window.cC && window.cC.classList.remove('editado-manualmente');
+  }
+}
+
+document.getElementById('image-container').addEventListener('input', function (e) {
+  if (e.target && e.target.classList && e.target.classList.contains('carimbo')) {
+    window.carimboEditadoManualmente = true;
+    atualizarStatusCarimbo();
+  }
+});
+
+function uCT() {
+  if (!window.cC) return;
+
+  if (window.carimboEditadoManualmente) {
+    const confirmar = confirm('O texto do carimbo foi editado manualmente. Clicar em "Atualizar" vai substituí-lo pelo texto gerado automaticamente com base nos campos preenchidos, perdendo a edição manual.\n\nDeseja continuar?');
+    if (!confirmar) return;
+  }
+
+  const matricula = document.getElementById('matricula').value.trim();
+  const selo = document.getElementById('selo').value.trim();
+  const assinatura = document.getElementById('assinatura').checked;
+  const emolumento = document.querySelector('input[name="emolumentos"]:checked')?.value || "";
+  const assinante = document.querySelector('input[name="assinante"]:checked')?.value || "";
+  const bodyClass = document.body.classList;
+
+  let carimboText = "";
+
+  const gratuitoTipo = document.body.getAttribute("data-gratuito-tipo");
+
+  // Protocolo em aberto: frase destacada, inserida após a assinatura
+  let frasePA = "";
+  if (document.getElementById('protocolo-aberto').checked) {
+    const paNumero = document.getElementById('pa-numero').value.trim();
+    const paDataISO = document.getElementById('pa-data').value; // AAAA-MM-DD
+    const paTipo = document.getElementById('pa-tipo').value.trim();
+    const paData = paDataISO ? paDataISO.split('-').reverse().join('/') : '';
+    const ehLivro3 = bodyClass.contains("livro3-selected") || gratuitoTipo === "l3";
+    const objeto = ehLivro3 ? `no referido <strong>Registro Auxiliar nº ${matricula}</strong>` : `na referida <strong>Matrícula nº ${matricula}</strong>`;
+    frasePA = `<div style="margin-top:8px; padding-top:6px; border-top:1px solid #000; text-align:justify;"><strong>CERTIFICO</strong> que ${objeto} consta o protocolo em aberto de nº <strong>${paNumero}</strong>, protocolado em <strong>${paData}</strong>, referente ao registro de <strong>${paTipo}</strong>.</div>`;
+  }
+
+if (bodyClass.contains("gratuito-selected") && gratuitoTipo === "l3") {
+  carimboText = `<span> <strong>CERTIFICO</strong> que a presente é reprodução autêntica do <strong>Registro Auxiliar nº ${matricula},</strong> Livro 3, ${emolumento} Selo Digital: <strong>${selo}</strong>. ${localData}` +
+    (assinatura ? `<strong> Assinado digitalmente por ${assinante}</strong>` : `</span><span style="display:inline-block; width:100%; text-align:center;"><br><br>___________________________________________________<br><strong>${assinante}</strong></span>`);
+
+} else if (bodyClass.contains("gratuito-selected") && gratuitoTipo === "l2") {
+
+  carimboText = `<span><strong>CERTIFICO</strong> que a presente é reprodução autêntica da <strong>Matrícula nº ${matricula},</strong> Livro 2, ${emolumento} Selo Digital: <strong>${selo}</strong>. ${localData}` +
+    (assinatura ? `<strong> Assinado digitalmente por ${assinante}</strong>` : `</span><span style="display:inline-block; width:100%; text-align:center;"><br><br>___________________________________________________<br><strong>${assinante}</strong></span>`);
+
+} else if (bodyClass.contains("livro3-selected")) {
+
+  carimboText = `<span><strong>CERTIFICO</strong> que a presente é reprodução autêntica do <strong>Registro Auxiliar nº ${matricula},</strong> Livro 3, ${emolumento} Selo Digital: <strong>${selo}</strong>. ${localData}` +
+    (assinatura ? `<strong> Assinado digitalmente por ${assinante}</strong>` : `</span><span style="display:inline-block; width:100%; text-align:center;"><br><br>___________________________________________________<br><strong>${assinante}</strong></span>`);
+
+} else {
+
+  carimboText = `<span><strong>CERTIFICO</strong> que a presente é reprodução autêntica da <strong>Matrícula nº ${matricula},</strong> Livro 2, ${emolumento} Selo Digital: <strong>${selo}</strong>. ${localData}` +
+    (assinatura ? `<strong> Assinado digitalmente por ${assinante}</strong>` : `</span><span style="display:inline-block; width:100%; text-align:center;"><br><br>___________________________________________________<br><strong>${assinante}</strong></span>`);
+
+}
+
+
+  window.cC.innerHTML = carimboText + frasePA;
+  window.carimboEditadoManualmente = false;
+  atualizarStatusCarimbo();
+}
+
+function aM(delta) {
+  const input = document.getElementById('matricula');
+  let valor = input.value.replace(/\D/g, '') || '0';
+  let novo = Math.max(0, parseInt(valor) + delta);
+  novo = novo.toString().padStart(5, '0');
+  // Aplica ponto: 00.000
+  input.value = novo.slice(0, 2) + '.' + novo.slice(2);
+}
+
+function aS(delta) {
+  const input = document.getElementById('selo');
+  let valor = input.value.replace(/\D/g, '') || '0';
+
+  // Garante até 23 dígitos, mantém os zeros à esquerda
+  let numero = BigInt(valor); // Usa BigInt pra não perder precisão
+  let novo = numero + BigInt(delta);
+  if (novo < 0n) novo = 0n;
+
+  const novoStr = novo.toString().padStart(valor.length, '0');
+  input.value = novoStr.slice(0, 23); // Limita ao tamanho original
+}
+
+document.getElementById('update-carimbo-button').addEventListener('click', uCT);
+
+document.getElementById('protocolo-aberto').addEventListener('change', function () {
+  document.getElementById('protocolo-aberto-campos').style.display = this.checked ? 'block' : 'none';
+});
+
+const hoje = new Date();
+const options = { year: 'numeric', month: 'long', day: 'numeric' };
+const dataAtual = hoje.toLocaleDateString('pt-BR', options);
+const localData = `Consulte este selo em <a href='http://extrajudicial.tjgo.jus.br' target='_blank'>http://extrajudicial.tjgo.jus.br</a>. Piracanjuba, ${dataAtual}.</span>`;
+
+// ===================== Lista de Pedidos (PDF) =====================
+
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
+}
+
+window.filaPedidos = [];
+window.filaIndice = -1;
+
+function formatarMatriculaAuto(numeroBruto) {
+  const raw = String(numeroBruto || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (raw.length <= 3) return raw;
+  return raw.slice(0, raw.length - 3) + '.' + raw.slice(-3);
+}
+
+// Extrai o texto do PDF em ordem de leitura (linha por linha, de cima pra baixo)
+async function extrairTextoPDF(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let textoCompleto = '';
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+
+    // Agrupa itens por linha (mesma posição Y, com tolerância)
+    const linhas = [];
+    content.items.forEach(item => {
+      const y = Math.round(item.transform[5]);
+      let linha = linhas.find(l => Math.abs(l.y - y) <= 2);
+      if (!linha) {
+        linha = { y: y, itens: [] };
+        linhas.push(linha);
+      }
+      linha.itens.push(item);
+    });
+
+    linhas.sort((a, b) => b.y - a.y); // de cima pra baixo (PDF cresce Y pra cima)
+    linhas.forEach(linha => {
+      linha.itens.sort((a, b) => a.transform[4] - b.transform[4]); // esquerda pra direita
+      textoCompleto += linha.itens.map(i => i.str).join(' ') + '\n';
+    });
+  }
+
+  return textoCompleto;
+}
+
+function parsePedidosDeTexto(texto) {
+  // Em vez de dividir o texto usando o cabeçalho da tabela como marcador (frágil: depende do
+  // texto exato "Protocolo P Protocolo S Data Solicitação..." se manter intacto na extração),
+  // usamos a posição de cada "Protocolo S" (ex: S26070554353D) encontrado no texto como âncora.
+  // Cada pedido vai do início de um Protocolo S até o início do próximo — isso não depende de
+  // nenhuma palavra específica do cabeçalho, só do próprio código de protocolo, que é muito
+  // mais confiável de encontrar.
+  const protocolosEncontrados = [...texto.matchAll(/\bS\d{9,12}D\b/g)];
+  const pedidos = [];
+
+  protocolosEncontrados.forEach((match, i) => {
+    const inicio = match.index;
+    const fim = protocolosEncontrados[i + 1] ? protocolosEncontrados[i + 1].index : texto.length;
+    const bloco = texto.slice(inicio, fim);
+
+    // Pedidos de Matrícula (Livro 2) trazem "Matrícula:"; pedidos de Registro Auxiliar
+    // (Livro 3) trazem "Nº Registro Livro 3" em vez disso. Reconhece os dois formatos.
+    const matriculaMatch = bloco.match(/Matr[íi]cula:\s*([\d.\-\/]+)/i);
+    const livro3Match = bloco.match(/N[ºo]\.?\s*Registro Livro\s*3\s*([\d.\-\/]+)/i);
+
+    let numero, tipo;
+    if (matriculaMatch) {
+      numero = matriculaMatch[1];
+      tipo = 'l2';
+    } else if (livro3Match) {
+      numero = livro3Match[1];
+      tipo = 'l3';
+    } else {
+      return; // nem Matrícula nem Registro Livro 3 nesse trecho, não é um pedido válido
+    }
+
+    const nomeMatch = bloco.match(/Telefone\s*\n?([\s\S]+?)\s+[\w.+-]+@[\w.\-]+\.[a-zA-Z]{2,}/i);
+    let nome = nomeMatch ? nomeMatch[1] : '';
+
+    // Limpa ruído que às vezes se intercala com o nome por causa da ordem de leitura do PDF
+    // (ex: telefone ou CPF/CNPJ aparecendo no meio do nome, quando o layout da tabela quebra em várias linhas)
+    nome = nome.replace(/\(\d{2}\)\s*\d{4,5}-?\d{4}/g, ' ');   // telefone: (88)981256534 / (64) 992309783
+    nome = nome.replace(/\b\d{11,14}\b/g, ' ');                 // CPF/CNPJ (11 a 14 dígitos)
+    nome = nome.replace(/\s+/g, ' ').trim();
+
+    if (!nome) nome = '(solicitante não identificado)';
+
+    pedidos.push({
+      nome: nome,
+      protocoloS: match[0],
+      matricula: numero.replace(/\D/g, ''),
+      tipo: tipo
+    });
+  });
+
+  return pedidos;
+}
+
+function agruparEOrdenarPedidos(pedidos) {
+  // Ordena por nome do solicitante (ordem alfabética), mantendo a ordem original dentro do mesmo nome
+  const ordenado = pedidos
+    .map((p, i) => ({ ...p, _idx: i }))
+    .sort((a, b) => {
+      const cmp = a.nome.localeCompare(b.nome, 'pt-BR');
+      return cmp !== 0 ? cmp : a._idx - b._idx;
+    });
+
+  const contagem = new Map();
+  ordenado.forEach(p => contagem.set(p.nome, (contagem.get(p.nome) || 0) + 1));
+
+  return { ordenado, contagem };
+}
+
+function abrirModalResumo(contagem, total) {
+  const tbody = document.getElementById('modal-fila-tbody');
+  tbody.innerHTML = '';
+
+  const nomesOrdenados = [...contagem.keys()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  nomesOrdenados.forEach(nome => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #eee';
+    tr.innerHTML = `<td style="padding: 4px 6px;">${nome}</td><td style="padding: 4px 6px; text-align:center;">${contagem.get(nome)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('modal-fila-total').textContent =
+    `${total} protocolo(s) encontrado(s), de ${contagem.size} solicitante(s) diferente(s).`;
+
+  document.getElementById('modal-fila-overlay').style.display = 'flex';
+}
+
+function fecharModalResumo() {
+  document.getElementById('modal-fila-overlay').style.display = 'none';
+}
+
+function atualizarStatusFila() {
+  const status = document.getElementById('fila-status');
+  const btnAnterior = document.getElementById('fila-anterior');
+  const btnProximo = document.getElementById('fila-proximo');
+  const btnResumo = document.getElementById('fila-resumo');
+
+  if (window.filaPedidos.length === 0) {
+    status.textContent = '';
+    btnAnterior.style.display = 'none';
+    btnProximo.style.display = 'none';
+    btnResumo.style.display = 'none';
+    return;
+  }
+
+  btnAnterior.style.display = 'inline-block';
+  btnProximo.style.display = 'inline-block';
+  btnResumo.style.display = 'inline-block';
+
+  const i = window.filaIndice;
+  const pedido = window.filaPedidos[i];
+  const rotuloTipo = pedido.tipo === 'l3' ? 'Registro Livro 3' : 'Matrícula';
+  const avisoTipo = pedido.tipo === 'l3'
+    ? ' <span style="color:darkorange;">⚠️ selecione um emolumento de Livro 3 abaixo</span>'
+    : '';
+  status.innerHTML = `Pedido <strong>${i + 1} de ${window.filaPedidos.length}</strong> — ` +
+    `<strong>${pedido.nome}</strong> — Protocolo S: ${pedido.protocoloS} — ${rotuloTipo}: ${pedido.matricula}${avisoTipo}`;
+
+  btnAnterior.disabled = (i <= 0);
+  btnProximo.disabled = (i >= window.filaPedidos.length - 1);
+}
+
+function carregarPedidoNaFila(indice) {
+  if (indice < 0 || indice >= window.filaPedidos.length) return;
+  window.filaIndice = indice;
+  const pedido = window.filaPedidos[indice];
+
+  document.getElementById('protocolo').value = pedido.protocoloS;
+  document.getElementById('matricula').value = formatarMatriculaAuto(pedido.matricula);
+
+  atualizarStatusFila();
+}
+
+document.getElementById('upload-lista-pedidos').addEventListener('change', async function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const label = document.querySelector('label[for="upload-lista-pedidos"]');
+  const textoOriginal = label.textContent;
+  label.textContent = '⏳ Lendo PDF...';
+
+  try {
+    if (!window.pdfjsLib) {
+      alert('⚠️ Biblioteca pdf.min.js não encontrada. Coloque o arquivo pdf.min.js e pdf.worker.min.js na mesma pasta deste HTML.');
+      return;
+    }
+
+    const texto = await extrairTextoPDF(file);
+    const pedidos = parsePedidosDeTexto(texto);
+
+    if (pedidos.length === 0) {
+      alert('⚠️ Não foi possível identificar nenhum pedido nesse PDF. O layout pode ter mudado.');
+      return;
+    }
+
+    const { ordenado, contagem } = agruparEOrdenarPedidos(pedidos);
+    window.filaPedidos = ordenado;
+    window.filaIndice = 0;
+
+    abrirModalResumo(contagem, ordenado.length);
+    atualizarStatusFila();
+  } catch (err) {
+    console.error(err);
+    alert('⚠️ Erro ao ler o PDF: ' + err.message);
+  } finally {
+    label.textContent = textoOriginal;
+    e.target.value = '';
+  }
+});
+
+document.getElementById('modal-fila-fechar').addEventListener('click', fecharModalResumo);
+
+document.getElementById('modal-fila-copiar').addEventListener('click', async function () {
+  const linhas = Array.from(document.querySelectorAll('#modal-fila-tbody tr')).map(tr => {
+    const celulas = tr.querySelectorAll('td');
+    return `${celulas[0].textContent}\t${celulas[1].textContent}`;
+  });
+  const texto = 'Solicitante\tQtd.\n' + linhas.join('\n');
+
+  const botao = this;
+  const textoOriginal = botao.textContent;
+
+  async function marcarCopiado() {
+    botao.textContent = '✅ Copiado!';
+    setTimeout(() => { botao.textContent = textoOriginal; }, 1800);
+  }
+
+  try {
+    await navigator.clipboard.writeText(texto);
+    await marcarCopiado();
+  } catch (err) {
+    // Alternativa para quando a API de área de transferência não está disponível (ex: sem HTTPS)
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = texto;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      await marcarCopiado();
+    } catch (err2) {
+      console.error(err2);
+      alert('⚠️ Não foi possível copiar automaticamente. Selecione o texto na tabela e use Ctrl+C.');
+    }
+  }
+});
+
+document.getElementById('modal-fila-overlay').addEventListener('click', function (e) {
+  if (e.target === this) fecharModalResumo();
+});
+
+document.getElementById('modal-fila-iniciar').addEventListener('click', function () {
+  fecharModalResumo();
+  carregarPedidoNaFila(0);
+});
+
+document.getElementById('fila-resumo').addEventListener('click', function () {
+  const { contagem } = agruparEOrdenarPedidos(window.filaPedidos);
+  abrirModalResumo(contagem, window.filaPedidos.length);
+});
+
+document.getElementById('fila-anterior').addEventListener('click', function () {
+  carregarPedidoNaFila(window.filaIndice - 1);
+});
+
+document.getElementById('fila-proximo').addEventListener('click', function () {
+  if (window.filaIndice >= window.filaPedidos.length - 1) {
+    alert('✅ Esse é o último pedido da lista.');
+    return;
+  }
+  carregarPedidoNaFila(window.filaIndice + 1);
+});
+
+// ===================== Pasta de Matrículas (busca automática de arquivos) =====================
+// Estrutura: \\SERVIDOR-PC\Engegraph\GED\Matriculas\000 .. 024
+// Arquivos nomeados como 002476.001F, 002476.001V, 002476.002F ...
+// A cada clique em "Buscar arquivos", calcula a subpasta certa (ex: matrícula 2476 -> pasta "002")
+// e pede pra selecionar SÓ essa subpasta -- não varre a árvore toda, então é rápido mesmo
+// tendo milhares de arquivos espalhados nas 25 pastas (000 a 024).
+
+function definirStatusPasta(html) {
+  document.getElementById('pasta-status').innerHTML = html;
+}
+
+window.buscaPastaAlvo = null;   // ex: "002"
+window.buscaPrefixoAlvo = null; // ex: "002476"
+
+document.getElementById('input-pasta-matriculas').addEventListener('change', async function (e) {
+  const arquivos = Array.from(e.target.files);
+  e.target.value = ''; // permite selecionar a mesma pasta de novo em buscas futuras
+
+  const prefixo = window.buscaPrefixoAlvo;
+  const pastaAlvo = window.buscaPastaAlvo;
+  if (!prefixo) return;
+
+  if (arquivos.length === 0) {
+    definirStatusPasta('⚠️ Nenhuma pasta selecionada.');
+    return;
+  }
+
+  const encontrados = arquivos.filter(f => f.name.startsWith(prefixo + '.'));
+
+  if (encontrados.length === 0) {
+    const nomePastaSelecionada = (arquivos[0].webkitRelativePath || '').split('/')[0] || '?';
+    definirStatusPasta(`⚠️ Nenhum arquivo "${prefixo}.*" encontrado em "${nomePastaSelecionada}". Confira se essa é mesmo a subpasta <strong>${pastaAlvo}</strong> de Matriculas.`);
+    return;
+  }
+
+  const qtd = await processarArquivosCarregados(encontrados);
+  definirStatusPasta(`✅ ${qtd} arquivo(s) carregado(s) para a matrícula ${prefixo} (pasta ${pastaAlvo}).`);
+});
+
+document.getElementById('buscar-matricula-button').addEventListener('click', function () {
+  const matriculaAtual = document.getElementById('matricula').value;
+
+  if (!matriculaAtual || matriculaAtual.trim() === '') {
+    alert('⚠️ Preencha o campo "Matrícula:" antes de buscar os arquivos.');
+    return;
+  }
+
+  const digitos = matriculaAtual.replace(/\D/g, '');
+  if (!digitos) {
+    alert('⚠️ Matrícula inválida.');
+    return;
+  }
+
+  const prefixo = digitos.padStart(6, '0');
+  const pastaAlvo = prefixo.slice(0, 3);
+
+  window.buscaPrefixoAlvo = prefixo;
+  window.buscaPastaAlvo = pastaAlvo;
+
+  definirStatusPasta(`👉 Selecione a subpasta <strong>${pastaAlvo}</strong> dentro de \\SERVIDOR-PC\Engegraph\GED\Matriculas (matrícula ${prefixo}).`);
+  document.getElementById('input-pasta-matriculas').click();
+});
+
+
+
+
+</script>
+
+
+<!-- Proteção básica -->
+<script>
+  document.addEventListener('contextmenu', e => {
+    if (e.target.closest('#modal-fila-overlay')) return; // permite clique direito/copiar dentro do popup de resumo
+    e.preventDefault();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('#modal-fila-overlay')) return; // permite Ctrl+C etc. dentro do popup de resumo
+    const k = e.key.toLowerCase();
+    if (e.ctrlKey && ['u', 's', 'c', 'x', 'i', 'j'].includes(k)) {
+      e.preventDefault();
+    }
+  });
+</script>
+
+</body>
+</html>
