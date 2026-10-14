@@ -37,6 +37,12 @@ select:focus, input:focus, textarea:focus{outline:2px solid var(--accent); outli
 .lote-item .tag{color:var(--ink-soft);font-size:11.5px;}
 .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 16px;font-family:Arial,sans-serif;font-size:13px;margin-top:4px;}
 .info-grid div b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-weight:700;margin-bottom:2px;}
+.info-grid.editavel{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
+.info-grid.editavel label{display:block;margin-bottom:3px;}
+.info-grid .editado input{border-color:#c9a227;background:#fff3cd;}
+.editStatus{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;font-family:Arial,sans-serif;font-size:12.5px;color:var(--ink-soft);}
+.editStatus.alterado{color:var(--warn);font-weight:700;}
+input:disabled{background:#eeeae2;color:#888;}
 .pill{display:inline-block;background:#eadfc9;color:var(--accent-dark);font-family:Arial,sans-serif;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin-left:8px;letter-spacing:.03em;}
 .toggle-row{display:flex;align-items:center;gap:8px;font-family:Arial,sans-serif;font-size:13px;margin-bottom:14px;}
 .toggle-row input{width:auto;}
@@ -107,7 +113,11 @@ button:hover{opacity:.9;}
 
   <div class="card" id="detailCard" style="display:none;">
     <h2>2. Dados extraídos da tabela <span class="pill" id="tipoLotePill"></span></h2>
-    <div class="info-grid" id="infoGrid"></div>
+    <div class="info-grid editavel" id="infoGrid"></div>
+    <div class="editStatus" id="editStatus">
+      <span id="editStatusTxt">Dados conforme a tabela do loteamento.</span>
+      <button type="button" class="secondary" id="restaurarLoteBtn">Restaurar dados da tabela</button>
+    </div>
   </div>
 
   <div class="card" id="formCard" style="display:none;">
@@ -234,7 +244,12 @@ button:hover{opacity:.9;}
       </div>
     </fieldset>
 
-    <div class="row" style="margin-top:18px;">
+    <div class="toggle-row" style="margin-top:18px;">
+      <input type="checkbox" id="seloGratuito" style="width:16px;height:16px;margin:0;">
+      <label for="seloGratuito" style="text-transform:none;font-weight:700;">Selo gratuito (zera Emolumentos, Taxa Judiciária e Fundos/ISSQN)</label>
+    </div>
+
+    <div class="row">
       <div class="field">
         <label for="emolumentos">Emolumentos (R$)</label>
         <input id="emolumentos" value="57,53">
@@ -370,6 +385,7 @@ function quadras(){
 }
 
 let selected = null;
+let loteOriginal = null;
 let lastHeaderBlock = '', lastMainBlock = '', lastFooterBlock = '';
 
 const quadraSel = document.getElementById('quadraSel');
@@ -420,31 +436,65 @@ temIndispEl.addEventListener('change', ()=>{
 function selectLote(l, el){
   document.querySelectorAll('.lote-item.active').forEach(e=>e.classList.remove('active'));
   if(el) el.classList.add('active');
-  selected = l;
+  loteOriginal = l;
+  selected = Object.assign({}, l);
   renderDetail();
   document.getElementById('formCard').style.display='block';
   document.getElementById('outputCard').style.display='block';
   generateCertidao();
 }
 
+const CAMPOS_LOTE = [
+  ['logradouro','Logradouro'],
+  ['area','Área (m²)'],
+  ['frente','Frente (m)'],
+  ['fundo','Fundo (m)'],
+  ['direito','Lado direito (m)'],
+  ['esquerdo','Lado esquerdo (m)'],
+  ['chanfro','Chanfro (m)'],
+  ['conffundo','Confronta (fundo)'],
+  ['confdireito','Confronta (dir.)'],
+  ['confesquerdo','Confronta (esq.)'],
+];
+
 function renderDetail(){
   document.getElementById('detailCard').style.display = 'block';
   document.getElementById('tipoLotePill').textContent = 'Quadra ' + pad2(selected.quadra) + ' — Lote ' + selected.lote;
   const grid = document.getElementById('infoGrid');
-  const rows = [
-    ['Logradouro', selected.logradouro],
-    ['Área', formatArea(selected.area)],
-    ['Frente', selected.frente + ' m'],
-    ['Fundo', selected.fundo + ' m'],
-    ['Lado direito', selected.direito + ' m'],
-    ['Lado esquerdo', selected.esquerdo + ' m'],
-    ['Chanfro', (selected.chanfro && selected.chanfro!=='---') ? selected.chanfro+' m' : '—'],
-    ['Confronta (fundo)', selected.conffundo],
-    ['Confronta (dir.)', selected.confdireito],
-    ['Confronta (esq.)', selected.confesquerdo],
-  ];
-  grid.innerHTML = rows.map(r=>'<div><b>'+r[0]+'</b>'+esc(r[1])+'</div>').join('');
+  grid.innerHTML = CAMPOS_LOTE.map(c=>
+    '<div id="w_'+c[0]+'"><label for="ed_'+c[0]+'">'+c[1]+'</label><input id="ed_'+c[0]+'" value="'+esc(selected[c[0]] == null ? '' : selected[c[0]])+'"></div>'
+  ).join('');
+  CAMPOS_LOTE.forEach(c=>{
+    document.getElementById('ed_'+c[0]).addEventListener('input', function(){
+      selected[c[0]] = this.value.trim();
+      atualizarStatusEdicao();
+      generateCertidao();
+    });
+  });
+  atualizarStatusEdicao();
 }
+
+function atualizarStatusEdicao(){
+  let n = 0;
+  CAMPOS_LOTE.forEach(c=>{
+    const orig = loteOriginal[c[0]] == null ? '' : String(loteOriginal[c[0]]).trim();
+    const alterado = (selected[c[0]] == null ? '' : String(selected[c[0]]).trim()) !== orig;
+    document.getElementById('w_'+c[0]).classList.toggle('editado', alterado);
+    if(alterado) n++;
+  });
+  const box = document.getElementById('editStatus');
+  box.classList.toggle('alterado', n>0);
+  document.getElementById('editStatusTxt').textContent = n
+    ? n + ' campo(s) alterado(s) manualmente. A certidão usa os valores editados.'
+    : 'Dados conforme a tabela do loteamento.';
+}
+
+document.getElementById('restaurarLoteBtn').addEventListener('click', ()=>{
+  if(!loteOriginal) return;
+  selected = Object.assign({}, loteOriginal);
+  renderDetail();
+  generateCertidao();
+});
 
 function val(id){ return document.getElementById(id).value.trim(); }
 
@@ -621,6 +671,19 @@ seloDigitalInput.addEventListener('input', ()=>{
 
 document.getElementById('protocoloAberto').addEventListener('change', function(){
   document.getElementById('protocoloAbertoFields').style.display = this.checked ? 'block' : 'none';
+  generateCertidao();
+});
+
+// Selo gratuito: zera os valores e bloqueia os campos; ao desmarcar, volta aos valores anteriores
+const CAMPOS_VALORES = ['emolumentos','taxaJud','fundosIssqn'];
+let valoresAntesGratuito = null;
+document.getElementById('seloGratuito').addEventListener('change', function(){
+  if(this.checked){
+    valoresAntesGratuito = CAMPOS_VALORES.map(id=>document.getElementById(id).value);
+    CAMPOS_VALORES.forEach(id=>{ const el=document.getElementById(id); el.value='0,00'; el.disabled=true; });
+  } else {
+    CAMPOS_VALORES.forEach((id,i)=>{ const el=document.getElementById(id); el.disabled=false; if(valoresAntesGratuito) el.value=valoresAntesGratuito[i]; });
+  }
   generateCertidao();
 });
 
