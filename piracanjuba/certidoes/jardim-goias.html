@@ -230,6 +230,29 @@ button:hover{opacity:.9;}
     </fieldset>
 
     <div class="toggle-row" style="margin-top:18px;">
+      <input type="checkbox" id="protocoloAberto" style="width:16px;height:16px;margin:0;">
+      <label for="protocoloAberto" style="text-transform:none;font-weight:700;">Protocolo em aberto</label>
+    </div>
+
+    <fieldset id="protocoloAbertoFields" style="display:none;">
+      <legend>Dados do protocolo em aberto</legend>
+      <div class="row">
+        <div class="field">
+          <label for="paNumero">Nº do protocolo</label>
+          <input id="paNumero" placeholder="00.000">
+        </div>
+        <div class="field">
+          <label for="paData">Data do protocolo</label>
+          <input id="paData" type="date">
+        </div>
+        <div class="field" style="flex:2;">
+          <label for="paTipo">Referente ao registro de</label>
+          <input id="paTipo" placeholder="ex.: compra e venda">
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="toggle-row" style="margin-top:18px;">
       <input type="checkbox" id="seloGratuito" style="width:16px;height:16px;margin:0;">
       <label for="seloGratuito" style="text-transform:none;font-weight:700;">Selo gratuito (zera Emolumentos, Taxa Judiciária e Fundos/ISSQN)</label>
     </div>
@@ -529,6 +552,16 @@ function buildBodyHtml(){
   return p1;
 }
 
+// Protocolo em aberto: frase destacada, inserida após a assinatura
+function protocoloAbertoBlock(){
+  if(!document.getElementById('protocoloAberto').checked) return '';
+  const paDataISO = val('paData'); // AAAA-MM-DD
+  const paData = paDataISO ? paDataISO.split('-').reverse().join('/') : '';
+  return '<div style="margin-top:22px;padding-top:8px;border-top:1px solid #111;text-align:justify;">' +
+    '<b>CERTIFICO</b> que na Matrícula nº ' + esc(val('matricula')) + ' consta o protocolo em aberto de nº <b>' + esc(val('paNumero')) +
+    '</b>, protocolado em <b>' + esc(paData) + '</b>, referente ao registro de <b>' + esc(val('paTipo')) + '</b>.</div>';
+}
+
 function generateCertidao(){
   if(!selected) return;
   const dataEmissao = val('dataEmissao') || dataHojeExtenso();
@@ -553,7 +586,8 @@ function generateCertidao(){
     '<div class="docSign" style="text-align:center;font-weight:700;margin-top:2px;">' +
       '<span class="line" style="display:block;margin-bottom:2px;">' + esc(assinanteNome) + '</span>' +
       '<span class="line" style="display:block;margin-bottom:2px;">' + esc(assinanteCargo) + '</span>' +
-    '</div>';
+    '</div>' +
+    protocoloAbertoBlock();
 
   const footerBlock =
     '<div class="docFooterNote">Rua Professor Percival Rebelo, nº 557, Centro - Piracanjuba-GO – CEP: 75.640-092 - Fone: (64) 3405-1340 – e-mail: registrodeimoveispiracanjuba@gmail.com</div>';
@@ -569,7 +603,7 @@ function generateCertidao(){
 ['matricula','rnum','dataEmissao','propNome','propResto','assinante',
  'avNumero','avData','avProtocolo','avProtocoloData','cnibProtocolo','ordemData','ordemHora',
  'propApelido','processoNum','varaComarca','emissorOrdem',
- 'emolumentos','taxaJud','fundosIssqn','seloDigital'].forEach(id=>{
+ 'emolumentos','taxaJud','fundosIssqn','seloDigital','paNumero','paData','paTipo'].forEach(id=>{
   document.getElementById(id).addEventListener('input', generateCertidao);
   document.getElementById(id).addEventListener('change', generateCertidao);
 });
@@ -640,6 +674,11 @@ seloDigitalInput.addEventListener('input', ()=>{
   let clean = seloDigitalInput.value.replace(/\D/g,'').slice(0,23);
   if(clean !== seloDigitalInput.value) seloDigitalInput.value = clean;
   seloDigitalCount.textContent = clean.length + '/23';
+  generateCertidao();
+});
+
+document.getElementById('protocoloAberto').addEventListener('change', function(){
+  document.getElementById('protocoloAbertoFields').style.display = this.checked ? 'block' : 'none';
   generateCertidao();
 });
 
