@@ -45,6 +45,9 @@
   .nota { color: var(--cinza); font-size: .88rem; margin: 10px 0 0; }
   .previa-caixa { overflow: auto; background: #E9E4D8; border-radius: 8px; padding: 12px; max-height: 80vh; }
   .previa-caixa .docx-wrapper { background: transparent !important; padding: 0 !important; }
+  /* cores padrão de estilos (títulos/links azuis) não valem na prévia/PDF: o texto segue a cor do documento; cor definida no próprio trecho continua valendo */
+  #paginas p[class*="docx_heading"] span, #paginas p.docx_title span, #paginas p.docx_subtitle span, #paginas span.docx_hyperlink { color: inherit; }
+  #paginas a { color: inherit; }
   [hidden] { display: none !important; }
   @media print {
     html, body { background: #fff !important; margin: 0 !important; }
