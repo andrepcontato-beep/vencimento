@@ -2,13 +2,39 @@
   "nome": "André Locatelli — Advocacia",
   "logo": "logo.png",
   "removerFundoBranco": false,
-  "cabecalho": { "logoLarguraCm": 1.1, "alinhamento": "center", "filete": true, "corFilete": "C6A253" },
+  "cabecalho": {
+    "logoLarguraCm": 1.1,
+    "alinhamento": "center",
+    "filete": true,
+    "corFilete": "C6A253"
+  },
   "rodape": {
     "texto": "Av. Dr. José Amym Daher, Q. 5, L. 12, Setor Boa Vista — Piracanjuba/GO  |  OAB/GO 73.211",
-    "cor": "5B5B58", "fonte": "Cambria", "tamanhoPt": 8,
-    "numeroPagina": true, "filete": true, "corFilete": "C6A253"
+    "cor": "5B5B58",
+    "fonte": "Cambria",
+    "tamanhoPt": 8,
+    "numeroPagina": true,
+    "filete": true,
+    "corFilete": "C6A253"
   },
-  "marcaDagua": { "ativa": true, "opacidade": 0.08, "larguraCm": 11.2, "posicao": "inferior-direita" },
-  "margensCm": { "topo": 4, "inferior": 3, "esquerda": 3, "direita": 2 },
-  "aplicarMargens": true
+  "marcaDagua": {
+    "ativa": true,
+    "opacidade": 0.08,
+    "larguraCm": 11.2,
+    "posicao": "inferior-direita"
+  },
+  "margensCm": {
+    "topo": 4,
+    "inferior": 3,
+    "esquerda": 3,
+    "direita": 2
+  },
+  "aplicarMargens": true,
+  "assinatura": {
+    "ativa": true,
+    "nome": "ANDRÉ LOCATELLI",
+    "titulo": "ADVOGADO",
+    "oab": "OAB/GO 73.211",
+    "corTitulo": "C6A253"
+  }
 }

@@ -117,6 +117,10 @@
     $('#fOpacVal').textContent = $('#fOpac').value;
     $('#fMarcaLarg').value = p.marcaDagua.larguraCm;
     $('#fMarcaPos').value = p.marcaDagua.posicao;
+    $('#fAssin').checked = !!p.assinatura.ativa;
+    $('#fAssNome').value = p.assinatura.nome;
+    $('#fAssTit').value = p.assinatura.titulo;
+    $('#fAssOab').value = p.assinatura.oab;
     $('#fAplicaMar').checked = !!p.aplicarMargens;
     $('#fMTopo').value = p.margensCm.topo;
     $('#fMInf').value = p.margensCm.inferior;
@@ -137,6 +141,7 @@
         fonte: estado.perfil.rodape.fonte
       },
       marcaDagua: { ativa: $('#fMarca').checked, opacidade: n('#fOpac') / 100, larguraCm: n('#fMarcaLarg'), posicao: $('#fMarcaPos').value },
+      assinatura: { ativa: $('#fAssin').checked, nome: $('#fAssNome').value.trim(), titulo: $('#fAssTit').value.trim(), oab: $('#fAssOab').value.trim(), corTitulo: estado.perfil.assinatura ? estado.perfil.assinatura.corTitulo : 'C6A253' },
       aplicarMargens: $('#fAplicaMar').checked,
       margensCm: { topo: n('#fMTopo'), inferior: n('#fMInf'), esquerda: n('#fMEsq'), direita: n('#fMDir') }
     });
@@ -217,7 +222,8 @@
       $('#previa').hidden = false;
       await montarPaginas(estado.blob, imgs, estado.perfil);
       $('#previa').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      msg('Pronto. Baixe o Word com a identidade aplicada.', 'ok');
+      const ass = IDV.ultimaAssinatura;
+      msg('Pronto. Baixe o Word com a identidade aplicada.' + (ass === 'padronizada' ? ' Assinatura padronizada.' : ass === 'nao-encontrada' ? ' Atenção: não encontrei a assinatura (nome + OAB) no fim do documento; ela ficou como estava.' : ''), ass === 'nao-encontrada' ? 'erro' : 'ok');
     } catch (e) {
       msg('Não consegui aplicar a identidade: ' + (e.message || e), 'erro');
     } finally { estado.ocupado = false; }

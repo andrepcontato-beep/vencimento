@@ -54,5 +54,6 @@ Atenção: tudo que está em `perfis/` fica visível a quem acessar o site (logo
 
 - Substitui qualquer cabeçalho/rodapé existente (e remove as imagens antigas deles do pacote).
 - Aplica em todas as seções e em todas as páginas (inclusive a primeira).
+- Padroniza a assinatura (opcional, por identidade): procura nome + OAB no fim do documento, remove a linha de assinatura e escreve o bloco do perfil (nome, título e OAB). Se não encontrar, avisa e não altera.
 - Ajusta as margens ao perfil (opcional, desligável na página).
 - Não altera o texto, estilos, tabelas ou imagens do corpo.

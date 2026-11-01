@@ -25,7 +25,8 @@
     rodape: { texto: '', cor: '5B5B58', fonte: 'Cambria', tamanhoPt: 8, numeroPagina: true, filete: true, corFilete: 'C6A253' },
     marcaDagua: { ativa: true, opacidade: 0.08, larguraCm: 11.2, posicao: 'inferior-direita' },
     margensCm: { topo: 4, inferior: 3, esquerda: 3, direita: 2 },
-    aplicarMargens: true
+    aplicarMargens: true,
+    assinatura: { ativa: false, nome: '', titulo: 'ADVOGADO', oab: '', corTitulo: 'C6A253' }
   };
 
   function mesclar(base, extra) {
@@ -42,6 +43,7 @@
     ['corFilete'].forEach(function (k) { perfil.cabecalho[k] = hex(perfil.cabecalho[k], 'C6A253'); });
     perfil.rodape.corFilete = hex(perfil.rodape.corFilete, 'C6A253');
     perfil.rodape.cor = hex(perfil.rodape.cor, '5B5B58');
+    perfil.assinatura.corTitulo = hex(perfil.assinatura.corTitulo, 'C6A253');
     perfil.rodape.tamanhoPt = Math.min(14, Math.max(5, Number(perfil.rodape.tamanhoPt) || 8));
     perfil.cabecalho.logoLarguraCm = Math.min(8, Math.max(0.3, Number(perfil.cabecalho.logoLarguraCm) || 1.1));
     perfil.marcaDagua.opacidade = Math.min(0.6, Math.max(0.01, Number(perfil.marcaDagua.opacidade) || 0.08));
@@ -228,6 +230,76 @@
     return 'desconhecido';
   }
 
+  /* ---------- assinatura padronizada ---------- */
+  function textoDe(par) {
+    let t = '';
+    (function walk(n) {
+      for (let c = n.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType !== 1) continue;
+        if (c.namespaceURI === NS_W && c.localName === 't') t += c.textContent;
+        else if (c.namespaceURI === NS_W && (c.localName === 'br' || c.localName === 'cr')) t += '\n';
+        else if (c.namespaceURI === NS_W && c.localName === 'tab') t += ' ';
+        else walk(c);
+      }
+    })(par);
+    return t;
+  }
+  const RE_OAB = /OAB\s*[\/\-]?\s*[A-Z]{2}\b[^\n]*\d/i;
+  function ehLinha(par, t) {
+    if (/^[\s_\-\u2013\u2014.=\u2500]{5,}$/.test(t)) return true;
+    if (t.trim() === '') {
+      return !!par.getElementsByTagNameNS(NS_W, 'pBdr').length;
+    }
+    return false;
+  }
+  function padronizarAssinatura(doc, body, p) {
+    const a = p.assinatura;
+    if (!a.ativa || !a.nome) return 'desligada';
+    const pars = Array.prototype.filter.call(body.childNodes, function (n) { return n.nodeType === 1 && n.namespaceURI === NS_W && n.localName === 'p'; });
+    const limite = Math.max(0, pars.length - 14);
+    let iOab = -1;
+    for (let i = pars.length - 1; i >= limite; i--) {
+      const t = textoDe(pars[i]).trim();
+      if (t && t.length <= 90 && RE_OAB.test(t) && !/[a-zà-ú]{4,}\s+[a-zà-ú]{3,}\s+[a-zà-ú]{3,}\s+[a-zà-ú]{3,}/.test(t)) { iOab = i; break; }
+    }
+    if (iOab < 0) return 'nao-encontrada';
+    let ini = iOab;
+    const tOab = textoDe(pars[iOab]).trim();
+    if (tOab.indexOf('\n') < 0) {
+      // parágrafos acima: título (ADVOGADO ou traços), nome, linha
+      let k = iOab - 1;
+      const pula = function () { return k >= 0 && textoDe(pars[k]).trim() === '' && !pars[k].getElementsByTagNameNS(NS_W, 'pBdr').length; };
+      let guarda = 0;
+      while (k >= 0 && guarda++ < 4) {
+        const t = textoDe(pars[k]).trim();
+        if (ehLinha(pars[k], t)) { ini = k; k--; continue; }
+        if (/^[\u2014\u2013\-\s]*advogad[oa][\u2014\u2013\-\s]*$/i.test(t)) { ini = k; k--; continue; }
+        if (t && t.length <= 60 && !/[.,:;]$/.test(t) && !/\d/.test(t) && !RE_OAB.test(t)) { ini = k; k--; continue; }
+        break;
+      }
+    }
+    const NSDECL = ' xmlns:w="' + NS_W + '"';
+    const rf = '<w:rFonts w:eastAsia="Times New Roman" w:cs="Times New Roman"/>';
+    const par = function (before, runs) {
+      return '<w:p' + NSDECL + '><w:pPr><w:keepNext/><w:spacing w:before="' + before + '" w:after="0"/><w:jc w:val="center"/></w:pPr>' + runs + '</w:p>';
+    };
+    const run = function (txt, rpr) { return '<w:r><w:rPr>' + rf + rpr + '</w:rPr><w:t xml:space="preserve">' + esc(txt) + '</w:t></w:r>'; };
+    const ouro = '<w:color w:val="' + a.corTitulo + '"/><w:spacing w:val="70"/><w:sz w:val="18"/><w:szCs w:val="18"/>';
+    let xml = par(720, run(a.nome, '<w:b/><w:bCs/><w:color w:val="262624"/><w:spacing w:val="30"/><w:sz w:val="24"/><w:szCs w:val="24"/>'));
+    if (a.titulo) {
+      xml += par(0, run('\u2014\u2014\u2014', '<w:strike/>' + ouro) + run('  ', ouro) + run(a.titulo + '  ', ouro) + run('\u2014\u2014\u2014', '<w:strike/>' + ouro));
+    }
+    if (a.oab) xml += par(0, run(a.oab, '<w:color w:val="5B5B58"/><w:spacing w:val="20"/><w:sz w:val="22"/><w:szCs w:val="22"/>'));
+    const frag = new DOMParser().parseFromString('<root' + NSDECL + '>' + xml.replace(/ xmlns:w="[^"]+"/g, '') + '</root>', 'application/xml');
+    if (frag.getElementsByTagName('parsererror').length) return 'nao-encontrada';
+    const ref = pars[iOab].nextSibling;
+    for (let i = ini; i <= iOab; i++) body.removeChild(pars[i]);
+    Array.prototype.slice.call(frag.documentElement.childNodes).forEach(function (n) {
+      body.insertBefore(doc.importNode(n, true), ref);
+    });
+    return 'padronizada';
+  }
+
   async function aplicarIdentidade(arrayBuffer, perfilEntrada, imgs) {
     const p = normalizarPerfil(perfilEntrada);
     const zip = await JSZip.loadAsync(arrayBuffer);
@@ -283,6 +355,7 @@
         larguraTexto = Math.max(1000, (pw || 11906) - (l || 0) - (r || 0));
       }
     });
+    global.IDV.ultimaAssinatura = padronizarAssinatura(doc, body, p);
     gravarXml(zip, 'word/document.xml', doc);
 
     // 2) relacionamentos: descarta cabeçalhos/rodapés antigos, registra os novos
