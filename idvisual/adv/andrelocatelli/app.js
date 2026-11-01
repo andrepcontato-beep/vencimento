@@ -285,6 +285,10 @@
       });
     }
     doc = doc.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function (p) { return converte(p, info.fonte, info.tamanhoPt); });
+    // espaçamento entre caracteres (w:spacing dentro de w:rPr): o docx-preview ignora; marcamos o texto e aplicamos depois
+    doc = doc.replace(/<w:r(?: [^>]*)?>\s*<w:rPr>(?:(?!<\/w:rPr>)[\s\S])*?<w:spacing w:val="(-?\d+)"\s*\/>[\s\S]*?<\/w:r>/g, function (run, val) {
+      return run.replace(/(<w:t(?: [^>]*)?>)/, '$1\uE000' + val + '\uE001');
+    });
     zip.file('word/document.xml', doc);
     if (estilos) {
       estilos = estilos.replace(/<w:style [\s\S]*?<\/w:style>/g, function (st) { return converte(st, info.fonte, info.tamanhoPt); });
@@ -305,6 +309,12 @@
     await docx.renderAsync(blob, med, null, {
       className: 'docx', inWrapper: true, breakPages: true, ignoreLastRenderedPageBreak: true,
       useBase64URL: true, renderHeaders: false, renderFooters: false, renderFootnotes: true, renderEndnotes: true
+    });
+    nosDeTexto(med).forEach(function (n) {
+      const m = n.nodeValue.match(/\uE000(-?\d+)\uE001/);
+      if (!m) return;
+      n.nodeValue = n.nodeValue.replace(/\uE000-?\d+\uE001/g, '');
+      if (n.parentElement) n.parentElement.style.letterSpacing = (Number(m[1]) / 20) + 'pt';
     });
     const secoes = Array.prototype.slice.call(med.querySelectorAll('section.docx'));
     const alvo = $('#paginas');
@@ -506,7 +516,17 @@
     if (ns.length) ns[0].nodeValue = ns[0].nodeValue.replace(/^\s+/, '');
     return par;
   }
-  function estoura(pg) { return pg.cont.offsetHeight > pg.limite + 1; }
+  // Word/LibreOffice colocam a entrelinha extra acima do texto: a última linha da página só precisa caber na altura natural da fonte
+  function folgaUltimaLinha(pg) {
+    const ult = pg.cont.lastElementChild;
+    if (!ult) return 0;
+    const cs = getComputedStyle(ult);
+    const lh = parseFloat(cs.lineHeight), fs = parseFloat(cs.fontSize);
+    if (!isFinite(lh) || !isFinite(fs)) return 0;
+    const fonte = (cs.fontFamily.split(',')[0] || '').replace(/["']/g, '').trim() || 'Times New Roman';
+    return Math.max(0, lh - fs * razaoNatural(fonte));
+  }
+  function estoura(pg) { return pg.cont.offsetHeight > pg.limite + 1 + folgaUltimaLinha(pg); }
   function ehTitulo(el) {
     if (!el || el.tagName !== 'P') return false;
     const txt = (el.textContent || '').trim();

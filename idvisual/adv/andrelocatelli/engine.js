@@ -186,15 +186,11 @@
     if (r.texto) runs += '<w:r>' + rpr + '<w:t xml:space="preserve">' + esc(r.texto) + '</w:t></w:r>';
     if (r.numeroPagina) {
       runs += '<w:r>' + rpr + '<w:tab/></w:r>' +
-        '<w:r>' + rpr + '<w:fldChar w:fldCharType="begin"/></w:r>' +
-        '<w:r>' + rpr + '<w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>' +
-        '<w:r>' + rpr + '<w:fldChar w:fldCharType="separate"/></w:r>' +
-        '<w:r>' + rpr + '<w:t>1</w:t></w:r>' +
-        '<w:r>' + rpr + '<w:fldChar w:fldCharType="end"/></w:r>';
+        '<w:fldSimple w:instr=" PAGE ">' + '<w:r>' + rpr + '<w:t>1</w:t></w:r></w:fldSimple>';
     }
     const tabs = r.numeroPagina ? '<w:tabs><w:tab w:val="right" w:pos="' + larguraTextoTwips + '"/></w:tabs>' : '';
     return XML_DECL + '<w:ftr ' + ROOT_NS + '><w:p><w:pPr>' + borda + tabs +
-      '<w:spacing w:before="60" w:after="60" w:line="240" w:lineRule="auto"/></w:pPr>' + runs + '</w:p></w:ftr>';
+      '<w:spacing w:before="60" w:after="60" w:line="240" w:lineRule="auto"/>' + rpr + '</w:pPr>' + runs + '</w:p></w:ftr>';
   }
 
   /* ---------- pacote .docx ---------- */
