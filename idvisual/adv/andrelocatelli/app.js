@@ -214,19 +214,166 @@
       msg('Aplicando a identidade…');
       const imgs = await IDV.prepararImagens(estado.perfil);
       estado.blob = await IDV.aplicarIdentidade(estado.buffer, estado.perfil, imgs);
-      const alvo = $('#paginas');
-      alvo.innerHTML = '';
-      await docx.renderAsync(estado.blob, alvo, null, {
-        className: 'docx', inWrapper: true, ignoreWidth: false, ignoreHeight: false, breakPages: true,
-        ignoreLastRenderedPageBreak: true, useBase64URL: true, renderHeaders: true, renderFooters: true,
-        renderFootnotes: true, renderEndnotes: true
-      });
       $('#previa').hidden = false;
+      await montarPaginas(estado.blob, imgs, estado.perfil);
       $('#previa').scrollIntoView({ behavior: 'smooth', block: 'start' });
       msg('Pronto. Baixe o Word com a identidade aplicada.', 'ok');
     } catch (e) {
       msg('Não consegui aplicar a identidade: ' + (e.message || e), 'erro');
     } finally { estado.ocupado = false; }
+  }
+  /* ---------- prévia paginada ---------- */
+  const PX_CM = 96 / 2.54;
+  let urlsPrevia = [];
+  function urlDe(bytes) {
+    const u = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+    urlsPrevia.push(u);
+    return u;
+  }
+  function criarEl(tag, css, filhos) {
+    const e = document.createElement(tag);
+    if (css) e.style.cssText = css;
+    return e;
+  }
+  async function montarPaginas(blob, imgs, perfil) {
+    urlsPrevia.forEach(function (u) { URL.revokeObjectURL(u); });
+    urlsPrevia = [];
+    const med = $('#medidor');
+    med.innerHTML = '';
+    // o docx-preview só serve para converter o corpo do texto em HTML; a paginação e a identidade são desenhadas aqui
+    await docx.renderAsync(blob, med, null, {
+      className: 'docx', inWrapper: true, breakPages: true, ignoreLastRenderedPageBreak: true,
+      useBase64URL: true, renderHeaders: false, renderFooters: false, renderFootnotes: true, renderEndnotes: true
+    });
+    const secoes = Array.prototype.slice.call(med.querySelectorAll('section.docx'));
+    const alvo = $('#paginas');
+    alvo.innerHTML = '';
+    const urlLogo = urlDe(imgs.logo);
+    const urlMarca = imgs.marca ? urlDe(imgs.marca) : null;
+    const cab = perfil.cabecalho, rod = perfil.rodape, wm = perfil.marcaDagua;
+    let numero = 0;
+
+    const lista = [];
+    let secaoAtual = 0;
+    function novaPagina(W, H, pad, aposDe) {
+      numero += 1;
+      const pg = criarEl('div', 'position:relative;box-sizing:border-box;background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.25);margin:0 auto 20px;overflow:hidden;' +
+        'width:' + W + 'px;min-height:' + H + 'px;padding:' + pad.t + 'px ' + pad.r + 'px ' + pad.b + 'px ' + pad.l + 'px;');
+      pg.className = 'docx pagina';
+      if (urlMarca) {
+        const w = wm.larguraCm * PX_CM;
+        const m = criarEl('img', 'position:absolute;z-index:0;pointer-events:none;width:' + w + 'px;height:auto;');
+        m.src = urlMarca; m.alt = '';
+        const pos = wm.posicao.split('-');
+        if (wm.posicao === 'centro') { m.style.left = '50%'; m.style.top = '50%'; m.style.transform = 'translate(-50%,-50%)'; }
+        else {
+          m.style.bottom = pos[0] === 'inferior' ? '0' : 'auto'; m.style.top = pos[0] === 'superior' ? '0' : 'auto';
+          m.style.right = pos[1] === 'direita' ? '0' : 'auto'; m.style.left = pos[1] === 'esquerda' ? '0' : 'auto';
+        }
+        pg.appendChild(m);
+      }
+      const topo = criarEl('div', 'position:absolute;z-index:1;top:' + (1.25 * PX_CM) + 'px;left:' + pad.l + 'px;right:' + pad.r + 'px;' +
+        'padding-bottom:6pt;' + (cab.filete ? 'border-bottom:.75pt solid #' + cab.corFilete + ';' : ''));
+      const li = criarEl('img', 'display:block;height:auto;width:' + (cab.logoLarguraCm * PX_CM) + 'px;' +
+        'margin:' + (cab.alinhamento === 'center' ? '0 auto' : cab.alinhamento === 'right' ? '0 0 0 auto' : '0') + ';');
+      li.src = urlLogo; li.alt = '';
+      topo.appendChild(li);
+      pg.appendChild(topo);
+      const base = criarEl('div', 'position:absolute;z-index:1;bottom:' + (1.25 * PX_CM) + 'px;left:' + pad.l + 'px;right:' + pad.r + 'px;' +
+        'display:flex;justify-content:space-between;gap:12px;padding-top:6pt;font:' + rod.tamanhoPt + 'pt ' + rod.fonte + ',Georgia,serif;color:#' + rod.cor + ';' +
+        (rod.filete ? 'border-top:.75pt solid #' + rod.corFilete + ';' : ''));
+      const t = criarEl('span'); t.textContent = rod.texto; base.appendChild(t);
+      if (rod.numeroPagina) { const n = criarEl('span'); n.className = 'num'; n.textContent = String(numero); base.appendChild(n); }
+      pg.appendChild(base);
+      const cont = criarEl('div', 'position:relative;z-index:1;display:flow-root;');
+      pg.appendChild(cont);
+      const obj = { pg: pg, cont: cont, limite: H - pad.t - pad.b, secao: secaoAtual, W: W, H: H, pad: pad };
+      if (aposDe) {
+        alvo.insertBefore(pg, aposDe.pg.nextSibling);
+        lista.splice(lista.indexOf(aposDe) + 1, 0, obj);
+      } else { alvo.appendChild(pg); lista.push(obj); }
+      return obj;
+    }
+
+    if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) { /* segue */ } }
+    secoes.forEach(function (sec, idxSecao) {
+      secaoAtual = idxSecao;
+      const cs = getComputedStyle(sec);
+      const W = sec.getBoundingClientRect().width || parseFloat(cs.width);
+      const H = parseFloat(cs.minHeight) || parseFloat(cs.height) || 1123;
+      const pad = { t: parseFloat(cs.paddingTop), r: parseFloat(cs.paddingRight), b: parseFloat(cs.paddingBottom), l: parseFloat(cs.paddingLeft) };
+      const artigo = sec.querySelector('article');
+      if (!artigo) return;
+      let atual = novaPagina(W, H, pad);
+      Array.prototype.slice.call(artigo.children).forEach(function (filho) {
+        atual.cont.appendChild(filho);
+        if (estoura(atual) && atual.cont.children.length > 1) {
+          atual.cont.removeChild(filho);
+          const novo = novaPagina(W, H, pad);
+          // título não fica sozinho no pé da página: vai junto com o parágrafo seguinte
+          const anterior = atual.cont.lastElementChild;
+          if (anterior && atual.cont.children.length > 1 && ehTitulo(anterior)) novo.cont.appendChild(anterior);
+          novo.cont.appendChild(filho);
+          atual = novo;
+        }
+      });
+    });
+    // conferência final: se algo ainda passar do limite (a tipografia pode mudar após a medição), empurra para a página seguinte
+    for (let i = 0; i < lista.length; i++) {
+      let guarda = 0;
+      while (estoura(lista[i]) && lista[i].cont.children.length > 1 && guarda++ < 500) {
+        let prox = lista[i + 1];
+        if (!prox || prox.secao !== lista[i].secao) prox = novaPagina(lista[i].W, lista[i].H, lista[i].pad, lista[i]);
+        const ultimo = lista[i].cont.lastElementChild;
+        prox.cont.insertBefore(ultimo, prox.cont.firstChild);
+        const ant = lista[i].cont.lastElementChild;
+        if (ant && lista[i].cont.children.length > 1 && ehTitulo(ant)) prox.cont.insertBefore(ant, prox.cont.firstChild);
+      }
+    }
+    lista.forEach(function (pg, i) { const n = pg.pg.querySelector('.num'); if (n) n.textContent = String(i + 1); });
+    ajustarEscala();
+    // remove só o invólucro vazio; as folhas de estilo do documento ficam, pois as páginas dependem delas
+    Array.prototype.forEach.call(med.querySelectorAll('.docx-wrapper'), function (w) { w.remove(); });
+  }
+  function estoura(pg) { return pg.cont.offsetHeight > pg.limite + 1; }
+  function ehTitulo(el) {
+    if (!el || el.tagName !== 'P') return false;
+    const txt = (el.textContent || '').trim();
+    if (!txt || txt.length > 140) return false;
+    const spans = el.querySelectorAll('span');
+    const alvo = spans.length ? spans[0] : el;
+    const peso = getComputedStyle(alvo).fontWeight;
+    return peso === 'bold' || parseInt(peso, 10) >= 600;
+  }
+  function ajustarEscala() {
+    const caixa = document.querySelector('.previa-caixa'), alvo = $('#paginas');
+    const p = alvo.firstElementChild;
+    if (!p) return;
+    const disponivel = caixa.clientWidth - 24;
+    const w = p.getBoundingClientRect().width / (Number(alvo.style.zoom) || 1);
+    alvo.style.zoom = w > disponivel && disponivel > 0 ? String(disponivel / w) : '1';
+  }
+  window.addEventListener('resize', function () { if (!$('#previa').hidden) ajustarEscala(); });
+
+  function baixarPdf() {
+    const paginas = Array.prototype.slice.call(document.querySelectorAll('#paginas .pagina'));
+    if (!paginas.length) return;
+    const W = paginas[0].getBoundingClientRect().width / (Number($('#paginas').style.zoom) || 1);
+    const H = parseFloat(paginas[0].style.minHeight);
+    let estilo = document.getElementById('estiloPagina');
+    if (!estilo) { estilo = document.createElement('style'); estilo.id = 'estiloPagina'; document.head.appendChild(estilo); }
+    estilo.textContent = '@page { size: ' + W.toFixed(2) + 'px ' + H.toFixed(2) + 'px; margin: 0; }';
+    // altura fixa (2px a menos) para o arredondamento não empurrar uma página em branco
+    paginas.forEach(function (p) { p.style.height = (H - 2) + 'px'; });
+    const tituloOriginal = document.title;
+    document.title = estado.nomeBase + ' - ' + slug(estado.perfil.nome);
+    const restaurar = function () {
+      paginas.forEach(function (p) { p.style.height = ''; });
+      document.title = tituloOriginal;
+      window.removeEventListener('afterprint', restaurar);
+    };
+    window.addEventListener('afterprint', restaurar);
+    window.print();
   }
   function baixarDocx() {
     if (estado.blob) baixar(estado.blob, estado.nomeBase + ' - ' + slug(estado.perfil.nome) + '.docx');
@@ -254,6 +401,7 @@
     ['dragleave', 'drop'].forEach(function (ev) { zona.addEventListener(ev, function (e) { e.preventDefault(); zona.classList.remove('sobre'); }); });
     zona.addEventListener('drop', function (e) { receberArquivo(e.dataTransfer.files[0]); });
     $('#btnDocx').addEventListener('click', baixarDocx);
+    $('#btnPdf').addEventListener('click', baixarPdf);
   }
 
   async function iniciar() {

@@ -136,7 +136,7 @@
       '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
       '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic>';
   }
-  function xmlCabecalho(p, imgs) {
+  function xmlCabecalho(p, imgs, pagina) {
     const cab = p.cabecalho;
     const cx = Math.round(cab.logoLarguraCm * EMU_CM);
     const cy = Math.round(cx * imgs.logoRatio);
@@ -151,15 +151,19 @@
     if (imgs.marca) {
       const wcx = Math.round(p.marcaDagua.larguraCm * EMU_CM);
       const wcy = Math.round(wcx * imgs.marcaRatio);
-      const pos = {
-        'inferior-direita': ['right', 'bottom'], 'inferior-esquerda': ['left', 'bottom'],
-        'superior-direita': ['right', 'top'], 'superior-esquerda': ['left', 'top'], 'centro': ['center', 'center']
-      }[p.marcaDagua.posicao] || ['right', 'bottom'];
+      // coordenadas absolutas a partir do tamanho real da página (mais confiável que "alinhar" entre Word e LibreOffice)
+      const pgW = (pagina && pagina.largura ? pagina.largura : 11906) * 635;
+      const pgH = (pagina && pagina.altura ? pagina.altura : 16838) * 635;
+      const posX = { esquerda: 0, direita: pgW - wcx, centro: Math.round((pgW - wcx) / 2) };
+      const posY = { superior: 0, inferior: pgH - wcy, centro: Math.round((pgH - wcy) / 2) };
+      const chave = p.marcaDagua.posicao === 'centro' ? ['centro', 'centro'] : p.marcaDagua.posicao.split('-').map(function (s, i) { return s; });
+      const offY = Math.max(0, posY[chave[0]] !== undefined ? posY[chave[0]] : posY.inferior);
+      const offX = Math.max(0, posX[chave[1]] !== undefined ? posX[chave[1]] : posX.direita);
       ancora =
         '<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="251650048" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1">' +
         '<wp:simplePos x="0" y="0"/>' +
-        '<wp:positionH relativeFrom="page"><wp:align>' + pos[0] + '</wp:align></wp:positionH>' +
-        '<wp:positionV relativeFrom="page"><wp:align>' + pos[1] + '</wp:align></wp:positionV>' +
+        '<wp:positionH relativeFrom="page"><wp:posOffset>' + Math.round(offX) + '</wp:posOffset></wp:positionH>' +
+        '<wp:positionV relativeFrom="page"><wp:posOffset>' + Math.round(offY) + '</wp:posOffset></wp:positionV>' +
         '<wp:extent cx="' + wcx + '" cy="' + wcy + '"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/>' +
         '<wp:docPr id="9102" name="Marca dagua da identidade"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
         grafico('rIdIdvMarca', wcx, wcy, 9102, 'marca.png') + '</wp:anchor></w:drawing></w:r>';
@@ -247,6 +251,7 @@
     }
     const cm = p.margensCm;
     let larguraTexto = null;
+    const pagina = { largura: 0, altura: 0 };
     sects.forEach(function (sect) {
       Array.prototype.slice.call(sect.childNodes).forEach(function (n) {
         if (n.nodeType === 1 && n.namespaceURI === NS_W &&
@@ -275,6 +280,8 @@
       if (larguraTexto === null) {
         const sz = Array.prototype.find.call(sect.childNodes, function (n) { return n.localName === 'pgSz' && n.namespaceURI === NS_W; });
         const pw = sz ? parseInt(sz.getAttributeNS(NS_W, 'w'), 10) : 11906;
+        pagina.largura = pw || 11906;
+        pagina.altura = (sz && parseInt(sz.getAttributeNS(NS_W, 'h'), 10)) || 16838;
         const l = mar ? parseInt(mar.getAttributeNS(NS_W, 'left'), 10) : 1701;
         const r = mar ? parseInt(mar.getAttributeNS(NS_W, 'right'), 10) : 1134;
         larguraTexto = Math.max(1000, (pw || 11906) - (l || 0) - (r || 0));
@@ -351,7 +358,7 @@
       }
       midiasAntigas.forEach(function (m) { if (!emUso[m]) zip.remove(m); });
     }
-    zip.file('word/header_idv.xml', xmlCabecalho(p, imgs));
+    zip.file('word/header_idv.xml', xmlCabecalho(p, imgs, pagina));
     zip.file('word/footer_idv.xml', xmlRodape(p, larguraTexto));
     let relH = '<Relationships xmlns="' + NS_PKG + '"><Relationship Id="rIdIdvLogo" Type="' + REL + 'image" Target="media/idv_logo.png"/>';
     zip.file('word/media/idv_logo.png', imgs.logo);

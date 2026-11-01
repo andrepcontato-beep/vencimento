@@ -12,9 +12,11 @@ Tudo roda no navegador. O documento **não é enviado a nenhum servidor**. Não 
 
 Link direto para outro escritório do catálogo: `?perfil=<id>`.
 
-## PDF
+## PDF e prévia
 
-A página não gera PDF: um PDF fiel precisa de um motor de layout (o do Word ou do LibreOffice) e a alternativa é enviar a petição a um servidor. Abra o `.docx` baixado e use **Arquivo → Salvar como → PDF**; a paginação sai idêntica à do Word.
+A prévia mostra uma folha A4 por página, com logo, marca d'água e rodapé numerado desenhados em cada uma. O botão **Baixar PDF** imprime exatamente essas páginas: no diálogo do navegador, escolha **Salvar como PDF** (as margens já saem zeradas). O texto continua selecionável e nada é enviado a servidor.
+
+As quebras de página da prévia e do PDF são calculadas pela página, parágrafo a parágrafo, e podem diferir um pouco das do Word. Para paginação idêntica à do Word, use o `.docx` baixado e **Arquivo → Salvar como → PDF** no próprio Word. O `.docx` é sempre o arquivo de referência.
 
 ## .doc e LibreOffice (.odt)
 
