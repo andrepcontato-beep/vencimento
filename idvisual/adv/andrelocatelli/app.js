@@ -314,7 +314,13 @@
       const m = n.nodeValue.match(/\uE000(-?\d+)\uE001/);
       if (!m) return;
       n.nodeValue = n.nodeValue.replace(/\uE000-?\d+\uE001/g, '');
-      if (n.parentElement) n.parentElement.style.letterSpacing = (Number(m[1]) / 20) + 'pt';
+      if (!n.parentElement) return;
+      const sp = n.parentElement;
+      sp.style.letterSpacing = (Number(m[1]) / 20) + 'pt';
+      // traços riscados (linha dourada da assinatura): o risco não cobre o espaço entre letras; fecha os vãos
+      if (/^[\u2014\u2013\-]+$/.test(n.nodeValue.trim()) && /line-through/.test(getComputedStyle(sp).textDecorationLine)) {
+        sp.style.letterSpacing = '0'; sp.style.display = 'inline-block'; sp.style.width = (n.nodeValue.trim().length * (parseFloat(getComputedStyle(sp).fontSize) + Number(m[1]) / 20 * 96 / 72)) + 'px'; sp.style.overflow = 'hidden'; sp.style.verticalAlign = 'bottom';
+      }
     });
     const secoes = Array.prototype.slice.call(med.querySelectorAll('section.docx'));
     const alvo = $('#paginas');
