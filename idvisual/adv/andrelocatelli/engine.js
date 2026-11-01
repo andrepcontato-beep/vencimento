@@ -115,10 +115,25 @@
     const src = perfil.logoData || perfil.logoUrl;
     if (!src) throw new Error('Esta identidade ainda não tem logo. Envie um arquivo de imagem.');
     const img = await carregarImagem(src);
-    const logo = desenhar(img, 700, perfil.removerFundoBranco, 1);
-    const out = { logo: await canvasParaBytes(logo.canvas), logoRatio: logo.ratio, marca: null, marcaRatio: 1 };
+    // logo PNG sem tratamento: vai para o documento exatamente como foi enviado (nenhum reprocessamento)
+    let original = null;
+    if (!perfil.removerFundoBranco) {
+      try {
+        const bytes = new Uint8Array(await (await fetch(src)).arrayBuffer());
+        const ehPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+        if (ehPng) original = bytes;
+      } catch (e) { original = null; }
+    }
+    let out;
+    if (original) {
+      const nw = img.naturalWidth || img.width || 1, nh = img.naturalHeight || img.height || 1;
+      out = { logo: original, logoRatio: nh / nw, marca: null, marcaRatio: 1 };
+    } else {
+      const logo = desenhar(img, 1600, perfil.removerFundoBranco, 1);
+      out = { logo: await canvasParaBytes(logo.canvas), logoRatio: logo.ratio, marca: null, marcaRatio: 1 };
+    }
     if (perfil.marcaDagua.ativa) {
-      const wm = desenhar(img, 900, perfil.removerFundoBranco, perfil.marcaDagua.opacidade);
+      const wm = desenhar(img, 1400, perfil.removerFundoBranco, perfil.marcaDagua.opacidade);
       out.marca = await canvasParaBytes(wm.canvas);
       out.marcaRatio = wm.ratio;
     }
