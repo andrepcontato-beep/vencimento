@@ -16,7 +16,7 @@ Link direto para outro escritório do catálogo: `?perfil=<id>`.
 
 A prévia mostra uma folha A4 por página, com logo, marca d'água e rodapé numerado desenhados em cada uma. O botão **Baixar PDF** imprime exatamente essas páginas: no diálogo do navegador, escolha **Salvar como PDF** (as margens já saem zeradas). O texto continua selecionável e nada é enviado a servidor.
 
-As quebras de página da prévia e do PDF são calculadas pela página, parágrafo a parágrafo, e podem diferir um pouco das do Word. Para paginação idêntica à do Word, use o `.docx` baixado e **Arquivo → Salvar como → PDF** no próprio Word. O `.docx` é sempre o arquivo de referência.
+As quebras de página da prévia e do PDF são calculadas pela página: os parágrafos longos são divididos linha a linha (com controle de linha viúva/órfã) e a entrelinha segue a regra do Word (múltiplo da altura natural da fonte). Ainda assim, a quebra pode diferir em uma ou duas linhas das do Word. Para paginação idêntica à do Word, use o `.docx` baixado e **Arquivo → Salvar como → PDF** no próprio Word. O `.docx` é sempre o arquivo de referência.
 
 ## .doc e LibreOffice (.odt)
 
