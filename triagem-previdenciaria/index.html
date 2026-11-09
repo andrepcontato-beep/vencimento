@@ -176,9 +176,7 @@ th{background:var(--paper)}
   </section>
 
   <section id="sec-mapas" hidden>
-    <p class="lead">Os três primeiros mapas são o mesmo caminho da triagem, abertos de uma vez. Os demais servem de consulta rápida. Clique em um benefício para abrir a ficha.</p>
-    <div class="legend" id="legend2"></div>
-    <div class="maps" id="maps"></div>
+    <div class="qcard"><h2>Em construção</h2><p class="hint">Os mapas mentais estão sendo revisados e voltam em breve. Enquanto isso, use a Triagem e as Fichas dos benefícios.</p></div>
   </section>
 
   <section id="sec-fichas" hidden>
@@ -565,8 +563,8 @@ function show(tab){
 }
 window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
 
-legend($("#legend"));legend($("#legend2"));
-renderWiz();renderMaps();renderCards();renderAlerts();
+legend($("#legend"));
+renderWiz();renderCards();renderAlerts();
 show(location.hash.slice(1));
 </script>
 </body>
