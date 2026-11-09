@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Triagem Previdenciária</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: cabeçalho fixo com abas; cada aba é uma coluna central de leitura (triagem, mapas, fichas, alertas). */
+:root{
+  --paper:#f4f6f7;
+  --surface:#ffffff;
+  --ink:#16202b;
+  --muted:#5b6876;
+  --line:#c9d2da;
+  --accent:#1d5b8f;
+  --accent-soft:#e3edf6;
+  --urb:#1d5b8f;   --urb-bg:#e3edf6;
+  --rur:#2f7d4a;   --rur-bg:#e3f2e8;
+  --ass:#a86b0c;   --ass-bg:#fbf0dc;
+  --dep:#6a4a9c;   --dep-bg:#eee8f7;
+  --warn:#b23a2e;  --warn-bg:#fbe9e6;
+  --display:"Newsreader", Georgia, "Times New Roman", serif;
+  --body:"IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#11161c; --surface:#1a222b; --ink:#e6ebf0; --muted:#9aa7b4; --line:#34414e;
+    --accent:#7fb3e0; --accent-soft:#1f3346;
+    --urb:#7fb3e0; --urb-bg:#1f3346;
+    --rur:#7cc796; --rur-bg:#1c3326;
+    --ass:#e3b05c; --ass-bg:#3a2d16;
+    --dep:#b9a0e6; --dep-bg:#2d2440;
+    --warn:#f08f84; --warn-bg:#3b1f1c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11161c; --surface:#1a222b; --ink:#e6ebf0; --muted:#9aa7b4; --line:#34414e;
+  --accent:#7fb3e0; --accent-soft:#1f3346;
+  --urb:#7fb3e0; --urb-bg:#1f3346;
+  --rur:#7cc796; --rur-bg:#1c3326;
+  --ass:#e3b05c; --ass-bg:#3a2d16;
+  --dep:#b9a0e6; --dep-bg:#2d2440;
+  --warn:#f08f84; --warn-bg:#3b1f1c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.55 var(--body)}
+h1,h2,h3{font-family:var(--display);font-weight:600;text-wrap:balance;margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+header{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.hwrap{max-width:1080px;margin:0 auto;padding:14px 16px 0;display:flex;flex-direction:column;gap:10px}
+.title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.title h1{font-size:1.6rem}
+.title span{color:var(--muted);font-size:.88rem}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav a{padding:8px 14px;border-radius:8px 8px 0 0;text-decoration:none;color:var(--muted);font-weight:500;white-space:nowrap;border-bottom:3px solid transparent}
+nav a[aria-current="page"]{color:var(--accent);border-bottom-color:var(--accent)}
+nav a .n{display:inline-block;min-width:1.4em;padding:0 .35em;margin-left:4px;border-radius:99px;background:var(--warn-bg);color:var(--warn);font-size:.75rem;text-align:center}
+
+main{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+section[hidden]{display:none}
+.lead{color:var(--muted);max-width:68ch;margin:0 0 16px}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;font-size:.82rem}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:.82rem;font-weight:500;border:1px solid transparent;line-height:1.4}
+.t-urb{background:var(--urb-bg);color:var(--urb)}
+.t-rur{background:var(--rur-bg);color:var(--rur)}
+.t-ass{background:var(--ass-bg);color:var(--ass)}
+.t-dep{background:var(--dep-bg);color:var(--dep)}
+button.chip{cursor:pointer;text-align:left}
+button.chip:hover{border-color:currentColor}
+
+/* Triagem */
+.wiz{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;max-width:820px}
+.trail{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.84rem}
+.trail .step{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 9px;cursor:pointer}
+.trail .step:hover{border-color:var(--accent)}
+.trail .sep{color:var(--muted)}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.qcard h2{font-size:1.45rem;margin-bottom:6px}
+.hint{color:var(--muted);font-size:.9rem;margin:0 0 14px;max-width:68ch}
+.opts{display:grid;gap:8px}
+.opt{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:500}
+.opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.opt small{display:block;font-weight:400;color:var(--muted);font-size:.84rem}
+.opt::after{content:"›";font-size:1.4rem;color:var(--muted)}
+.wbar{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:7px 14px;border:1px solid var(--line);background:var(--surface);border-radius:8px;cursor:pointer;font-size:.88rem}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.9rem;margin:0 0 14px}
+.note.warn{border-color:var(--warn);background:var(--warn-bg)}
+
+/* Fichas */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;scroll-margin-top:130px}
+.card.flash{box-shadow:0 0 0 3px var(--accent)}
+.card h3{font-size:1.18rem}
+.card .base{font-size:.8rem;color:var(--muted)}
+.card .who{font-size:.92rem}
+.card h4{margin:0;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.card ul{margin:2px 0 0;padding-left:1.1rem}
+.card li{margin:2px 0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:.9rem;font-variant-numeric:tabular-nums}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.upd{color:var(--warn);font-size:.86rem}
+.upd::before{content:"Atenção · ";font-weight:600}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 16px}
+.filters input{flex:1 1 220px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+.filters .chip[aria-pressed="false"]{opacity:.45}
+.result-cards{display:grid;gap:14px}
+
+/* Mapas */
+.maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,500px),1fr));gap:16px}
+.map{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto}
+.map.wide{grid-column:1/-1}
+.map h2{font-size:1.25rem;margin-bottom:2px}
+.map .sub{color:var(--muted);font-size:.85rem;margin:0 0 10px}
+.tree,.tree ul{list-style:none;margin:0;padding:0}
+.tree ul{padding-left:1.1rem}
+.tree li{position:relative;padding:4px 0 4px 1.15rem}
+.tree ul>li::before{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid var(--line)}
+.tree ul>li:last-child::before{bottom:auto;height:1.05rem}
+.tree ul>li::after{content:"";position:absolute;left:0;top:1.05rem;width:.95rem;border-top:2px solid var(--line)}
+.tree>li{padding-left:0}
+.nd{display:inline-block;padding:3px 10px;border-radius:7px;border:1px solid var(--line);background:var(--paper);font-size:.88rem;max-width:56ch}
+.nd.q{border-color:var(--accent);color:var(--ink);font-weight:600;background:var(--accent-soft)}
+.nd.root{font-family:var(--display);font-size:1.02rem;background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.edge{display:inline-block;font-size:.84rem;font-weight:600;color:var(--accent);padding:3px 0}
+.leafs{display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle}
+.lnote{display:block;font-size:.8rem;color:var(--muted);margin-top:3px;max-width:60ch}
+
+/* Alertas */
+.alerts{display:grid;gap:12px;max-width:860px}
+.alert{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:0 10px 10px 0;padding:14px 18px}
+.alert h3{font-size:1.08rem;margin-bottom:4px}
+.alert p{margin:4px 0}
+.alert .src{font-size:.8rem;color:var(--muted)}
+table{border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums;margin:6px 0}
+th,td{border:1px solid var(--line);padding:4px 10px;text-align:left}
+th{background:var(--paper)}
+@media (max-width:420px){.title h1{font-size:1.35rem}.qcard{padding:16px}.qcard h2{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="title"><h1>Triagem Previdenciária</h1><span>Módulo 03 · Benefícios do INSS e assistenciais</span></div>
+    <nav aria-label="Seções">
+      <a href="#triagem" data-tab="triagem">Triagem</a>
+      <a href="#mapas" data-tab="mapas">Mapas mentais</a>
+      <a href="#fichas" data-tab="fichas">Fichas dos benefícios</a>
+      <a href="#alertas" data-tab="alertas">Conferir no material<span class="n" id="nAlerts"></span></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="sec-triagem">
+    <p class="lead">Responda pelo que você vê no atendimento e no CNIS. No fim aparece o benefício indicado, com requisitos e documentos.</p>
+    <div class="legend" id="legend"></div>
+    <div class="wiz">
+      <div class="trail" id="trail"></div>
+      <div id="wizBody"></div>
+      <div class="wbar"><button class="btn" id="back" type="button">Voltar uma pergunta</button><button class="btn" id="reset" type="button">Começar de novo</button></div>
+    </div>
+  </section>
+
+  <section id="sec-mapas" hidden>
+    <p class="lead">Os três primeiros mapas são o mesmo caminho da triagem, abertos de uma vez. Os demais servem de consulta rápida. Clique em um benefício para abrir a ficha.</p>
+    <div class="legend" id="legend2"></div>
+    <div class="maps" id="maps"></div>
+  </section>
+
+  <section id="sec-fichas" hidden>
+    <div class="filters">
+      <input id="q" type="search" placeholder="Buscar benefício, requisito ou documento" aria-label="Buscar nas fichas">
+      <span id="tfil"></span>
+    </div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section id="sec-alertas" hidden>
+    <p class="lead">Pontos em que a apresentação está desatualizada, incompleta ou mistura regras. Já estão corrigidos nas fichas e na triagem.</p>
+    <div class="alerts" id="alerts"></div>
+  </section>
+</main>
+
+<script>
+const TIPOS={
+  urb:{l:"Previdenciário",c:"t-urb"},
+  rur:{l:"Rural / segurado especial",c:"t-rur"},
+  ass:{l:"Assistencial (LOAS)",c:"t-ass"},
+  dep:{l:"Para dependentes",c:"t-dep"}
+};
+
+const DOCS_BASE=["Documento pessoal (RG/CPF)","Comprovante de endereço","CNIS e CTPS","Senha do Meu INSS (gov.br)","Procuração e contrato (kit previdenciário)"];
+const DOCS_RURAL=["Contrato de arrendamento, parceria ou comodato rural","Título eleitoral com profissão rural","Notas fiscais de venda da produção / bloco de produtor","Declaração de sindicato (homologada)","Cadastro INCRA / CCIR","Certidão de casamento ou de nascimento dos filhos com profissão lavrador(a)","Histórico escolar de escola rural","Comprovante de endereço rural","Ficha médica indicando zona rural","Carteira de pescador artesanal / CTPS com vínculo rural","Testemunhas, se necessário"];
+const DOCS_MED=["Documento pessoal e comprovante de endereço","Relatórios, exames, laudos, atestados e receituários","Procuração e contrato (kit previdenciário)","Senha do Meu INSS (gov.br)"];
+
+const B={
+ idade_urb:{n:"Aposentadoria por idade urbana",t:"urb",base:"CF art. 201, §7º, I · EC 103/19, arts. 18 e 19 · Lei 8.213/91, art. 48",
+  who:"Trabalhador urbano que contribuiu e atingiu a idade.",
+  kv:[["Homem","65 anos"],["Mulher","62 anos"],["Tempo (filiado até 13/11/2019)","15 anos (H e M)"],["Tempo (filiado depois)","20 anos H · 15 anos M"],["Carência","180 contribuições"]],
+  docs:DOCS_BASE,
+  obs:["Para a mulher filiada antes da reforma a idade subiu 6 meses por ano, de 60 (2019) até 62 (2023). Hoje já são 62."],
+  upd:["Pontos, idade progressiva e pedágios não são transição desta aposentadoria. Ver a ficha das regras de transição."]},
+ transicao:{n:"Regras de transição (antiga aposentadoria por tempo de contribuição)",t:"urb",base:"EC 103/19, arts. 15, 16, 17 e 20",
+  who:"Só para quem já era filiado ao INSS em 13/11/2019 e tem muito tempo de contribuição.",
+  kv:[["Pontos 2026","M 93 · H 103 + 30/35 anos"],["Idade progressiva 2026","M 59,5 · H 64,5 + 30/35 anos"],["Pedágio 50%","faltavam até 2 anos em 13/11/2019 · sem idade · fator previdenciário"],["Pedágio 100%","M 57 · H 60 + 30/35 anos + 100% do que faltava"]],
+  docs:DOCS_BASE,
+  obs:["Pontos sobem 1 por ano (mulher até 100, homem até 105). Idade progressiva sobe 6 meses por ano (mulher até 62, homem até 65).","Calcule todas e escolha a mais vantajosa (planejamento previdenciário)."],
+  upd:["O material traz 92/102 pontos, que eram os de 2025."]},
+ rural:{n:"Aposentadoria por idade rural",t:"rur",base:"Lei 8.213/91, arts. 11, VII; 39, I; 48, §§1º e 2º",
+  who:"Lavrador, meeiro, parceiro, pescador artesanal, boia-fria ou segurado especial em economia familiar.",
+  kv:[["Homem","60 anos"],["Mulher","55 anos"],["Carência","15 anos de atividade rural (180 meses), sem precisar contribuir"],["Área","até 4 módulos fiscais"],["Atividade urbana","até 120 dias no ano sem perder a condição"]],
+  docs:DOCS_RURAL,
+  obs:["O módulo fiscal varia por município (de 5 a 110 ha no país; em Goiás a maior parte fica entre 20 e 65 ha). Confira o do município do cliente no INCRA.","Passou de 120 dias urbanos: precisa de novo documento rural para reiniciar a contagem.","Prática do curso: cada prova material cobre cerca de 7,5 anos perante o INSS."]},
+ hibrida:{n:"Aposentadoria por idade híbrida",t:"rur",base:"Lei 8.213/91, art. 48, §3º · STJ Tema 1007",
+  who:"Quem tem tempo rural e tempo urbano e nenhum dos dois sozinho fecha 15 anos.",
+  kv:[["Homem","65 anos"],["Mulher","62 anos"],["Carência","15 anos somando rural + urbano"],["Mínimo urbano","basta 1 contribuição ou um vínculo em CTPS"]],
+  docs:[...DOCS_BASE,"Provas rurais (ver ficha da aposentadoria rural)"],
+  obs:["O tempo rural pode ser antigo (remoto), mesmo sem contribuição (STJ, Tema 1007)."]},
+ pcd_idade:{n:"Aposentadoria por idade da pessoa com deficiência",t:"urb",base:"LC 142/2013, art. 3º, IV",
+  who:"Quem trabalhou e contribuiu tendo deficiência física, mental, intelectual ou sensorial, em qualquer grau.",
+  kv:[["Homem","60 anos"],["Mulher","55 anos"],["Carência","15 anos de contribuição na condição de PcD"]],
+  docs:[...DOCS_BASE,"Documentos médicos que mostrem desde quando existe a deficiência"],
+  obs:["Avaliação médica e social confirma se há deficiência, desde quando e em que grau."]},
+ pcd_tempo:{n:"Aposentadoria por tempo de contribuição da pessoa com deficiência",t:"urb",base:"LC 142/2013, art. 3º, I a III",
+  who:"PcD com longo tempo de contribuição. Não tem idade mínima.",
+  kv:[["Grave","H 25 · M 20 anos"],["Moderada","H 29 · M 24 anos"],["Leve","H 33 · M 28 anos"]],
+  docs:[...DOCS_BASE,"Documentos médicos que mostrem desde quando existe a deficiência"],
+  obs:["Mesma avaliação médica e social da aposentadoria por idade PcD.","Se o grau mudou ao longo do tempo, os períodos são convertidos."]},
+ especial:{n:"Aposentadoria especial",t:"urb",base:"Lei 8.213/91, art. 57 · EC 103/19, arts. 19, §1º, I e 21",
+  who:"Quem trabalhou exposto a agentes nocivos (ruído, químicos, biológicos) de forma habitual e permanente.",
+  kv:[["Risco alto","15 anos"],["Risco médio","20 anos"],["Risco baixo","25 anos"],["Idade mínima (filiado após a reforma)","55 · 58 · 60 anos"],["Transição (filiado antes)","66 · 76 · 86 pontos"]],
+  docs:[...DOCS_BASE,"PPP (Perfil Profissiográfico Previdenciário)","LTCAT, se houver"],
+  obs:["O PPP comprova a atividade, os agentes nocivos e a exposição habitual e permanente."],
+  upd:["O material não menciona a idade mínima e os pontos que a reforma passou a exigir."]},
+ professor:{n:"Aposentadoria do professor",t:"urb",base:"CF art. 201, §8º · EC 103/19, art. 19, §1º, II",
+  who:"Professor da educação infantil, ensino fundamental e médio, em efetivo exercício do magistério.",
+  kv:[["Homem","60 anos + 25 anos de magistério"],["Mulher","57 anos + 25 anos de magistério"]],
+  docs:[...DOCS_BASE,"Declaração da escola / histórico funcional comprovando magistério"],
+  obs:["Quem já era filiado em 13/11/2019 também tem regras de transição próprias de professor."]},
+ aux_doenca:{n:"Auxílio-doença (incapacidade temporária)",t:"urb",base:"Lei 8.213/91, arts. 25, I; 26, II; 59",
+  who:"Segurado temporariamente incapaz para a sua atividade habitual.",
+  kv:[["Qualidade de segurado","obrigatória"],["Carência","12 contribuições"],["Dispensa de carência","acidente de qualquer natureza, doença profissional/do trabalho, doenças graves da lista do art. 151 (inclui aids)"],["Prova","atestado/laudo de incapacidade temporária"],["Valor","91% da média, limitado à média dos 12 últimos salários de contribuição"],["Duração","fixada na perícia; sem data, 120 dias; prorrogação nos 15 dias finais"],["Empregado","empresa paga os 15 primeiros dias"]],
+  docs:DOCS_MED,
+  obs:["A incapacidade é medida pela profissão do cliente.","Segurado especial também tem direito, provando atividade rural no período de carência.","Confira a data de início da incapacidade (DII): se caiu dentro do período de graça, o direito existe mesmo que hoje não haja mais qualidade.","Incapacidade anterior à filiação ou à volta ao INSS não dá direito, salvo agravamento (art. 59, §1º). O que importa é a DII, não a data do diagnóstico. Peça ao médico que diga desde quando há incapacidade.","HIV: o art. 151 fala em aids. Para HIV sem sintomas, a dispensa de carência é discutível. A TNU (Súmula 72) admite atrasados mesmo se trabalhou incapaz por necessidade; a Súmula 78 manda considerar o estigma.","Não pode trabalhar na atividade em que está incapaz. MEI: não basta parar de emitir nota; a DASN-SIMEI do período deve vir zerada."]},
+ invalidez:{n:"Aposentadoria por invalidez (incapacidade permanente)",t:"urb",base:"Lei 8.213/91, arts. 42 a 45 · EC 103/19, art. 26",
+  who:"Segurado total e permanentemente incapaz, sem possibilidade de reabilitação. Geralmente vem da conversão do auxílio-doença.",
+  kv:[["Requisitos","os mesmos do auxílio-doença + irreversibilidade"],["Valor","60% + 2% por ano acima de 20 (H) ou 15 (M) anos"],["Acidente de trabalho","100%"]],
+  docs:DOCS_MED,
+  obs:["A perícia avalia se cabe readaptação.","Se precisar de assistência permanente de outra pessoa, há acréscimo de 25% (art. 45).","Muitas vezes paga menos que o auxílio-doença (60% contra 91%). Explique ao cliente antes da conversão.","Voltar a trabalhar cancela o benefício desde o retorno (art. 46).","HIV/aids: dispensa de revisão pericial (art. 43, §5º). Proventos isentos de IR (Lei 7.713/88, art. 6º, XIV)."]},
+ aux_acidente:{n:"Auxílio-acidente",t:"urb",base:"Lei 8.213/91, arts. 18, §1º; 26, I; 86",
+  who:"Segurado que ficou com sequela de acidente de qualquer natureza que reduz permanentemente a capacidade, mesmo continuando a trabalhar.",
+  kv:[["Incapacidade total","não exige"],["Carência","não exige"],["Valor","50% do salário de benefício"],["Quem tem direito","empregado, doméstico, avulso e segurado especial"]],
+  docs:DOCS_MED,
+  obs:["É indenizatório: acumula com salário e termina na aposentadoria."],
+  upd:["Contribuinte individual (inclusive MEI) e facultativo não têm direito ao auxílio-acidente."]},
+ bpc_def:{n:"BPC/LOAS da pessoa com deficiência",t:"ass",base:"Lei 8.742/93 (LOAS), art. 20",
+  who:"Pessoa com deficiência de baixa renda. Não é aposentadoria e não exige contribuição.",
+  kv:[["Deficiência","física, mental, intelectual ou sensorial"],["Duração mínima","impedimento de 2 anos ou mais"],["Renda","até ¼ do salário mínimo por pessoa da família"],["Cadastro","CadÚnico atualizado"]],
+  docs:["Exames, laudos, relatórios, atestados e receitas","Documentos do grupo familiar","Comprovante de renda ou de ausência de renda","Comprovante de residência","Inscrição atualizada no CadÚnico"],
+  obs:["Não gera 13º nem deixa pensão por morte.","No INSS, perícia e avaliação social são na agência. Na ação judicial, a assistente social vai à casa do cliente e o advogado escolhe a especialidade da perícia."]},
+ bpc_idoso:{n:"BPC/LOAS do idoso",t:"ass",base:"Lei 8.742/93 (LOAS), art. 20",
+  who:"Idoso de baixa renda. Não é aposentadoria e não exige contribuição.",
+  kv:[["Idade","65 anos ou mais"],["Renda","até ¼ do salário mínimo por pessoa da família"],["Cadastro","CadÚnico atualizado"]],
+  docs:["Documentos do grupo familiar","Comprovante de renda ou de ausência de renda","Comprovante de residência","Inscrição atualizada no CadÚnico"],
+  obs:["BPC ou benefício de até 1 salário mínimo de outro idoso ou PcD da família não entra no cálculo da renda (art. 20, §14).","Não gera 13º nem deixa pensão por morte."]},
+ sal_mat:{n:"Salário-maternidade (urbano e rural)",t:"urb",base:"Lei 8.213/91, arts. 71 e seguintes · STF, ADIs 2110 e 2111",
+  who:"Quem teve filho, adotou ou obteve guarda judicial para adoção. Pago por 120 dias.",
+  kv:[["Qualidade de segurada","obrigatória na data do parto"],["Carência","não há: 1 contribuição válida basta"],["Facultativa","a contribuição tem de ser paga antes do parto (CRPS, Enunciado 19)"],["Contribuinte individual sem inscrição","provar a atividade na época + ao menos 1 contribuição"],["Segurada especial","comprova a atividade rural"],["Prazo para pedir","até 5 anos do parto (prescrição)"]],
+  docs:["Certidão de nascimento, termo de guarda ou de adoção","Documento pessoal e comprovante de endereço","CNIS","Provas rurais, se segurada especial","Contribuinte individual: prova da atividade (notas, recibos, extratos)"],
+  obs:["Contribuinte individual, facultativa e segurada especial deixaram de precisar de 10 contribuições.","Os 5 anos são para pedir um direito que já existia no parto. Não servem para começar a contribuir depois.","Contribuinte individual que prestava serviço a empresa: o recolhimento é presumido (Lei 10.666/2003, art. 4º). Se era empregada informal, vale reconhecer o vínculo.","Servidora com regime próprio não pode ser facultativa (CF, art. 201, §5º). Só recebe também do INSS se tiver outra atividade real (Decreto 3.048/99, art. 98)."]},
+ pensao_urb:{n:"Pensão por morte urbana",t:"dep",base:"Lei 8.213/91, arts. 16, 26, I; 74 a 77 · Portaria ME 424/2020",
+  who:"Dependentes do segurado do INSS que faleceu.",
+  kv:[["Falecido","tinha qualidade de segurado na data do óbito (ou já tinha direito a aposentadoria)"],["Carência","não exige"],["Dependência","presumida para cônjuge e filhos; comprovada para pais e irmãos"]],
+  docs:["Certidão de óbito","Documentos pessoais dos dependentes","Plano funerário, seguro de vida, conta conjunta","Comprovante de endereço do falecido e do dependente, no mesmo local e época","Prova de união estável, se houver","Prova de dependência econômica (pais e irmãos)","CNIS e CTPS do falecido (se não houver CNIS, só o INSS fornece)"],
+  obs:["Duração para cônjuge na tabela da aba Mapas e em Conferir no material."],
+  upd:["Pensão por morte não exige carência. As 18 contribuições só definem a duração para o cônjuge."]},
+ pensao_rur:{n:"Pensão por morte rural",t:"dep",base:"Lei 8.213/91, arts. 39, I; 74 a 77",
+  who:"Dependentes do trabalhador rural (segurado especial) que faleceu.",
+  kv:[["Falecido","segurado especial em atividade rural na data do óbito"],["Contribuição","não precisa; basta provar a atividade rural"],["Filhos","até 21 anos; vitalícia se inválido ou com deficiência"]],
+  docs:["Certidão de óbito","Documentos pessoais dos dependentes","Provas rurais do falecido (mesmas da aposentadoria rural)","Prova de união estável, se houver"],
+  obs:["Mesmas classes de dependentes e mesma tabela de duração da pensão urbana."]},
+ reclusao:{n:"Auxílio-reclusão",t:"dep",base:"Lei 8.213/91, arts. 25, IV; 80 · Lei 13.846/2019",
+  who:"Dependentes do segurado de baixa renda preso em regime fechado.",
+  kv:[["Preso","qualidade de segurado na data da prisão"],["Carência","24 contribuições"],["Regime","fechado"],["Baixa renda","último salário de contribuição dentro do limite anual fixado em portaria"]],
+  docs:["Certidão de recolhimento prisional (renovar periodicamente)","Documentos pessoais dos dependentes","CNIS e CTPS do preso","Prova de união estável, se houver"],
+  obs:["Mesmas classes de dependentes da pensão por morte."],
+  upd:["Desde a Lei 13.846/2019 o semiaberto não dá direito, e o critério de baixa renda (que o material não cita) é obrigatório."]}
+};
+
+/* Árvore da triagem */
+const T={
+ start:{q:"O cliente já contribuiu para o INSS?",hint:"Olhe o CNIS: vínculo CLT, recolhimento como autônomo, MEI ou facultativo. Se o caso é de um familiar que morreu ou foi preso, use a terceira opção.",
+  o:[{l:"Nunca contribuiu",go:"n_rural"},{l:"Já contribuiu",go:"c_qual"},{l:"O benefício é para a família de um segurado",s:"Morte ou prisão",go:"d_ev"}]},
+ n_rural:{q:"Trabalha ou trabalhou na roça em economia familiar?",hint:"Lavrador, meeiro, parceiro, pescador artesanal, boia-fria. Área de até 4 módulos fiscais.",
+  o:[{l:"Sim, é trabalhador rural",go:"n_rur_sit"},{l:"Não, sempre foi urbano",go:"n_urb_sit"}]},
+ n_rur_sit:{q:"O que o cliente rural precisa?",
+  o:[{l:"Chegou à idade",s:"Mulher 55 · Homem 60",r:["rural"]},
+     {l:"Também tem algum período urbano com carteira ou recolhimento",r:["hibrida"],n:"Na híbrida a idade é a urbana: mulher 62, homem 65."},
+     {l:"Teve filho, adotou ou obteve guarda",r:["sal_mat"]},
+     {l:"Ficou doente ou sofreu acidente",r:["aux_doenca","invalidez","aux_acidente"],n:"O segurado especial prova a atividade rural no lugar das contribuições."},
+     {l:"Nada disso, mas é idoso ou PcD de baixa renda",r:["bpc_idoso","bpc_def"]}]},
+ n_urb_sit:{q:"Qual a situação do cliente urbano que nunca contribuiu?",
+  o:[{l:"Tem 65 anos ou mais e família de baixa renda",r:["bpc_idoso"]},
+     {l:"Tem deficiência de longo prazo e família de baixa renda",s:"Impedimento de 2 anos ou mais",r:["bpc_def"]},
+     {l:"Está grávida",r:["sal_mat"],n:"Oriente 1 recolhimento em dia antes do parto (facultativa ou contribuinte individual). Uma contribuição válida basta.",warn:true},
+     {l:"Já teve o filho e nunca contribuiu",go:"n_pos_parto"},
+     {l:"Nenhuma dessas",r:[],n:"Sem benefício cabível hoje. Oriente o início das contribuições e um planejamento previdenciário.",warn:true}]},
+ n_pos_parto:{q:"Na época do parto, ela exercia alguma atividade remunerada?",hint:"Pagar como facultativa depois do parto não gera direito (CRPS, Enunciado 19).",
+  o:[{l:"Não, era dona de casa ou estudante",r:[],n:"Sem direito. A contribuição facultativa paga depois do parto não vale.",warn:true},
+     {l:"Sim, trabalhava por conta própria e consegue provar",r:["sal_mat"],n:"Tese controvertida: provar a atividade com documentos, indenizar ao menos 1 competência (Lei 8.212/91, art. 45-A) e pedir. Conte com a via judicial.",warn:true},
+     {l:"Sim, prestava serviço a empresa ou era empregada informal",r:["sal_mat"],n:"Recolhimento presumido: basta provar a prestação do serviço ou o vínculo, sem indenizar."},
+     {l:"Sim, trabalhava na roça",r:["sal_mat"],n:"Segurada especial: prova a atividade rural, sem contribuição."}]},
+ c_qual:{q:"Ainda tem qualidade de segurado?",hint:"Mantém a qualidade até 12 meses após o último recolhimento ou vínculo. Mais 12 se ficou desempregado involuntariamente, e mais 12 se tem mais de 120 contribuições sem perda. Facultativo: só 6 meses.",
+  o:[{l:"Sim, está contribuindo ou no período de graça",go:"c_sit"},{l:"Não, perdeu a qualidade",go:"c_perdeu"}]},
+ c_perdeu:{q:"Perdeu a qualidade. O que o cliente busca?",
+  o:[{l:"Aposentadoria",s:"Idade, especial, tempo, PcD",go:"c_apos",n:"A perda da qualidade não impede aposentadoria (Lei 10.666/2003, art. 3º)."},
+     {l:"Benefício por incapacidade",r:["aux_doenca","invalidez"],n:"Primeiro confira a data de início da incapacidade: se foi dentro do período de graça, o direito existe. Se não, precisa voltar a contribuir e cumprir metade da carência (6 contribuições, art. 27-A).",warn:true},
+     {l:"Teve filho ou vai ter",r:["sal_mat"],n:"Sem qualidade na data do parto, precisa de nova contribuição válida antes do parto.",warn:true},
+     {l:"É idoso ou PcD de baixa renda",r:["bpc_idoso","bpc_def"]}]},
+ c_sit:{q:"Qual a situação do cliente hoje?",
+  o:[{l:"Quer se aposentar",go:"c_apos"},{l:"Está doente ou sofreu acidente",go:"c_incap"},{l:"Teve filho, adotou ou obteve guarda",r:["sal_mat"]}]},
+ c_apos:{q:"Qual o perfil da aposentadoria?",
+  o:[{l:"Tem deficiência",r:["pcd_idade","pcd_tempo"],n:"Compare as duas: por idade (55/60 + 15 anos como PcD) ou por tempo, sem idade mínima."},
+     {l:"Trabalhou exposto a ruído, químicos ou agentes biológicos",r:["especial"]},
+     {l:"É professor do ensino infantil, fundamental ou médio",r:["professor"]},
+     {l:"Tem período rural e período urbano",r:["hibrida","rural"],n:"Se o tempo rural é recente e soma 15 anos, a rural (55/60) pode ser melhor que a híbrida (62/65)."},
+     {l:"Só trabalho urbano comum",go:"c_urb"}]},
+ c_urb:{q:"Quando começou a contribuir?",
+  o:[{l:"Antes de 13/11/2019",r:["idade_urb","transicao"],n:"Simule as transições: com muito tempo de contribuição, pode se aposentar antes da idade."},
+     {l:"Depois de 13/11/2019",r:["idade_urb"],n:"Regra definitiva: homem 65 + 20 anos, mulher 62 + 15 anos."}]},
+ c_incap:{q:"Como está a capacidade de trabalho?",
+  o:[{l:"Incapaz por um tempo, com chance de melhora",r:["aux_doenca"]},
+     {l:"Incapaz de forma total e definitiva",r:["invalidez","aux_doenca"],n:"O caminho comum é o auxílio-doença convertido em aposentadoria por invalidez."},
+     {l:"Trabalha, mas ficou com sequela de acidente que reduz a capacidade",r:["aux_acidente"],n:"Não cabe para contribuinte individual, MEI ou facultativo.",warn:true}]},
+ d_ev:{q:"O que aconteceu com o segurado?",
+  o:[{l:"Faleceu",go:"d_morte"},{l:"Foi preso em regime fechado",r:["reclusao"]}]},
+ d_morte:{q:"O falecido era trabalhador urbano ou rural?",
+  o:[{l:"Urbano, contribuía para o INSS",r:["pensao_urb"]},{l:"Rural, segurado especial",r:["pensao_rur"]}]}
+};
+
+const ALERTS=[
+ {h:"Pensão por morte: duração para o cônjuge está desatualizada",p:"O material usa a tabela de 2015. Para óbitos a partir de 01/01/2021 vale a tabela da Portaria ME 424/2020:",tbl:[["Menos de 22 anos","3 anos"],["22 a 27 anos","6 anos"],["28 a 30 anos","10 anos"],["31 a 41 anos","15 anos"],["42 a 44 anos","20 anos"],["45 anos ou mais","Vitalícia"]],p2:"Os 4 meses se aplicam quando o falecido tinha menos de 18 contribuições ou a união tinha menos de 2 anos, salvo morte por acidente ou doença do trabalho. O material cita só os 2 anos de união.",src:"Lei 8.213/91, art. 77, §2º, V · Portaria ME 424/2020"},
+ {h:"Pensão por morte não exige carência",p:"O material diz que o falecido precisava ter qualidade de segurado e carência. A carência não é exigida; basta a qualidade de segurado na data do óbito.",src:"Lei 8.213/91, art. 26, I"},
+ {h:"Auxílio-reclusão: só regime fechado e com baixa renda",p:"Desde 2019 o semiaberto não dá direito. Também é obrigatório que o preso seja de baixa renda, pelo limite fixado todo ano em portaria. O material não cita esse requisito.",src:"Lei 8.213/91, art. 80, com redação da Lei 13.846/2019"},
+ {h:"Pontos e pedágios não são transição da aposentadoria por idade",p:"O slide 4 coloca pontos, idade progressiva e pedágios sob a aposentadoria por idade urbana. Essas são transições da antiga aposentadoria por tempo de contribuição. A única transição da idade urbana é a idade da mulher (60 até 62). Em 2026 os pontos são 93 (M) e 103 (H), não 92 e 102.",src:"EC 103/19, arts. 15 a 18 e 20"},
+ {h:"Aposentadoria especial ganhou idade mínima",p:"Para quem se filiou após a reforma: 55, 58 ou 60 anos, conforme o risco. Para quem já era filiado: pontos 66, 76 ou 86. O material só traz o tempo de 15, 20 ou 25 anos.",src:"EC 103/19, arts. 19, §1º, I e 21"},
+ {h:"Auxílio-acidente não cabe para MEI, autônomo ou facultativo",p:"Só empregado, doméstico, avulso e segurado especial têm direito. O auxílio-acidente também dispensa carência.",src:"Lei 8.213/91, arts. 18, §1º e 26, I"},
+ {h:"Período de graça tem outras prorrogações",p:"Além dos 12 meses por desemprego involuntário, há mais 12 meses para quem tem mais de 120 contribuições sem perda da qualidade. O facultativo tem só 6 meses.",src:"Lei 8.213/91, art. 15"},
+ {h:"Perda da qualidade não impede aposentadoria",p:"Para aposentadoria por idade, por tempo e especial, a perda da qualidade de segurado não é considerada. Para os demais benefícios, ao voltar a contribuir é preciso cumprir metade da carência.",src:"Lei 10.666/2003, art. 3º · Lei 8.213/91, art. 27-A"},
+ {h:"PPPs de exemplo (slides 19 a 21): o que eles ensinam",p:"Os três PPPs são do mesmo trabalhador e trazem datas de nascimento diferentes (1963 e 1965), o que geraria exigência no INSS. O da logística tem todos os fatores de risco como \"NA\", então não comprova exposição. O do posto registra produtos de limpeza e risco de incêndio e explosão com EPI eficaz \"S\", o que em regra não enquadra no INSS. O da metalúrgica (lixador/polidor de metais) é o candidato real à especial: confira ruído e poeira metálica no campo 15.",src:"Lei 8.213/91, art. 58 · STF, Tema 555"},
+ {h:"CNIS de exemplo (slides 26 e 27): indicador PSC-MEN-SM-EC103",p:"As competências marcadas com esse indicador (07/2021, 01/2023, 05/2024) ficaram abaixo do salário mínimo e não contam como tempo nem carência até serem complementadas ou agrupadas. O vínculo de 2005, em outro NIT e sem data de fim, precisa ser vinculado e comprovado.",src:"EC 103/19, art. 29 · CF, art. 195, §14"},
+ {h:"BPC: o limite é até ¼, não só menor que ¼",p:"A lei fala em renda igual ou inferior a ¼ do salário mínimo por pessoa. Benefício de até 1 salário mínimo de outro idoso ou PcD da família não entra na conta.",src:"Lei 8.742/93, art. 20, §§3º e 14"}
+];
+
+/* Mapas de consulta */
+const M_INCAP={t:"Problema de saúde ou acidente",k:"root",c:[
+ {e:"Incapaz por um tempo",c:[{b:["aux_doenca"],n:"12 contribuições, salvo acidente ou doença grave"}]},
+ {e:"Incapaz total e definitivamente",c:[{b:["invalidez"],n:"Sem chance de reabilitação · 60% + 2%/ano"}]},
+ {e:"Trabalha, mas ficou com sequela de acidente",c:[{b:["aux_acidente"],n:"Sem carência · 50% · não para MEI, autônomo ou facultativo"}]},
+ {e:"Perdeu a qualidade?",c:[{t:"Ver a DII: começou no período de graça?",c:[{e:"Sim",c:[{t:"Tem direito"}]},{e:"Não",c:[{t:"Voltar a contribuir + 6 contribuições"}]}]}]}
+]};
+const M_DEP={t:"Quem recebe pensão ou auxílio-reclusão",k:"root",c:[
+ {e:"Classe 1 · dependência presumida",c:[{t:"Cônjuge ou companheiro(a)"},{t:"Filhos menores de 21 anos"},{t:"Filhos inválidos ou com deficiência, qualquer idade"}]},
+ {e:"Classe 2 · só se não houver classe 1",c:[{t:"Pais, provando dependência econômica"}]},
+ {e:"Classe 3 · só se não houver classes 1 e 2",c:[{t:"Irmãos menores de 21, inválidos ou com deficiência, provando dependência"}]},
+ {e:"Duração para cônjuge",c:[
+   {t:"Menos de 18 contribuições ou menos de 2 anos de união",c:[{t:"4 meses (salvo acidente ou doença do trabalho)"}]},
+   {t:"Idade do cônjuge no óbito",c:[{t:"Menos de 22: 3 anos · 22 a 27: 6 anos · 28 a 30: 10 anos"},{t:"31 a 41: 15 anos · 42 a 44: 20 anos · 45 ou mais: vitalícia"}]}]}
+]};
+const M_TIPO={t:"Que tipo de segurado é o cliente?",k:"root",c:[
+ {e:"Empregado CLT, doméstico ou avulso",c:[{t:"Contribuição presumida: conta mesmo que o empregador ou o sindicato/OGMO não tenha recolhido"},{t:"Tem direito a auxílio-acidente"}]},
+ {e:"Contribuinte individual (autônomo)",c:[{t:"Só conta o que foi efetivamente pago"},{t:"Atrasados pagos depois de perder a qualidade não contam para carência (art. 27, II)"},{t:"Sem auxílio-acidente"}]},
+ {e:"MEI (5%)",c:[{t:"Serve para aposentadoria por idade, incapacidade, maternidade e pensão, no valor de 1 salário mínimo"},{t:"Auxílio-doença: se os 12 últimos meses forem só DAS, sai em 1 salário mínimo mesmo com CLT antes (art. 29, §10)"},{t:"Para aposentadorias por tempo, precisa complementar 15% (Lei 8.212/91, art. 21, §3º)"},{t:"Sem auxílio-acidente"},{t:"DAS em dia mantém a qualidade: enquanto paga, não está em período de graça"}]},
+ {e:"Servidor efetivo com regime próprio",c:[{t:"Não pode ser facultativo do INSS (CF, art. 201, §5º)"},{t:"Entra no INSS só por outra atividade real (CLT, MEI, autônomo)"},{t:"Município sem regime próprio: o servidor já é segurado obrigatório do INSS"}]},
+ {e:"Facultativo (dona de casa, estudante)",c:[{t:"20%, 11% ou 5% baixa renda"},{t:"5% exige CadÚnico validado e família de baixa renda"},{t:"Período de graça de 6 meses · sem auxílio-acidente"}]},
+ {e:"Segurado especial (rural)",c:[{t:"A prova da atividade rural substitui a contribuição"},{t:"Benefícios de 1 salário mínimo · tem auxílio-acidente"}]}
+]};
+const M_QUAL={t:"Qualidade de segurado e carência",k:"root",c:[
+ {e:"Qualidade de segurado",c:[{t:"Começa na 1ª contribuição ou no início da atividade"},{t:"Período de graça",c:[{t:"12 meses (regra)"},{t:"+12 desemprego involuntário"},{t:"+12 com mais de 120 contribuições sem perda"},{t:"Facultativo: 6 meses"}]}]},
+ {e:"Carência (art. 25)",c:[
+   {t:"12 contribuições",c:[{b:["aux_doenca","invalidez"]}]},
+   {t:"180 contribuições",c:[{b:["idade_urb","especial","professor"]}]},
+   {t:"24 contribuições",c:[{b:["reclusao"]}]},
+   {t:"Sem carência",c:[{b:["sal_mat","pensao_urb","aux_acidente"]}]}]},
+ {e:"Perdeu a qualidade",c:[{t:"Aposentadorias: não importa"},{t:"Demais benefícios: metade da carência ao voltar a contribuir"}]}
+]};
+
+const M_CNIS={t:"Indicadores e alertas do CNIS",k:"root",c:[
+ {e:"PEXT",c:[{t:"Vínculo com informação extemporânea: comprovar com CTPS, ficha de registro ou declaração do empregador"}]},
+ {e:"PADM-EMPR",c:[{t:"Admissão anterior ao início da atividade do empregador: o INSS pode desconsiderar; comprovar"}]},
+ {e:"IREM-INDPEND",c:[{t:"Remuneração com pendência: abrir as competências e regularizar"}]},
+ {e:"IVIN-JORN-DIFERENCIADA",c:[{t:"Jornada parcial: risco de meses abaixo do salário mínimo"}]},
+ {e:"PSC-MEN-SM-EC103",c:[{t:"Competência abaixo do salário mínimo depois de 11/2019: não conta como tempo nem carência"},{t:"Saída: complementar, agrupar competências ou usar excedente de outro mês (EC 103/19, art. 29)"}]},
+ {e:"Vínculo sem data fim",c:[{t:"Conta até a última remuneração; sem remuneração, não conta. Buscar CTPS ou ficha financeira"}]},
+ {e:"Benefício por incapacidade no meio",c:[{t:"Intercalado com contribuições, conta como tempo e carência (STF, Tema 1125)"}]},
+ {e:"Dois NITs",c:[{t:"Conferir se estão vinculados; período em NIT solto não entra no cálculo"}]},
+ {e:"Extrato certo",c:[{t:"Pedir o CNIS com relações e remunerações. O de relações só não permite calcular o valor"}]}
+]};
+const M_PPP={t:"Checklist do PPP (aposentadoria especial)",k:"root",c:[
+ {e:"Campo 13 · período e função",c:[{t:"Cobre todo o período pedido? Cada mudança de função tem sua linha?"}]},
+ {e:"Campo 15 · fatores de risco",c:[
+   {t:"\"NA\" no fator ou na intensidade",c:[{t:"Sem exposição registrada: não enquadra"}]},
+   {t:"Ruído (dB)",c:[{t:"Acima de 80 até 05/03/1997 · 90 até 18/11/2003 · 85 depois"}]},
+   {t:"EPI eficaz \"S\"",c:[{t:"Afasta a especialidade, exceto ruído (STF, Tema 555)"}]},
+   {t:"Produtos de limpeza domésticos, \"incêndio e explosão\"",c:[{t:"Em regra o INSS não reconhece; periculosidade é tese judicial"}]}]},
+ {e:"Campo 16 · responsável técnico",c:[{t:"Engenheiro ou médico do trabalho para o período. Sem ele, o PPP é fraco: pedir LTCAT"}]},
+ {e:"Dados cadastrais",c:[{t:"Data de nascimento, NIT e CTPS iguais em todos os PPPs. Divergência gera exigência"}]},
+ {e:"Formato",c:[{t:"Modelo oficial do INSS, assinado e com carimbo da empresa; a partir de 2023 pode ser o PPP eletrônico do eSocial"}]}
+]};
+const M_APOS_TRAB={t:"Aposentado pode ter carteira assinada?",k:"root",c:[
+ {e:"Idade, tempo de contribuição ou PcD",c:[{t:"Sim. Recebe os dois e contribui normalmente"},{t:"Só tem direito a salário-família, reabilitação e salário-maternidade (art. 18, §2º)"},{t:"Sem auxílio-doença; não há desaposentação (STF, Tema 503)"},{t:"FGTS é depositado e pode ser sacado"}]},
+ {e:"Invalidez",c:[{t:"Não. Cancela desde o retorno (art. 46)"}]},
+ {e:"Especial",c:[{t:"Só fora de agente nocivo (art. 57, §8º; STF, Tema 709)"}]},
+ {e:"BPC (não é aposentadoria)",c:[{t:"Suspende durante o emprego e volta depois (LOAS, art. 21-A)"}]}
+]};
+
+/* ---------- utilidades ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chip=id=>`<button type="button" class="chip ${TIPOS[B[id].t].c}" data-goto="${id}">${esc(B[id].n)}</button>`;
+function legend(el){el.innerHTML=Object.values(TIPOS).map(t=>`<span class="chip ${t.c}">${t.l}</span>`).join("");}
+
+function cardHTML(id,extra=""){
+  const b=B[id];
+  return `<article class="card" id="f-${id}" data-t="${b.t}">
+    <div><span class="chip ${TIPOS[b.t].c}">${TIPOS[b.t].l}</span></div>
+    <h3>${esc(b.n)}</h3>
+    <div class="base">${esc(b.base)}</div>
+    <div class="who">${esc(b.who)}</div>
+    <div><h4>Requisitos</h4><dl class="kv">${b.kv.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
+    <div><h4>Documentos</h4><ul>${b.docs.map(d=>`<li>${esc(d)}</li>`).join("")}</ul></div>
+    ${b.obs?`<div><h4>Na prática</h4><ul>${b.obs.map(d=>`<li>${esc(d)}</li>`).join("")}</ul></div>`:""}
+    ${b.upd?b.upd.map(u=>`<div class="upd">${esc(u)}</div>`).join(""):""}
+    ${extra}
+  </article>`;
+}
+
+/* ---------- triagem ---------- */
+let path=[]; // [{node, optIndex}]
+function renderWiz(){
+  const trail=$("#trail");
+  trail.innerHTML=path.length?path.map((p,i)=>`<button type="button" class="step" data-i="${i}" title="Voltar a esta pergunta">${esc(T[p.node].o[p.opt].l)}</button>`).join('<span class="sep">›</span>'):'<span class="sep">Início</span>';
+  const last=path[path.length-1];
+  const body=$("#wizBody");
+  if(last && T[last.node].o[last.opt].r){
+    const o=T[last.node].o[last.opt];
+    const note=o.n?`<p class="note${o.warn?" warn":""}">${esc(o.n)}</p>`:"";
+    const pathNotes=path.slice(0,-1).map(p=>T[p.node].o[p.opt].n).filter(Boolean).map(n=>`<p class="note">${esc(n)}</p>`).join("");
+    body.innerHTML=`<div class="qcard"><h2>${o.r.length?(o.r.length>1?"Benefícios a avaliar":"Benefício indicado"):"Resultado"}</h2>${pathNotes}${note}
+      <div class="result-cards">${o.r.map(id=>cardHTML(id)).join("")}</div></div>`;
+  }else{
+    const id=last?T[last.node].o[last.opt].go:"start";
+    const n=T[id];
+    const pn=last&&T[last.node].o[last.opt].n?`<p class="note">${esc(T[last.node].o[last.opt].n)}</p>`:"";
+    body.innerHTML=`<div class="qcard">${pn}<h2>${esc(n.q)}</h2>${n.hint?`<p class="hint">${esc(n.hint)}</p>`:""}
+      <div class="opts">${n.o.map((o,i)=>`<button type="button" class="opt" data-node="${id}" data-opt="${i}"><span>${esc(o.l)}${o.s?`<small>${esc(o.s)}</small>`:""}</span></button>`).join("")}</div></div>`;
+  }
+  $("#back").disabled=!path.length;
+  $("#reset").disabled=!path.length;
+}
+document.addEventListener("click",e=>{
+  const o=e.target.closest(".opt");
+  if(o){path.push({node:o.dataset.node,opt:+o.dataset.opt});renderWiz();$("#wizBody").scrollIntoView({block:"nearest"});return;}
+  const s=e.target.closest(".step");
+  if(s){path=path.slice(0,+s.dataset.i);renderWiz();return;}
+  const g=e.target.closest("[data-goto]");
+  if(g){openFicha(g.dataset.goto);}
+});
+$("#back").onclick=()=>{path.pop();renderWiz();};
+$("#reset").onclick=()=>{path=[];renderWiz();};
+
+/* ---------- mapas ---------- */
+function treeFromNode(id){
+  const n=T[id];
+  return {t:n.q,k:"q",c:n.o.map(o=>o.go?{e:o.l,n:o.n,c:[treeFromNode(o.go)]}:{e:o.l,c:[{b:o.r,n:o.n}]})};
+}
+function liHTML(x){
+  let inner="";
+  if(x.e!==undefined){inner=`<span class="edge">${esc(x.e)}</span>`;}
+  else if(x.b){inner=x.b.length?`<span class="leafs">${x.b.map(chip).join("")}</span>`:`<span class="nd">Sem benefício cabível hoje</span>`;}
+  else{inner=`<span class="nd ${x.k||""}">${esc(x.t)}</span>`;}
+  if(x.n) inner+=`<span class="lnote">${esc(x.n)}</span>`;
+  const kids=x.c&&x.c.length?`<ul>${x.c.map(liHTML).join("")}</ul>`:"";
+  return `<li>${inner}${kids}</li>`;
+}
+function mapHTML(title,sub,root,wide){
+  return `<div class="map${wide?" wide":""}"><h2>${esc(title)}</h2><p class="sub">${esc(sub)}</p><ul class="tree">${liHTML(root)}</ul></div>`;
+}
+function renderMaps(){
+  const a=treeFromNode("n_rural");a.k="root";a.t="Nunca contribuiu · "+a.t;
+  const b=treeFromNode("c_qual");b.k="root";b.t="Já contribuiu · "+b.t;
+  const c=treeFromNode("d_ev");c.k="root";c.t="Familiar de segurado · "+c.t;
+  $("#maps").innerHTML=[
+    mapHTML("1. Nunca contribuiu","Rural, BPC ou nada por enquanto.",a),
+    mapHTML("2. Família de um segurado","Morte ou prisão de quem contribuía ou trabalhava na roça.",c),
+    mapHTML("3. Já contribuiu","Primeiro a qualidade de segurado, depois o fato que motiva o pedido.",b,true),
+    mapHTML("4. Incapacidade: qual dos três?","Auxílio-doença, invalidez ou auxílio-acidente.",M_INCAP),
+    mapHTML("5. Dependentes e duração","Vale para pensão por morte e auxílio-reclusão.",M_DEP),
+    mapHTML("6. Tipo de segurado","MEI, avulso, autônomo, facultativo: o que muda na prática.",M_TIPO,true),
+    mapHTML("7. Qualidade de segurado e carência","Checagem rápida no CNIS antes de pedir qualquer benefício.",M_QUAL,true),
+    mapHTML("8. Lendo o CNIS","O que cada indicador significa e o que fazer.",M_CNIS),
+    mapHTML("9. Lendo o PPP","Pontos que derrubam ou sustentam a especial.",M_PPP),
+    mapHTML("10. Aposentado trabalhando","Quando dá para acumular salário e benefício.",M_APOS_TRAB,true)
+  ].join("");
+}
+
+/* ---------- fichas ---------- */
+const active=new Set(Object.keys(TIPOS));
+function renderCards(){
+  const q=$("#q").value.trim().toLowerCase();
+  $("#cards").innerHTML=Object.keys(B).filter(id=>{
+    const b=B[id];
+    if(!active.has(b.t)) return false;
+    if(!q) return true;
+    return JSON.stringify(b).toLowerCase().includes(q);
+  }).map(id=>cardHTML(id)).join("")||'<p class="lead">Nada encontrado. Tente outro termo ou ative os filtros.</p>';
+}
+$("#tfil").innerHTML=Object.entries(TIPOS).map(([k,t])=>`<button type="button" class="chip ${t.c}" data-fil="${k}" aria-pressed="true">${t.l}</button>`).join(" ");
+$("#tfil").addEventListener("click",e=>{
+  const b=e.target.closest("[data-fil]");if(!b)return;
+  const k=b.dataset.fil;
+  active.has(k)?active.delete(k):active.add(k);
+  b.setAttribute("aria-pressed",active.has(k));
+  renderCards();
+});
+$("#q").addEventListener("input",renderCards);
+function openFicha(id){
+  $("#q").value="";Object.keys(TIPOS).forEach(k=>active.add(k));
+  document.querySelectorAll("[data-fil]").forEach(b=>b.setAttribute("aria-pressed","true"));
+  renderCards();
+  location.hash="fichas";
+  show("fichas");
+  const el=document.getElementById("f-"+id);
+  if(el){el.scrollIntoView({block:"start"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1600);}
+}
+
+/* ---------- alertas ---------- */
+function renderAlerts(){
+  $("#nAlerts").textContent=ALERTS.length;
+  $("#alerts").innerHTML=ALERTS.map(a=>`<div class="alert"><h3>${esc(a.h)}</h3><p>${esc(a.p)}</p>
+    ${a.tbl?`<table><thead><tr><th>Idade do cônjuge no óbito</th><th>Duração</th></tr></thead><tbody>${a.tbl.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</tbody></table>`:""}
+    ${a.p2?`<p>${esc(a.p2)}</p>`:""}<p class="src">${esc(a.src)}</p></div>`).join("");
+}
+
+/* ---------- abas ---------- */
+const TABS=["triagem","mapas","fichas","alertas"];
+function show(tab){
+  if(!TABS.includes(tab)) tab="triagem";
+  TABS.forEach(t=>{document.getElementById("sec-"+t).hidden=t!==tab;});
+  document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.tab===tab)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
+}
+window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
+
+legend($("#legend"));legend($("#legend2"));
+renderWiz();renderMaps();renderCards();renderAlerts();
+show(location.hash.slice(1));
+</script>
+</body>
+</html>
