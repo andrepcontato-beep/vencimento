@@ -107,6 +107,7 @@
     $('#fAlin').value = p.cabecalho.alinhamento;
     $('#fCorFilete').value = '#' + p.cabecalho.corFilete;
     $('#fFileteCab').checked = !!p.cabecalho.filete;
+    $('#fFilExt').value = p.fileteExtEsquerdaCm || 0;
     $('#fRodape').value = p.rodape.texto;
     $('#fRodapeCor').value = '#' + p.rodape.cor;
     $('#fRodapeTam').value = p.rodape.tamanhoPt;
@@ -141,6 +142,7 @@
         fonte: estado.perfil.rodape.fonte
       },
       marcaDagua: { ativa: $('#fMarca').checked, opacidade: n('#fOpac') / 100, larguraCm: n('#fMarcaLarg'), posicao: $('#fMarcaPos').value },
+      fileteExtEsquerdaCm: Math.max(0, Number($('#fFilExt').value) || 0),
       assinatura: { ativa: $('#fAssin').checked, nome: $('#fAssNome').value.trim(), titulo: $('#fAssTit').value.trim(), oab: $('#fAssOab').value.trim(), corTitulo: estado.perfil.assinatura ? estado.perfil.assinatura.corTitulo : 'C6A253' },
       aplicarMargens: $('#fAplicaMar').checked,
       margensCm: { topo: n('#fMTopo'), inferior: n('#fMInf'), esquerda: n('#fMEsq'), direita: n('#fMDir') }
@@ -355,14 +357,15 @@
         }
         pg.appendChild(m);
       }
-      const topo = criarEl('div', 'position:absolute;z-index:1;top:' + (1.25 * PX_CM) + 'px;left:' + pad.l + 'px;right:' + pad.r + 'px;' +
+      const extE = (Number(perfil.fileteExtEsquerdaCm) || 0) * PX_CM;
+      const topo = criarEl('div', 'position:absolute;z-index:1;top:' + (1.25 * PX_CM) + 'px;left:' + (pad.l - extE) + 'px;right:' + pad.r + 'px;padding-left:' + extE + 'px;' +
         'padding-bottom:6pt;' + (cab.filete ? 'border-bottom:.75pt solid #' + cab.corFilete + ';' : ''));
       const li = criarEl('img', 'display:block;height:auto;width:' + (cab.logoLarguraCm * PX_CM) + 'px;' +
         'margin:' + (cab.alinhamento === 'center' ? '0 auto' : cab.alinhamento === 'right' ? '0 0 0 auto' : '0') + ';');
       li.src = urlLogo; li.alt = '';
       topo.appendChild(li);
       pg.appendChild(topo);
-      const base = criarEl('div', 'position:absolute;z-index:1;bottom:' + (1.25 * PX_CM) + 'px;left:' + pad.l + 'px;right:' + pad.r + 'px;' +
+      const base = criarEl('div', 'position:absolute;z-index:1;bottom:' + (1.25 * PX_CM) + 'px;left:' + (pad.l - extE) + 'px;right:' + pad.r + 'px;padding-left:' + extE + 'px;' +
         'display:flex;justify-content:space-between;gap:12px;padding-top:6pt;font:' + rod.tamanhoPt + 'pt ' + rod.fonte + ',Georgia,serif;color:#' + rod.cor + ';' +
         (rod.filete ? 'border-top:.75pt solid #' + rod.corFilete + ';' : ''));
       const t = criarEl('span'); t.textContent = rod.texto; base.appendChild(t);

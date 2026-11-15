@@ -25,6 +25,7 @@
     rodape: { texto: '', cor: '5B5B58', fonte: 'Cambria', tamanhoPt: 8, numeroPagina: true, filete: true, corFilete: 'C6A253' },
     marcaDagua: { ativa: true, opacidade: 0.08, larguraCm: 11.2, posicao: 'inferior-direita' },
     margensCm: { topo: 4, inferior: 3, esquerda: 3, direita: 2 },
+    fileteExtEsquerdaCm: 0,
     aplicarMargens: true,
     assinatura: { ativa: false, nome: '', titulo: 'ADVOGADO', oab: '', corTitulo: 'C6A253' }
   };
@@ -185,11 +186,12 @@
         '<wp:docPr id="9102" name="Marca dagua da identidade"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
         grafico('rIdIdvMarca', wcx, wcy, 9102, 'marca.png') + '</wp:anchor></w:drawing></w:r>';
     }
+    const extEsq = Math.round((Number(p.fileteExtEsquerdaCm) || 0) * 567);
     const borda = cab.filete
       ? '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="6" w:color="' + cab.corFilete + '"/></w:pBdr>' : '';
     const miudo = '<w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr>';
     const regraP =
-      '<w:p><w:pPr>' + borda + '<w:spacing w:before="80" w:after="0" w:line="240" w:lineRule="auto"/>' + miudo + '</w:pPr>' +
+      '<w:p><w:pPr>' + borda + '<w:spacing w:before="80" w:after="0" w:line="240" w:lineRule="auto"/>' + (extEsq ? '<w:ind w:left="-' + extEsq + '" w:right="0"/>' : '') + miudo + '</w:pPr>' +
       ancora + '<w:r>' + miudo + '<w:t xml:space="preserve"></w:t></w:r></w:p>';
     return XML_DECL + '<w:hdr ' + ROOT_NS + '>' + logoP + regraP + '</w:hdr>';
   }
@@ -206,6 +208,14 @@
         '<w:fldSimple w:instr=" PAGE ">' + '<w:r>' + rpr + '<w:t>1</w:t></w:r></w:fldSimple>';
     }
     const tabs = r.numeroPagina ? '<w:tabs><w:tab w:val="right" w:pos="' + larguraTextoTwips + '"/></w:tabs>' : '';
+    const extEsq = Math.round((Number(p.fileteExtEsquerdaCm) || 0) * 567);
+    if (r.filete && extEsq > 0) {
+      // filete em parágrafo próprio, para avançar além da margem esquerda sem deslocar o texto do rodapé
+      const miudo = '<w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr>';
+      const regra = '<w:p><w:pPr>' + borda + '<w:spacing w:before="0" w:after="120" w:line="240" w:lineRule="auto"/><w:ind w:left="-' + extEsq + '" w:right="0"/>' + miudo + '</w:pPr></w:p>';
+      return XML_DECL + '<w:ftr ' + ROOT_NS + '>' + regra + '<w:p><w:pPr>' + tabs +
+        '<w:spacing w:before="0" w:after="60" w:line="240" w:lineRule="auto"/>' + rpr + '</w:pPr>' + runs + '</w:p></w:ftr>';
+    }
     return XML_DECL + '<w:ftr ' + ROOT_NS + '><w:p><w:pPr>' + borda + tabs +
       '<w:spacing w:before="60" w:after="60" w:line="240" w:lineRule="auto"/>' + rpr + '</w:pPr>' + runs + '</w:p></w:ftr>';
   }
