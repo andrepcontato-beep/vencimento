@@ -155,6 +155,9 @@ async function contratoSM(v,data){
   const tel=ou(v,'tel',B);
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)} e ${c.inscrito} no CPF sob o nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, Município de ${ou(v,'cid',B)}, telefone/WhatsApp ${tel}.`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
+  if(!/PREVIDENCI/.test(txt(ps[1])))modelo();
+  subst(0,sub(ps[0],'CONTRATO DE HONORÁRIOS ADVOCATÍCIOS','CONTRATO PARTICULAR DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS').replace('w:after="40"','w:after="320"')); // o espaço que o subtítulo dava passa para o título
+  subst(1,''); // tira o subtítulo "(PREVIDENCIÁRIO – ADMINISTRATIVO)"
   subst(2,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
   // data provável do parto
   let dpp='o dia ____ de ______________ de ______';
