@@ -202,6 +202,17 @@ async function contratoFC(v,data){
   let p26=sub(ps[26],'50% (cinquenta por cento)',`${String(pct).replace('.',',')}% (${extenso(Math.floor(pct))} por cento)`);
   p26=sub(p26,'R$ 5.000,00 (cinco mil reais)',reais(min));
   subst(26,p26);
+  // um único contratado (o advogado): singular em todo o contrato
+  const ed=(i,pares)=>{let p=ps[i];pares.forEach(([a,b])=>{p=sub(p,a,b)});subst(i,p)};
+  ed(10,[['CONTRATADOS','CONTRATADO']]);
+  ed(13,[['Os Contratados, obrigam-se','O Contratado obriga-se']]);
+  ed(17,[['CONTRATADOS','CONTRATADO']]);
+  ed(18,[['CONTRATADO(A)','CONTRATADO']]);
+  ed(19,[['estes ficam, desde já, obrigados','este fica, desde já, obrigado']]);
+  ed(21,[['CONTRATADOS','CONTRATADO']]);
+  ed(24,[['Envidarem','Envidar']]);
+  ed(33,[['utilizarem','utilizar']]);
+  ed(35,[['A CONTRATADA se responsabiliza por manterem','O CONTRATADO se responsabiliza por manter'],['protegerem','proteger']]);
   subst(38,sub(ps[38],'Comarca de Piracanjuba','Comarca de '+ou(v,'foro','Piracanjuba')));
   const dt=`${ou(v,'local','Piracanjuba/GO')}, ${dataExt(data)}.`;
   const p42=ps[42],pp=p42.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:tabs>[\s\S]*?<\/w:tabs>/,'');
