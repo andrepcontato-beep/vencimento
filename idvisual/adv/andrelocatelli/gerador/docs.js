@@ -206,10 +206,10 @@ async function contratoFC(v,data){
   const ed=(i,pares)=>{let p=ps[i];pares.forEach(([a,b])=>{p=sub(p,a,b)});subst(i,p)};
   ed(10,[['CONTRATADOS','CONTRATADO']]);
   ed(13,[['Os Contratados, obrigam-se','O Contratado obriga-se']]);
-  ed(17,[['CONTRATADOS','CONTRATADO']]);
+  ed(17,[['pelos CONTRATADOS','pelo CONTRATADO']]);
   ed(18,[['CONTRATADO(A)','CONTRATADO']]);
   ed(19,[['estes ficam, desde já, obrigados','este fica, desde já, obrigado']]);
-  ed(21,[['CONTRATADOS','CONTRATADO']]);
+  ed(21,[['DOS CONTRATADOS','DO CONTRATADO']]);
   ed(24,[['Envidarem','Envidar']]);
   ed(33,[['utilizarem','utilizar']]);
   ed(35,[['A CONTRATADA se responsabiliza por manterem','O CONTRATADO se responsabiliza por manter'],['protegerem','proteger']]);
