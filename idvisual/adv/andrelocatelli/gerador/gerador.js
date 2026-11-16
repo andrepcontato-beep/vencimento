@@ -79,7 +79,7 @@ async function carregaPerfil(){
     perfil.cabecalho=Object.assign({},perfil.cabecalho,{logoLarguraCm:1.75});
     perfil.margensCm=Object.assign({},perfil.margensCm,{topo:4.6,esquerda:2.5,direita:2.5,rodapeCm:0.9});
     perfil.fileteExtEsquerdaCm=0.3;
-    perfil.rodape=Object.assign({},perfil.rodape,{tamanhoPt:7.5});
+    perfil.rodape=Object.assign({},perfil.rodape,{tamanhoPt:6.5});
     perfil.marcaDagua=Object.assign({},perfil.marcaDagua,{posicao:'centro',larguraCm:12,opacidade:0.07});
   }
   imgs=await IDV.prepararImagens(perfil);
