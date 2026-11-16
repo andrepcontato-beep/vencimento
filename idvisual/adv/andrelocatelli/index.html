@@ -6,8 +6,11 @@
 @media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b}}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,Segoe UI,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px}
-.logo{width:min(300px,70vw);height:auto;display:block;margin:0 auto 10px}
-.fio{width:80px;height:2px;background:var(--ouro);margin:14px auto 28px}
+.logo{width:min(210px,52vw);height:auto;display:block;margin:0 auto 6px}
+.assin{text-align:center;margin:0 auto 30px;font-family:"Times New Roman","Liberation Serif",Georgia,serif}
+.assin .n{font-weight:700;font-size:clamp(20px,5.2vw,26px);letter-spacing:.2em;padding-left:.2em;color:var(--tx)}
+.assin .a{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:4px;color:var(--ouro);font-size:clamp(14px,3.6vw,18px);letter-spacing:.32em}
+.assin .a::before,.assin .a::after{content:"";height:1px;width:clamp(40px,11vw,70px);background:#b9b3a3}
 nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:min(520px,100%)}
 @media(max-width:480px){nav{grid-template-columns:1fr}}
 .b{display:block;text-align:center;text-decoration:none;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-bottom:3px solid var(--ouro);border-radius:10px;padding:18px 12px;font:600 15px system-ui,sans-serif;cursor:pointer;width:100%}
@@ -19,7 +22,7 @@ nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:mi
 footer{margin-top:34px;font-size:12px;color:var(--mut)}
 </style></head><body>
 <img class="logo" src="perfis/andrelocatelli/logo.png" alt="André Locatelli">
-<div class="fio"></div>
+<div class="assin"><div class="n">ANDRÉ LOCATELLI</div><div class="a">ADVOGADO</div></div>
 <nav>
  <a class="b" href="pecas.html">Identidade visual<small>peças / petições</small></a>
  <a class="b" href="gerador.html?doc=procuracao">Procurações<small>leitura de RG/CNH e comprovante</small></a>
