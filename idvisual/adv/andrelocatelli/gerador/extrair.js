@@ -8,8 +8,8 @@ function extrairId(t){
   if(cpf)o.cpf=`${cpf[1]}.${cpf[2]}.${cpf[3]}-${cpf[4]}`;
   const L=t.split('\n').map(s=>s.trim()).filter(Boolean);
   for(let i=0;i<L.length;i++){
-    if(!o.nome&&/^NOME(\s+E\s+SOBRENOME)?\b/i.test(L[i])){
-      let r=L[i].replace(/^NOME(\s+E\s+SOBRENOME)?[:\s]*/i,'');
+    if(!o.nome&&/^NOME(\s+E\s+SOBRENOME)?\b/i.test(L[i])&&!/^NOME\s+SOCIAL/i.test(L[i])){   /* CIN: "Nome Social / Social Name" não é o nome */
+      let r=L[i].replace(/^NOME(\s+E\s+SOBRENOME)?[:\s]*/i,'').replace(/^[\/\s]*NAME\b[:\s]*/i,'');
       if(r.length<5&&L[i+1])r=L[i+1];
       r=r.split(/\s{3,}|\s[|!¡]/)[0];
       r=r.replace(/[^A-ZÀ-Ú\s]/gi,' ').replace(/\s+/g,' ').trim();
@@ -30,7 +30,9 @@ function extrairId(t){
       }
     }
   }
-  if(o.rg&&!/[A-Z]{2,}/.test(o.rg)){const uf=(t.match(/ESTADO\s+D[EO]\s+([A-ZÀ-Ú ]{4,20}?)\s*(?:\n|SECRETARIA|\s{2,})/i)||[])[1];const U={'GOIÁS':'GO','GOIAS':'GO','SÃO PAULO':'SP','MINAS GERAIS':'MG','MATO GROSSO':'MT','TOCANTINS':'TO','BAHIA':'BA','DISTRITO FEDERAL':'DF'};const u=uf&&U[uf.trim().toUpperCase()];if(u&&/SEGURAN[ÇC]A/i.test(t))o.rg+=' SSP/'+u}
+  /* CIN (nova Carteira de Identidade Nacional): "Registro Geral - CPF / Personal Number" — o RG é o próprio número do CPF */
+  if(o.cpf&&/REGISTRO\s+GER\S*\s*[-–—]?\s*CPF|CPF\s*\/\s*PERSONAL\s+NUMBER/i.test(t))o.rg=o.cpf;
+  if(o.rg&&!/[A-Z]{2,}/.test(o.rg)&&o.rg!==o.cpf){const uf=(t.match(/ESTADO\s+D[EO]\s+([A-ZÀ-Ú ]{4,20}?)\s*(?:\n|SECRETARIA|\s{2,})/i)||[])[1];const U={'GOIÁS':'GO','GOIAS':'GO','SÃO PAULO':'SP','MINAS GERAIS':'MG','MATO GROSSO':'MT','TOCANTINS':'TO','BAHIA':'BA','DISTRITO FEDERAL':'DF'};const u=uf&&U[uf.trim().toUpperCase()];if(u&&/SEGURAN[ÇC]A/i.test(t))o.rg+=' SSP/'+u}
   if(!o.rg){const m=t.match(/(\d{5,9}[-.]?\d?)\s*(SSP|SDS|DGPC|PC|IFP)[\s\/-]*([A-Z]{2})/i);if(m)o.rg=`${m[1]} ${m[2].toUpperCase()}/${m[3].toUpperCase()}`}
   return o;
 }
