@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de documentos · André Locatelli</title>
+<style>
+:root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc;--up:#fffdf7;--okbg:#f4faf0;--sel:#fffbef;--warn:#fff3cd;--warnbd:#e6c55a;--autobg:#fff8d6}
+@media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b;--up:#27241a;--okbg:#1d2a1b;--sel:#2c2717;--warn:#3a3217;--warnbd:#8a7424;--autobg:#4a4112}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif}
+header{padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:2px solid var(--ouro);background:var(--card);display:flex;align-items:center;gap:12px}
+header a.vt{color:var(--ouro2);text-decoration:none;font-weight:600}header img{height:38px}header h1{font-size:17px;margin:0}
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(330px,430px) minmax(0,1fr);gap:18px;padding-block:18px;max-width:1500px;margin:auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ouro2);margin:0 0 10px}
+.up{display:block;color:var(--tx);border:1.5px dashed var(--ouro);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;background:var(--up)}
+.up b{display:block}.up span{font-size:12px;color:var(--mut)}.up input{display:none}
+.up.ok{border-style:solid;background:var(--okbg)}.st{font-size:12px;margin-top:3px}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 2px}
+input[type=text],input[type=date],select{width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:var(--card);color:var(--tx)}
+.auto{background:var(--autobg)!important;border-color:#e0c75a!important}
+button{background:var(--ouro);color:#fff;border:0;border-radius:7px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+button.sec{background:var(--card);color:var(--ouro2);border:1px solid var(--ouro)}button:disabled{opacity:.45;cursor:not-allowed}
+.dias{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.dias label{margin:0;background:var(--card);flex:1;min-width:140px;border:1px solid var(--bd);border-radius:8px;padding:8px;cursor:pointer;color:var(--tx);font-size:13px}
+.dias input{margin-right:6px}.dias label.sel{border-color:var(--ouro);background:var(--sel)}
+.alerta{background:var(--warn);border:1px solid var(--warnbd);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:8px}
+.falta{font-size:12px;color:#b3261e;margin-top:6px}
+.abas{display:flex;gap:6px;margin-bottom:12px}.abas button{flex:1;background:var(--card);color:var(--mut);border:1px solid var(--bd);padding:8px 6px;font-size:13px}.abas button.on{background:var(--ouro);color:#fff;border-color:var(--ouro)}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}[hidden]{display:none!important}
+.barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.previa-caixa{overflow:auto;background:#E9E4D8;border-radius:8px;padding:12px;max-height:85vh;min-height:200px}
+.previa-caixa .docx-wrapper{background:transparent!important;padding:0!important}
+#paginas p[class*="docx_heading"] span,#paginas p.docx_title span,#paginas p.docx_subtitle span,#paginas span.docx_hyperlink{color:inherit}#paginas a{color:inherit}
+body.p1 main{grid-template-columns:minmax(330px,560px);justify-content:center}body.p1 #previa{display:none}
+#msgP{color:var(--mut);font-size:13px;padding:8px}
+@media print{
+ html,body{background:#fff!important;margin:0!important}header,.lado,.barra,#medidor,#msgP,.versao{display:none!important}
+ main{display:block!important;padding:0!important;max-width:none!important}#previa{display:block!important;padding:0!important}
+ .previa-caixa{overflow:visible!important;max-height:none!important;padding:0!important;background:none!important;border-radius:0!important}
+ #paginas{zoom:1!important}#paginas .pagina{box-shadow:none!important;margin:0!important;break-after:page;page-break-after:always;overflow:hidden!important}
+ #paginas .pagina:last-child{break-after:auto;page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body class="p1">
+<header><a class="vt" href="index.html">← Início</a><img id="logoTopo" src="perfis/andrelocatelli/logo.png" alt=""><h1 id="h1">Gerador</h1></header>
+<main>
+<div class="lado">
+ <nav class="abas"><button data-p="1" class="on">1 · Documentos</button><button data-p="2">2 · Dados</button><button data-p="3">3 · Local e data</button></nav>
+ <section data-p="1">
+  <div class="card"><h2>Documentos do cliente</h2>
+  <label class="up" id="u1"><b>Identidade / CNH / documento com foto</b><span>foto, PDF ou imagem — frente (e verso, se precisar)</span><input type="file" id="f1" accept="image/*,application/pdf" multiple><div class="st" id="s1"></div></label>
+  <label class="up" id="u2"><b>Comprovante de endereço</b><span>conta de luz/água/telefone etc.</span><input type="file" id="f2" accept="image/*,application/pdf"><div class="st" id="s2"></div></label>
+  <div class="st" style="color:var(--mut)">A leitura é feita no seu navegador (OCR); nada é enviado a servidor.</div>
+  <div class="acoes"><button id="seguir" disabled>Continuar →</button><button class="sec" id="manual">Preencher manualmente</button></div></div>
+ </section>
+ <section data-p="2" hidden>
+  <div class="card" id="gFalta"><h2>Falta preencher</h2><div id="boxFalta"></div><div class="st" id="nadaFalta" hidden>✔ Nenhum campo pendente.</div></div>
+  <div class="card" id="gLido"><h2>Lido dos documentos / padrões — confira</h2><div id="boxLido"></div></div>
+  <div class="acoes"><button id="seguir2">Continuar →</button><button class="sec" data-vai="1">← Documentos</button></div>
+ </section>
+ <section data-p="3" hidden>
+  <div class="card"><h2>Local e data</h2>
+  <label>Local</label><input type="text" id="local" value="Piracanjuba/GO">
+  <div class="alerta" id="alertaData"></div><div class="dias" id="dias"></div><div class="falta" id="falta"></div></div>
+  <div class="card"><button class="sec" data-vai="2">← Dados</button> <button class="sec" id="limpar">Limpar tudo</button></div>
+ </section>
+ <div id="campos" hidden></div>
+ <p class="st versao" style="color:var(--mut)">Versão da página: 2026-11-15 23:59</p>
+</div>
+<div id="previa">
+ <div class="barra"><button id="baixar">⬇ Baixar .docx</button><button id="pdf" class="sec">⬇ Salvar em PDF</button><span class="st" id="msgBaixar"></span></div>
+ <div class="previa-caixa"><div id="msgP"></div><div id="paginas"></div></div>
+</div>
+</main>
+<div id="medidor" aria-hidden="true" style="position:absolute;left:-10000px;top:0;width:1000px;visibility:hidden"></div>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/docx-preview.min.js"></script>
+<script src="gerador/ocr/tesseract.min.js"></script>
+<script src="gerador/ocr/pdf.min.js"></script>
+<script src="engine.js?v=202611152359"></script>
+<script src="gerador/paginar.js?v=202611152359"></script>
+<script src="gerador/modelos.js?v=202611152359"></script>
+<script src="gerador/docs.js?v=202611152359"></script>
+<script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
+<script src="gerador/extrair.js?v=202611152359"></script>
+<script src="gerador/gerador.js?v=202611152359"></script>
+</body></html>

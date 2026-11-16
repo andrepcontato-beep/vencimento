@@ -57,3 +57,14 @@ Atenção: tudo que está em `perfis/` fica visível a quem acessar o site (logo
 - Padroniza a assinatura (opcional, por identidade): procura nome + OAB no fim do documento, remove a linha de assinatura e escreve o bloco do perfil (nome, título e OAB). Se não encontrar, avisa e não altera.
 - Ajusta as margens ao perfil (opcional, desligável na página).
 - Não altera o texto, estilos, tabelas ou imagens do corpo.
+
+## Estrutura do site
+
+- `index.html` — antepágina (logo + botões).
+- `pecas.html` — identidade visual para petições (app.js / engine.js).
+- `gerador.html?doc=…` — gerador de documentos a partir de RG/CNH + comprovante de endereço (OCR no navegador):
+  `procuracao`, `hipossuficiencia`, `salario-maternidade`, `previdenciario`.
+  - `gerador/modelos.js` — modelos .docx do escritório (base64).
+  - `gerador/docs.js` — preenchimento dos modelos; `gerador/extrair.js` — OCR e leitura dos dados; `gerador/gerador.js` — tela.
+  - `gerador/ocr/` — tesseract.js, idioma português e pdf.js (tudo local, nada vai a servidor).
+- A prévia e o .docx saem com a identidade de `perfis/andrelocatelli/`.
