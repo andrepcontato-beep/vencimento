@@ -98,11 +98,11 @@ function blocoAssinatura(modeloP,v){
 }
 
 /* assinatura da procuração/declaração: linha centralizada (11 cm) acima do nome em negrito e do CPF, sem marcador */
-function assinaturaPessoa(pData,v){
+function assinaturaPessoa(pData,v,rotulo){
   const rp=rPrDe(pData.match(/<w:r>[\s\S]*?<\/w:r>/)[0]),rb=rp.replace('<w:color','<w:b/><w:bCs/><w:color');
   const pBase=pData.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0];
   const pNome=pBase.replace('<w:pStyle w:val="Normal"/>','<w:pStyle w:val="Normal"/><w:keepNext/><w:pBdr><w:top w:val="single" w:sz="6" w:space="2" w:color="000000"/></w:pBdr>').replace(/<w:spacing [^>]*\/>|<w:ind [^>]*\/>/g,'').replace(/<w:jc /,'<w:spacing w:before="720" w:after="0" w:lineRule="auto" w:line="360"/><w:ind w:left="1417" w:right="1417"/><w:jc ');
-  return `<w:p>${pNome}${run(rb,ou(v,'nome',B).toUpperCase())}</w:p><w:p>${pBase.replace(/<w:b\/>|<w:bCs\/>/g,'')}${run(rp.replace(/<w:b\/>|<w:bCs\/>/g,''),'CPF nº '+ou(v,'cpf',B))}</w:p>`;
+  return `<w:p>${pNome}${run(rb,ou(v,'nome',B).toUpperCase())}</w:p><w:p>${pBase.replace(/<w:b\/>|<w:bCs\/>/g,'')}${run(rp.replace(/<w:b\/>|<w:bCs\/>/g,''),'CPF nº '+ou(v,'cpf',B))}</w:p>`+(rotulo?`<w:p>${pBase.replace(/<w:b\/>|<w:bCs\/>/g,'')}${run(rp.replace(/<w:b\/>|<w:bCs\/>/g,''),rotulo)}</w:p>`:'');
 }
 
 /* ---------- procuração e hipossuficiência (mesmo modelo-base) ---------- */
@@ -128,8 +128,8 @@ async function basePessoa(v,data,tipo){
       subst(10,`<w:p>${pp}${r10[0]}${r10[1]}${run(rPrDe(r10[2]),digitado)}</w:p>`);
     }else subst(10,p10.replace(/defendê-lo/,c.lo).replace(/o outorgante/,c.ele));
   }else{
-    const t1='em razão de minha atual condição financeira, não tenho condições de arcar com nenhum tipo de pagamento de custos processuais, sob pena de implicar em prejuízo próprio e de minha família, nos termos do Art. 5º, LXXIV, da Constituição da República, da Lei nº 1.060/50, bem como nos artigos 82 e 98 do Novo Código de Processo Civil.';
-    const t2='Reiterando minha incapacidade de custear quaisquer ações, solicito, ainda, que tal benefício abranja todos os atos do processo, de acordo com o artigo 98 do novo Código de Processo Civil.';
+    const t1='em razão de minha atual condição financeira, não tenho condições de arcar com nenhum tipo de pagamento de custos processuais, pois o pagamento implicaria prejuízo ao meu sustento e ao de minha família, nos termos do Art. 5º, LXXIV, da Constituição da República, da Lei nº 1.060/50, bem como nos artigos 82, 98 e 99, §3º, do Código de Processo Civil.';
+    const t2='Reiterando minha incapacidade de custear quaisquer ações, solicito, ainda, que tal benefício abranja todos os atos do processo, de acordo com o artigo 98 do Código de Processo Civil.';
 
     subst(3,`<w:p>${pPr}${run(rN,'Eu, ')}${run(rB,q.nome)}${run(rN,resto+', venho declarar que, '+t1)}</w:p>`);
     subst(8,`<w:p>${pPr}${run(rN,t2)}</w:p>`);
@@ -137,7 +137,7 @@ async function basePessoa(v,data,tipo){
   }
   subst(4,'');subst(5,'');subst(6,'');
   x=x.replace(ps[11],()=>ps[11].replace(/<w:t>[^<]*<\/w:t>/,()=>`<w:t>${X(dt)}</w:t>`).replace('w:line="360"/>','w:line="360" w:before="480"/>'));
-  x=x.replace(ps[13],()=>assinaturaPessoa(ps[11],v));
+  x=x.replace(ps[13],()=>assinaturaPessoa(ps[11],v,tipo==='hipossuficiencia'?'DECLARANTE':''));
   x=x.replace(/w:line="360"/g,'w:line="313"').replace(/w:left="-(454|397)"/g,'w:left="0"'); // entrelinha e alinhamento do modelo
   zip.file('word/document.xml',x);
   return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
