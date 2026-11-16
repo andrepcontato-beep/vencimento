@@ -159,7 +159,7 @@ async function contratoSM(v,data){
   { // título no mesmo layout do contrato de serviços previdenciários
     const xf=await (await abre(MODELOS.fc)).file('word/document.xml').async('string'),pf=paragrafos(xf);
     const rpT=rPrDe(pf[0].match(/<w:r[ >][\s\S]*?<\/w:r>/)[0]);
-    subst(0,`<w:p>${pf[0].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0]}${run(rpT,'CONTRATO PARTICULAR DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS')}</w:p>${pf[1]}${pf[2]}`);
+    subst(0,`<w:p>${pf[0].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace('<w:pStyle w:val="Heading1"/>','<w:pStyle w:val="Normal"/>').replace(/<w:spacing [^>]*\/>/,'<w:spacing w:lineRule="auto" w:line="257" w:before="94" w:after="0"/>')}${run(rpT,'CONTRATO PARTICULAR DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS')}</w:p>${pf[1]}${pf[2]}`);
   }
   subst(1,''); // tira o subtítulo "(PREVIDENCIÁRIO – ADMINISTRATIVO)"
   subst(2,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
