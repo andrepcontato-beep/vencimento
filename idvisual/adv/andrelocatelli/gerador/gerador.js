@@ -87,7 +87,7 @@ async function identidade(tp){
     pf.cabecalho=Object.assign({},pf.cabecalho,{logoLarguraCm:1.75});
     pf.margensCm=Object.assign({},pf.margensCm,{topo:4.6,esquerda:2.5,direita:2.5,rodapeCm:0.9});
     pf.fileteExtEsquerdaCm=0.3;
-    pf.rodape=Object.assign({},pf.rodape,{tamanhoPt:6.5});
+    pf.rodape=Object.assign({},pf.rodape,{tamanhoPt:7});
     pf.marcaDagua=Object.assign({},pf.marcaDagua,{posicao:'centro',larguraCm:12,opacidade:0.07});
   }
   return variantes[chave]={perfil:pf,imgs:await IDV.prepararImagens(pf)};
