@@ -97,6 +97,14 @@ function blocoAssinatura(modeloP,v){
   return nomeP+cpfP;
 }
 
+/* assinatura da procuração/declaração: linha centralizada (11 cm) acima do nome em negrito e do CPF, sem marcador */
+function assinaturaPessoa(pData,v){
+  const rp=rPrDe(pData.match(/<w:r>[\s\S]*?<\/w:r>/)[0]),rb=rp.replace('<w:color','<w:b/><w:bCs/><w:color');
+  const pBase=pData.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0];
+  const pNome=pBase.replace('<w:pStyle w:val="Normal"/>','<w:pStyle w:val="Normal"/><w:keepNext/><w:pBdr><w:top w:val="single" w:sz="6" w:space="2" w:color="000000"/></w:pBdr>').replace(/<w:spacing [^>]*\/>/,'<w:spacing w:before="900" w:after="0" w:lineRule="auto" w:line="360"/><w:ind w:left="1417" w:right="1417"/>');
+  return `<w:p>${pNome}${run(rb,ou(v,'nome',B).toUpperCase())}</w:p><w:p>${pBase}${run(rp,'CPF nº '+ou(v,'cpf',B))}</w:p>`;
+}
+
 /* ---------- procuração e hipossuficiência (mesmo modelo-base) ---------- */
 async function basePessoa(v,data,tipo){
   const zip=await abre(MODELOS.proc);let x=await zip.file('word/document.xml').async('string');
@@ -108,24 +116,28 @@ async function basePessoa(v,data,tipo){
   const dt=`${ou(v,'local','Piracanjuba/GO')}, ${dataExt(data)}.`;
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, ${c.inscrito} no CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}, ${ou(v,'cid',B)}${q.cep}`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
+  const rpTit='<w:rPr><w:rFonts w:cs="Arial" w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:bCs/><w:color w:val="9C7D33"/><w:spacing w:val="77"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
+  subst(0,`<w:p>${ps[0].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0]}${run(rpTit,tipo==='procuracao'?'PROCURAÇÃO':'DECLARAÇÃO DE HIPOSSUFICIÊNCIA')}</w:p>`);
+  const p10=ps[10].replace(/w:left="-397"/,'w:left="-454"').replace(/<w:sz w:val="20"\/>/g,'<w:sz w:val="19"/>').replace(/<w:szCs w:val="20"\/>/g,'<w:szCs w:val="19"/>');
+  if(tipo==='procuracao')subst(8,ps[8].replace(/<w:sz w:val="22"\/>/g,'<w:sz w:val="21"/>').replace(/<w:szCs w:val="22"\/>/g,'<w:szCs w:val="21"/>'));
   if(tipo==='procuracao'){
     subst(3,`<w:p>${pPr}${run(rB,'OUTORGANTE: ')}${run(rB,q.nome)}${run(rN,resto+'.')}</w:p>`);
     if(v.pmodo==='digitar'){
-      const pp=ps[10].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0],r10=ps[10].match(/<w:r>[\s\S]*?<\/w:r>/g);
+      const pp=p10.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0],r10=p10.match(/<w:r>[\s\S]*?<\/w:r>/g);
       const digitado=(v.ptxt||'').trim().replace(/\s*\n\s*/g,' ')||'__________________________________________________';
       subst(10,`<w:p>${pp}${r10[0]}${r10[1]}${run(rPrDe(r10[2]),digitado)}</w:p>`);
-    }else subst(10,ps[10].replace(/defendê-lo/,c.lo).replace(/o outorgante/,c.ele));
+    }else subst(10,p10.replace(/defendê-lo/,c.lo).replace(/o outorgante/,c.ele));
   }else{
     const t1='em razão de minha atual condição financeira, não tenho condições de arcar com nenhum tipo de pagamento de custos processuais, sob pena de implicar em prejuízo próprio e de minha família, nos termos do Art. 5º, LXXIV, da Constituição da República, da Lei nº 1.060/50, bem como nos artigos 82 e 98 do Novo Código de Processo Civil.';
     const t2='Reiterando minha incapacidade de custear quaisquer ações, solicito, ainda, que tal benefício abranja todos os atos do processo, de acordo com o artigo 98 do novo Código de Processo Civil.';
-    subst(0,sub(ps[0],'P R O C U R A Ç Ã O','D E C L A R A Ç Ã O   D E   H I P O S S U F I C I Ê N C I A'));
+
     subst(3,`<w:p>${pPr}${run(rN,'Eu, ')}${run(rB,q.nome)}${run(rN,resto+', venho declarar que, '+t1)}</w:p>`);
     subst(8,`<w:p>${pPr}${run(rN,t2)}</w:p>`);
     subst(10,'');
   }
   subst(4,'');subst(5,'');subst(6,'');
-  x=x.replace(ps[11],()=>ps[11].replace(/<w:t>[^<]*<\/w:t>/,()=>`<w:t>${X(dt)}</w:t>`));
-  x=x.replace(ps[13],()=>ps[13]+blocoAssinatura(ps[11],v));
+  x=x.replace(ps[11],()=>ps[11].replace(/<w:t>[^<]*<\/w:t>/,()=>`<w:t>${X(dt)}</w:t>`).replace('w:line="360"/>','w:line="360" w:before="480"/>'));
+  x=x.replace(ps[13],()=>assinaturaPessoa(ps[11],v));
   zip.file('word/document.xml',x);
   return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
 }
@@ -142,7 +154,7 @@ async function contratoSM(v,data){
   const tel=ou(v,'tel',B);
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)} e ${c.inscrito} no CPF sob o nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, Município de ${ou(v,'cid',B)}, telefone/WhatsApp ${tel}.`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
-  subst(2,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rB,q.nome)}${run(rN,resto)}</w:p>`);
+  subst(2,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
   // data provável do parto
   let dpp='o dia ____ de ______________ de ______';
   if(v.dpp){const[a,m,d]=v.dpp.split('-').map(Number);if(a)dpp=`o dia ${d} de ${MESES[m-1]} de ${a}`}
@@ -175,7 +187,7 @@ async function contratoFC(v,data){
   const pPr=ps[3].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0];
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}.`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
-  subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rB,q.nome)}${run(rN,resto)}</w:p>`);
+  subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
   subst(4,'');subst(5,'');subst(6,'');
   const pct=parseFloat(String(v.pct).replace(',','.'))||50,min=numBR(v.minimo);
   if(!(min>0))throw new Error('Informe o valor mínimo dos honorários.');
