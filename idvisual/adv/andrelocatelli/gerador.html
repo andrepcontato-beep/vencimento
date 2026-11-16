@@ -26,6 +26,7 @@ button.sec{background:var(--card);color:var(--ouro2);border:1px solid var(--ouro
 .falta{font-size:12px;color:#b3261e;margin-top:6px}
 .abas{display:flex;gap:6px;margin-bottom:12px}.abas button{flex:1;background:var(--card);color:var(--mut);border:1px solid var(--bd);padding:8px 6px;font-size:13px}.abas button.on{background:var(--ouro);color:#fff;border-color:var(--ouro)}
 .acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}[hidden]{display:none!important}
+button .ic{width:15px;height:15px;vertical-align:-3px;margin-right:6px}.barra button{display:inline-flex;align-items:center}.barra button .ic{vertical-align:0}
 .barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
 .previa-caixa{overflow:auto;padding:0;max-height:none;min-height:200px}
 .previa-caixa .docx-wrapper{background:transparent!important;padding:0!important}
@@ -62,24 +63,26 @@ body.p1 main{grid-template-columns:minmax(330px,560px);justify-content:center}bo
   <div class="card"><button class="sec" data-vai="2">← Dados</button> <button class="sec" id="limpar">Limpar tudo</button></div>
  </section>
  <div id="campos" hidden></div>
- <p class="st versao" style="color:var(--mut)">Versão da página: 2026-11-16 01:05</p>
+ <p class="st versao" style="color:var(--mut)">Versão da página: 2026-11-16 01:30</p>
 </div>
 <div id="previa">
- <div class="barra"><button id="baixar">⬇ Baixar .docx</button><button id="pdf" class="sec">⬇ Salvar em PDF</button><span class="st" id="msgBaixar"></span></div>
+ <div class="barra"><button id="baixar"></button><button id="pdf" class="sec"></button><span class="st" id="msgBaixar"></span></div>
  <div class="previa-caixa"><div id="msgP"></div><div id="paginas"></div></div>
 </div>
 </main>
 <div id="medidor" aria-hidden="true" style="position:absolute;left:-10000px;top:0;width:1000px;visibility:hidden"></div>
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/docx-preview.min.js"></script>
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 <script src="gerador/ocr/tesseract.min.js"></script>
 <script src="gerador/ocr/pdf.min.js"></script>
-<script src="engine.js?v=202611160105"></script>
-<script src="gerador/paginar.js?v=202611160105"></script>
-<script src="gerador/modelos.js?v=202611160105"></script>
-<script src="gerador/sexo.js?v=202611160105"></script>
-<script src="gerador/docs.js?v=202611160105"></script>
+<script src="engine.js?v=202611160130"></script>
+<script src="gerador/paginar.js?v=202611160130"></script>
+<script src="gerador/modelos.js?v=202611160130"></script>
+<script src="gerador/sexo.js?v=202611160130"></script>
+<script src="gerador/docs.js?v=202611160130"></script>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="gerador/extrair.js?v=202611160105"></script>
-<script src="gerador/gerador.js?v=202611160105"></script>
+<script src="gerador/extrair.js?v=202611160130"></script>
+<script src="gerador/gerador.js?v=202611160130"></script>
 </body></html>

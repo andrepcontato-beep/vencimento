@@ -139,24 +139,38 @@ $('#baixar').onclick=async()=>{
     setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000);m.textContent='✔ '+nomeArq()+'.docx';
   }catch(e){m.textContent='⚠ '+(e.message||'erro ao gerar')}
 };
-$('#pdf').onclick=async()=>{
+const IC_W='<svg class="ic" viewBox="0 0 24 24"><path fill="#2B579A" d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path fill="#fff" fill-opacity=".45" d="M14 2l5 5h-4a1 1 0 0 1-1-1z"/><path fill="#fff" d="M7.2 9.5h1.4l1.2 5 1.3-5h1.1l1.3 5 1.2-5h1.4l-1.9 7h-1.2l-1.2-4.6-1.2 4.6H9.1z"/></svg>';
+const IC_P='<svg class="ic" viewBox="0 0 24 24"><path fill="#D32F2F" d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path fill="#fff" fill-opacity=".45" d="M14 2l5 5h-4a1 1 0 0 1-1-1z"/><text x="12" y="17.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="6.2" fill="#fff">PDF</text></svg>';
+const setBtn=(b,ic,t)=>{b.innerHTML=ic+'<span>'+t+'</span>'};
+function salva(blob,n){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)}
+async function baixaPdf(tp,arq){
   const m=$('#msgBaixar');
-  if(!dataEscolhida()){vai(3);$('#falta').textContent='Escolha a data para salvar o PDF.';return}
-  await previa();if(!document.querySelector('#paginas .pagina')){m.textContent='⚠ Prévia indisponível.';return}
-  m.textContent='Na janela de impressão, escolha "Salvar como PDF".';PAGINAR.imprimir(nomeArq());
-};
-async function baixaExtra(tp,rotulo,arq){
+  if(!dataEscolhida()){vai(3);$('#falta').textContent='Escolha a data para baixar.';return}
+  const n=arq+($('#nome').value.trim()?'-'+slug($('#nome').value):'')+'.pdf';
+  try{
+    m.textContent='Gerando PDF…';
+    if(tp!==tipo){const v=await identidade(tp),b=await montaDocumento(tp);await PAGINAR.montar(b,v.imgs,v.perfil)}
+    else{await previa();if(!document.querySelector('#paginas .pagina'))throw new Error('Prévia indisponível.')}
+    const pdf=await PAGINAR.gerarPdf();salva(pdf,n);m.textContent='✔ '+n;
+  }catch(e){m.textContent='⚠ '+(e.message||'erro ao gerar PDF')}
+  finally{if(tp!==tipo)previa()}
+}
+async function baixaExtra(tp,arq){
   const m=$('#msgBaixar');
   if(!dataEscolhida()){vai(3);$('#falta').textContent='Escolha a data para baixar.';return}
   try{
-    m.textContent='Gerando…';const b=await montaDocumento(tp),a=document.createElement('a'),n=arq+($('#nome').value.trim()?'-'+slug($('#nome').value):'')+'.docx';
-    a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000);m.textContent='✔ '+n;
+    m.textContent='Gerando…';const b=await montaDocumento(tp),n=arq+($('#nome').value.trim()?'-'+slug($('#nome').value):'')+'.docx';
+    salva(b,n);m.textContent='✔ '+n;
   }catch(e){m.textContent='⚠ '+(e.message||'erro ao gerar')}
 }
+setBtn($('#baixar'),IC_W,'Baixar .docx');setBtn($('#pdf'),IC_P,'Baixar PDF');
+$('#pdf').onclick=()=>baixaPdf(tipo,T.arq);
 if(!PESSOA(tipo)){
-  const barra=document.querySelector('.barra'),mk=(id,t,tp,arq)=>{const b=document.createElement('button');b.id=id;b.className='sec';b.textContent=t;b.onclick=()=>baixaExtra(tp,t,arq);barra.insertBefore(b,$('#msgBaixar'))};
-  mk('baixaProc','⬇ Baixar procuração','procuracao','procuracao');
-  mk('baixaHipo','⬇ Baixar dec. de hipossuficiência','hipossuficiencia','hipossuficiencia');
+  const barra=document.querySelector('.barra'),mk=(id,ic,t,fn)=>{const b=document.createElement('button');b.id=id;b.className='sec';setBtn(b,ic,t);b.onclick=fn;barra.insertBefore(b,$('#msgBaixar'))};
+  mk('baixaProc',IC_W,'Procuração',()=>baixaExtra('procuracao','procuracao'));
+  mk('baixaProcPdf',IC_P,'Procuração',()=>baixaPdf('procuracao','procuracao'));
+  mk('baixaHipo',IC_W,'Dec. de hipossuficiência',()=>baixaExtra('hipossuficiencia','hipossuficiencia'));
+  mk('baixaHipoPdf',IC_P,'Dec. de hipossuficiência',()=>baixaPdf('hipossuficiencia','hipossuficiencia'));
 }
 $('#limpar').onclick=()=>location.reload();
 $('#cpf').addEventListener('blur',()=>{const d=$('#cpf').value.replace(/\D/g,'');if(d.length===11){$('#cpf').value=`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;render()}});

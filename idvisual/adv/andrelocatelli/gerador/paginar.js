@@ -333,7 +333,34 @@
   }
   window.addEventListener('resize', function () { ajustarEscala(); });
 
-  function imprimir(nomeArquivo) {
+  // PDF direto (sem janela de impressão): cada página vira imagem 2,5x e entra num PDF do tamanho exato da página
+  async function aguardaImagens(paginas) {
+    const imgs = [];
+    paginas.forEach(function (p) { p.querySelectorAll('img').forEach(function (i) { imgs.push(i); }); });
+    await Promise.all(imgs.map(function (i) { return i.decode ? i.decode().catch(function () {}) : Promise.resolve(); }));
+  }
+  async function gerarPdf() {
+    const paginas = Array.prototype.slice.call(document.querySelectorAll('#paginas .pagina'));
+    if (!paginas.length) throw new Error('Prévia indisponível.');
+    if (!window.html2canvas || !window.jspdf) throw new Error('Biblioteca de PDF não carregada.');
+    const alvo = $('#paginas'), zoomAntes = alvo.style.zoom;
+    alvo.style.zoom = '1';
+    try {
+      await aguardaImagens(paginas);
+      const W = paginas[0].getBoundingClientRect().width, H = parseFloat(paginas[0].style.minHeight);
+      const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: [W * 0.75, H * 0.75], orientation: 'p', compress: true });
+      for (let k = 0; k < paginas.length; k++) {
+        const pg = paginas[k];
+        const cv = await window.html2canvas(pg, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true, logging: false, width: W, height: H, windowWidth: Math.ceil(W) + 40 });
+        if (k) pdf.addPage([W * 0.75, H * 0.75], 'p');
+        pdf.addImage(cv.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, W * 0.75, H * 0.75, undefined, 'FAST');
+      }
+      return pdf.output('blob');
+    } finally { alvo.style.zoom = zoomAntes; }
+  }
+
+  async function imprimir(nomeArquivo) {
+    await aguardaImagens(Array.prototype.slice.call(document.querySelectorAll('#paginas .pagina')));
     const paginas = Array.prototype.slice.call(document.querySelectorAll('#paginas .pagina'));
     if (!paginas.length) return;
     const W = paginas[0].getBoundingClientRect().width / (Number($('#paginas').style.zoom) || 1);
@@ -354,5 +381,5 @@
     window.print();
   }
 
-  window.PAGINAR = { montar: montarPaginas, imprimir: imprimir };
+  window.PAGINAR = { montar: montarPaginas, imprimir: imprimir, gerarPdf: gerarPdf };
 })();
