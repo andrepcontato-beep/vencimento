@@ -188,7 +188,7 @@ async function contratoFC(v,data){
   const c=conc(v.sexo),q=qualificacao(v,c);
   const rs=ps[3].match(/<w:r[ >][\s\S]*?<\/w:r>/g);
   const rB=rPrDe(rs[0]),rN=rPrDe(rs[2]);
-  const pPr=ps[3].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0];
+  const pPr=ps[3].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:ind [^>]*\/>/,'<w:ind w:right="156"/>'); // alinha com os demais parágrafos
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}.`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
   subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
