@@ -367,7 +367,7 @@
         const t = function (v) { return String(Math.round(v * TWIP_CM)); };
         mar.setAttributeNS(NS_W, 'w:top', t(cm.topo)); mar.setAttributeNS(NS_W, 'w:bottom', t(cm.inferior));
         mar.setAttributeNS(NS_W, 'w:left', t(cm.esquerda)); mar.setAttributeNS(NS_W, 'w:right', t(cm.direita));
-        mar.setAttributeNS(NS_W, 'w:header', '708'); mar.setAttributeNS(NS_W, 'w:footer', '708');
+        mar.setAttributeNS(NS_W, 'w:header', '708'); mar.setAttributeNS(NS_W, 'w:footer', cm.rodapeCm ? t(cm.rodapeCm) : '708');
         if (!mar.getAttributeNS(NS_W, 'gutter')) mar.setAttributeNS(NS_W, 'w:gutter', '0');
       }
       if (larguraTexto === null) {

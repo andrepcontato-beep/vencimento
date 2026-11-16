@@ -21,7 +21,7 @@ const TIPOS={
 };
 const tipo=(new URLSearchParams(location.search).get('doc'))||'procuracao';
 const T=TIPOS[tipo]||TIPOS.procuracao;
-$('#h1').textContent=T.nome;document.title=T.nome+' · André Locatelli';
+$('#h1').textContent=tipo==='procuracao'?'Gerador de Procurações':T.nome;document.title=T.nome+' · André Locatelli';
 
 /* ---------- campos ---------- */
 const BASE=[
@@ -75,6 +75,13 @@ async function carregaPerfil(){
   const url=new URL('perfis/andrelocatelli/perfil.json',location.href),p=await (await fetch(url)).json();
   p.logoUrl=new URL(p.logo,url).href;perfil=IDV.normalizarPerfil(p);perfil.logoUrl=p.logoUrl;
   perfil.assinatura=Object.assign({},perfil.assinatura,{ativa:false}); // os modelos já trazem a assinatura própria
+  if(tipo==='procuracao'||tipo==='hipossuficiencia'){ // formato do modelo da procuração: logo maior, margens de 2,5 cm
+    perfil.cabecalho=Object.assign({},perfil.cabecalho,{logoLarguraCm:1.75});
+    perfil.margensCm=Object.assign({},perfil.margensCm,{topo:4.6,esquerda:2.5,direita:2.5,rodapeCm:0.9});
+    perfil.fileteExtEsquerdaCm=0.3;
+    perfil.rodape=Object.assign({},perfil.rodape,{tamanhoPt:7.5});
+    perfil.marcaDagua=Object.assign({},perfil.marcaDagua,{posicao:'centro',larguraCm:12,opacidade:0.07});
+  }
   imgs=await IDV.prepararImagens(perfil);
 }
 async function montaDocumento(){
@@ -144,5 +151,5 @@ document.querySelectorAll('[data-vai]').forEach(b=>b.onclick=()=>vai(+b.dataset.
 $('#manual').onclick=()=>{manualMode=true;vai(2)};
 $('#seguir').onclick=()=>{manualMode=false;vai(2)};
 $('#seguir2').onclick=()=>vai(3);
-montaData();vai(1);
+montaData();vai(1);carregaPerfil().catch(()=>{});
 })();

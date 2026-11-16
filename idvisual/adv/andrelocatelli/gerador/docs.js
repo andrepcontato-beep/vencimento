@@ -101,7 +101,7 @@ function blocoAssinatura(modeloP,v){
 function assinaturaPessoa(pData,v){
   const rp=rPrDe(pData.match(/<w:r>[\s\S]*?<\/w:r>/)[0]),rb=rp.replace('<w:color','<w:b/><w:bCs/><w:color');
   const pBase=pData.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0];
-  const pNome=pBase.replace('<w:pStyle w:val="Normal"/>','<w:pStyle w:val="Normal"/><w:keepNext/><w:pBdr><w:top w:val="single" w:sz="6" w:space="2" w:color="000000"/></w:pBdr>').replace(/<w:spacing [^>]*\/>/,'<w:spacing w:before="900" w:after="0" w:lineRule="auto" w:line="360"/><w:ind w:left="1417" w:right="1417"/>');
+  const pNome=pBase.replace('<w:pStyle w:val="Normal"/>','<w:pStyle w:val="Normal"/><w:keepNext/><w:pBdr><w:top w:val="single" w:sz="6" w:space="2" w:color="000000"/></w:pBdr>').replace(/<w:spacing [^>]*\/>/,'<w:spacing w:before="500" w:after="0" w:lineRule="auto" w:line="360"/><w:ind w:left="1417" w:right="1417"/>');
   return `<w:p>${pNome}${run(rb,ou(v,'nome',B).toUpperCase())}</w:p><w:p>${pBase}${run(rp,'CPF nº '+ou(v,'cpf',B))}</w:p>`;
 }
 
@@ -118,7 +118,7 @@ async function basePessoa(v,data,tipo){
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
   const rpTit='<w:rPr><w:rFonts w:cs="Arial" w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:bCs/><w:color w:val="9C7D33"/><w:spacing w:val="77"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
   subst(0,`<w:p>${ps[0].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0]}${run(rpTit,tipo==='procuracao'?'PROCURAÇÃO':'DECLARAÇÃO DE HIPOSSUFICIÊNCIA')}</w:p>`);
-  const p10=ps[10].replace(/w:left="-397"/,'w:left="-454"').replace(/<w:sz w:val="20"\/>/g,'<w:sz w:val="19"/>').replace(/<w:szCs w:val="20"\/>/g,'<w:szCs w:val="19"/>');
+  const p10=ps[10].replace(/w:left="-397"/,'w:left="-454"').replace(/w:line="360"/,'w:line="323"').replace(/<w:sz w:val="20"\/>/g,'<w:sz w:val="19"/>').replace(/<w:szCs w:val="20"\/>/g,'<w:szCs w:val="19"/>');
   if(tipo==='procuracao')subst(8,ps[8].replace(/<w:sz w:val="22"\/>/g,'<w:sz w:val="21"/>').replace(/<w:szCs w:val="22"\/>/g,'<w:szCs w:val="21"/>'));
   if(tipo==='procuracao'){
     subst(3,`<w:p>${pPr}${run(rB,'OUTORGANTE: ')}${run(rB,q.nome)}${run(rN,resto+'.')}</w:p>`);
@@ -138,6 +138,7 @@ async function basePessoa(v,data,tipo){
   subst(4,'');subst(5,'');subst(6,'');
   x=x.replace(ps[11],()=>ps[11].replace(/<w:t>[^<]*<\/w:t>/,()=>`<w:t>${X(dt)}</w:t>`).replace('w:line="360"/>','w:line="360" w:before="480"/>'));
   x=x.replace(ps[13],()=>assinaturaPessoa(ps[11],v));
+  x=x.replace(/w:line="360"/g,'w:line="313"').replace(/w:left="-(454|397)"/g,'w:left="0"'); // entrelinha e alinhamento do modelo
   zip.file('word/document.xml',x);
   return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
 }
