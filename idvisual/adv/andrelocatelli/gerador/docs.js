@@ -156,7 +156,11 @@ async function contratoSM(v,data){
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)} e ${c.inscrito} no CPF sob o nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, Município de ${ou(v,'cid',B)}, telefone/WhatsApp ${tel}.`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
   if(!/PREVIDENCI/.test(txt(ps[1])))modelo();
-  subst(0,sub(ps[0],'CONTRATO DE HONORÁRIOS ADVOCATÍCIOS','CONTRATO PARTICULAR DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS').replace('w:after="40"','w:after="320"')); // o espaço que o subtítulo dava passa para o título
+  { // título no mesmo layout do contrato de serviços previdenciários
+    const xf=await (await abre(MODELOS.fc)).file('word/document.xml').async('string'),pf=paragrafos(xf);
+    const rpT=rPrDe(pf[0].match(/<w:r[ >][\s\S]*?<\/w:r>/)[0]);
+    subst(0,`<w:p>${pf[0].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0]}${run(rpT,'CONTRATO PARTICULAR DE PRESTAÇÃO DE SERVIÇOS ADVOCATÍCIOS')}</w:p>${pf[1]}${pf[2]}`);
+  }
   subst(1,''); // tira o subtítulo "(PREVIDENCIÁRIO – ADMINISTRATIVO)"
   subst(2,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
   // data provável do parto
