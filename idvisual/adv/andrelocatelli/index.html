@@ -1,175 +1,35 @@
 <!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
-<title>Identidade visual para petições</title>
-<link rel="icon" href="data:,">
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>André Locatelli · Advocacia</title>
 <style>
-  :root {
-    --ouro: #C6A253; --ouro-esc: #8A6F3C; --tinta: #262624; --cinza: #5B5B58;
-    --papel: #FAF8F4; --linha: #E4DCCB; --erro: #9B2C2C; --ok: #2F6B3B;
-  }
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--papel); color: var(--tinta); font: 16px/1.5 Cambria, Georgia, "Times New Roman", serif; }
-  .app { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
-  h1 { font-size: 1.5rem; margin: 0 0 4px; letter-spacing: .02em; }
-  .sub { color: var(--cinza); margin: 0 0 24px; }
-  .topo { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid var(--ouro); padding-bottom: 14px; margin-bottom: 22px; }
-  .topo img { height: 56px; width: auto; display: block; }
-  .passo { background: #fff; border: 1px solid var(--linha); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
-  .passo h2 { font-size: .95rem; margin: 0 0 12px; color: var(--ouro-esc); text-transform: uppercase; letter-spacing: .08em; }
-  label { display: block; font-size: .9rem; color: var(--cinza); margin: 10px 0 4px; }
-  select, input[type=text], input[type=number], textarea { width: 100%; padding: 9px 10px; border: 1px solid #CFC6B2; border-radius: 6px; font: inherit; background: #fff; color: var(--tinta); }
-  textarea { min-height: 64px; resize: vertical; }
-  input[type=color] { width: 48px; height: 36px; padding: 2px; border: 1px solid #CFC6B2; border-radius: 6px; background: #fff; }
-  input[type=range] { width: 100%; accent-color: var(--ouro-esc); }
-  .linha { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .chk { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; color: var(--tinta); font-size: .95rem; }
-  .chk input { width: 18px; height: 18px; accent-color: var(--ouro-esc); }
-  button, .btn { font: inherit; cursor: pointer; border-radius: 8px; padding: 10px 16px; border: 1px solid var(--ouro-esc); background: #fff; color: var(--ouro-esc); }
-  button.primario, .btn.primario { background: var(--ouro-esc); color: #fff; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  button:focus-visible, .zona:focus-visible, summary:focus-visible { outline: 3px solid var(--ouro); outline-offset: 2px; }
-  .acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-  details { margin-top: 14px; border-top: 1px dashed var(--linha); padding-top: 12px; }
-  summary { cursor: pointer; color: var(--ouro-esc); }
-  .zona { border: 2px dashed var(--ouro); border-radius: 10px; padding: 28px 16px; text-align: center; background: var(--papel); cursor: pointer; }
-  .zona.sobre { background: #F3EBD7; }
-  .zona strong { display: block; font-size: 1.05rem; }
-  .zona small { color: var(--cinza); }
-  #msg { margin: 12px 0 0; min-height: 1.4em; }
-  #msg.erro { color: var(--erro); } #msg.ok { color: var(--ok); }
-  .nota { color: var(--cinza); font-size: .88rem; margin: 10px 0 0; }
-  .previa-caixa { overflow: auto; background: #E9E4D8; border-radius: 8px; padding: 12px; max-height: 80vh; }
-  .previa-caixa .docx-wrapper { background: transparent !important; padding: 0 !important; }
-  /* cores padrão de estilos (títulos/links azuis) não valem na prévia/PDF: o texto segue a cor do documento; cor definida no próprio trecho continua valendo */
-  #paginas p[class*="docx_heading"] span, #paginas p.docx_title span, #paginas p.docx_subtitle span, #paginas span.docx_hyperlink { color: inherit; }
-  #paginas a { color: inherit; }
-  [hidden] { display: none !important; }
-  @media print {
-    html, body { background: #fff !important; margin: 0 !important; }
-    .app > *:not(#previa) { display: none !important; }
-    #medidor { display: none !important; }
-    #previa { border: 0 !important; padding: 0 !important; margin: 0 !important; background: none !important; }
-    #previa > *:not(.previa-caixa) { display: none !important; }
-    .app { padding: 0 !important; max-width: none !important; }
-    .previa-caixa { overflow: visible !important; max-height: none !important; padding: 0 !important; background: none !important; border-radius: 0 !important; }
-    #paginas { zoom: 1 !important; }
-    #paginas .pagina { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; overflow: hidden !important; }
-    #paginas .pagina:last-child { break-after: auto; page-break-after: auto; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-<main class="app">
-  <div class="topo">
-    <img id="logoTopo" alt="" hidden>
-    <div>
-      <h1>Identidade visual para petições</h1>
-      <p class="sub" style="margin:0">Envie a minuta em Word e receba pronta, com logo, marca d'água e rodapé do escritório.</p>
-    </div>
-  </div>
-
-  <section class="passo" id="passoIdentidade">
-    <h2>1. Identidade do escritório</h2>
-    <label for="selPerfil">Escritório</label>
-    <select id="selPerfil"></select>
-
-    <details id="detalhesEditar">
-      <summary>Criar ou ajustar identidade</summary>
-      <label for="fNome">Nome do escritório</label>
-      <input type="text" id="fNome" autocomplete="off">
-
-      <label for="fLogo">Logo (PNG, JPG, WebP ou SVG)</label>
-      <input type="file" id="fLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml">
-      <label class="chk"><input type="checkbox" id="fFundo"> Remover fundo branco do logo</label>
-
-      <div class="linha">
-        <div><label for="fLogoLarg">Largura do logo no cabeçalho (cm)</label><input type="number" id="fLogoLarg" min="0.3" max="8" step="0.1"></div>
-        <div><label for="fAlin">Posição do logo</label>
-          <select id="fAlin"><option value="center">Centro</option><option value="left">Esquerda</option><option value="right">Direita</option></select></div>
-        <div><label for="fCorFilete">Cor dos filetes</label><br><input type="color" id="fCorFilete"></div>
-      </div>
-      <label class="chk"><input type="checkbox" id="fFileteCab"> Filete abaixo do cabeçalho</label>
-      <label for="fFilExt">Filetes: avançar além da margem esquerda (cm)</label><input type="number" id="fFilExt" min="0" max="3" step="0.1">
-
-      <label for="fRodape">Texto do rodapé (endereço, OAB, contatos)</label>
-      <textarea id="fRodape"></textarea>
-      <div class="linha">
-        <div><label for="fRodapeCor">Cor do texto do rodapé</label><br><input type="color" id="fRodapeCor"></div>
-        <div><label for="fRodapeTam">Tamanho (pt)</label><input type="number" id="fRodapeTam" min="5" max="14" step="0.5"></div>
-      </div>
-      <label class="chk"><input type="checkbox" id="fFileteRod"> Filete acima do rodapé</label>
-      <label class="chk"><input type="checkbox" id="fNumPag"> Numerar páginas</label>
-
-      <label class="chk"><input type="checkbox" id="fMarca"> Marca d'água (logo clarinho ao fundo)</label>
-      <div class="linha">
-        <div><label for="fOpac">Intensidade da marca d'água: <span id="fOpacVal"></span>%</label><input type="range" id="fOpac" min="2" max="30" step="1"></div>
-        <div><label for="fMarcaLarg">Tamanho da marca (cm)</label><input type="number" id="fMarcaLarg" min="2" max="21" step="0.5"></div>
-        <div><label for="fMarcaPos">Posição da marca</label>
-          <select id="fMarcaPos">
-            <option value="inferior-direita">Canto inferior direito</option><option value="inferior-esquerda">Canto inferior esquerdo</option>
-            <option value="superior-direita">Canto superior direito</option><option value="superior-esquerda">Canto superior esquerdo</option>
-            <option value="centro">Centro da página</option></select></div>
-      </div>
-
-      <label class="chk"><input type="checkbox" id="fAssin"> Padronizar a assinatura no fim da petição (substitui a linha, o nome e a OAB)</label>
-      <div class="linha">
-        <div><label for="fAssNome">Nome na assinatura</label><input type="text" id="fAssNome"></div>
-        <div><label for="fAssTit">Título (opcional)</label><input type="text" id="fAssTit"></div>
-        <div><label for="fAssOab">OAB</label><input type="text" id="fAssOab"></div>
-      </div>
-
-      <label class="chk"><input type="checkbox" id="fAplicaMar"> Ajustar as margens do documento às da identidade</label>
-      <div class="linha">
-        <div><label for="fMTopo">Topo (cm)</label><input type="number" id="fMTopo" min="1" max="8" step="0.1"></div>
-        <div><label for="fMInf">Inferior (cm)</label><input type="number" id="fMInf" min="1" max="8" step="0.1"></div>
-        <div><label for="fMEsq">Esquerda (cm)</label><input type="number" id="fMEsq" min="1" max="8" step="0.1"></div>
-        <div><label for="fMDir">Direita (cm)</label><input type="number" id="fMDir" min="1" max="8" step="0.1"></div>
-      </div>
-
-      <div class="acoes">
-        <button type="button" id="btnAplicarId" class="primario">Usar esta identidade</button>
-        <button type="button" id="btnSalvarNav">Salvar neste navegador</button>
-        <button type="button" id="btnExportar">Exportar identidade (.json)</button>
-        <button type="button" id="btnImportar">Importar identidade (.json)</button>
-        <input type="file" id="fImportar" accept="application/json,.json" hidden>
-      </div>
-      <p class="nota">Identidades salvas ficam só neste navegador. Para disponibilizar uma identidade a todos, exporte o .json e envie ao responsável pelo site (veja o README).</p>
-    </details>
-  </section>
-
-  <section class="passo" id="passoArquivo">
-    <h2>2. Documento</h2>
-    <div class="zona" id="zona" tabindex="0" role="button" aria-label="Escolher arquivo do Word para aplicar a identidade">
-      <strong>Arraste a minuta aqui ou clique para escolher</strong>
-      <small>Word (.docx). Tudo é feito no seu navegador; o arquivo não é enviado a nenhum servidor.</small>
-    </div>
-    <input type="file" id="fArquivo" accept=".docx,.doc,.odt,.rtf,.dotx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
-    <p id="msg" role="status" aria-live="polite"></p>
-  </section>
-
-  <section class="passo" id="previa" hidden>
-    <h2>3. Resultado</h2>
-    <div class="acoes" style="margin:0 0 14px">
-      <button type="button" id="btnDocx" class="primario">Baixar Word (.docx)</button>
-      <button type="button" id="btnPdf">Baixar PDF</button>
-    </div>
-    <p class="nota" style="margin:0 0 10px"><strong>PDF:</strong> abre a janela de impressão do navegador. Em <em>Destino</em>, escolha <strong>Salvar como PDF</strong>; as margens já saem zeradas. O PDF é gerado aqui mesmo, sem enviar a petição a nenhum servidor.</p>
-    <p class="nota" style="margin:0 0 12px"><strong>Atenção:</strong> as quebras de página da prévia e do PDF são calculadas por esta página e podem diferir um pouco das do Word. Para paginação idêntica à do Word, use o .docx e <em>Arquivo → Salvar como → PDF</em> no próprio Word.</p>
-    <div class="previa-caixa"><div id="paginas"></div></div>
-  </section>
-  <p class="nota" style="text-align:center;margin-top:24px">Versão da página: 2026-11-15 17:42</p>
-  <div id="medidor" aria-hidden="true" style="position:absolute;left:-10000px;top:0;width:1000px;visibility:hidden"></div>
-</main>
-
-<script src="vendor/jszip.min.js"></script>
-<script src="vendor/docx-preview.min.js"></script>
-<script src="engine.js?v=202611151742"></script>
-<script src="app.js?v=202611151742"></script>
-</body>
-</html>
+:root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc}
+@media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,Segoe UI,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px}
+.logo{width:min(300px,70vw);height:auto;display:block;margin:0 auto 10px}
+.fio{width:80px;height:2px;background:var(--ouro);margin:14px auto 28px}
+nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:min(520px,100%)}
+@media(max-width:480px){nav{grid-template-columns:1fr}}
+.b{display:block;text-align:center;text-decoration:none;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-bottom:3px solid var(--ouro);border-radius:10px;padding:18px 12px;font:600 15px system-ui,sans-serif;cursor:pointer;width:100%}
+.b:hover{border-color:var(--ouro);background:var(--ouro);color:#fff}
+.b small{display:block;font-weight:400;font-size:12px;color:var(--mut);margin-top:3px}.b:hover small{color:#fff}
+#sub{display:none;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#sub.on{display:grid}@media(max-width:480px){#sub{grid-template-columns:1fr}}
+#sub .b{border-bottom-color:var(--ouro2);background:var(--bg)}
+footer{margin-top:34px;font-size:12px;color:var(--mut)}
+</style></head><body>
+<img class="logo" src="perfis/andrelocatelli/logo.png" alt="André Locatelli">
+<div class="fio"></div>
+<nav>
+ <a class="b" href="pecas.html">Identidade visual<small>peças / petições</small></a>
+ <a class="b" href="gerador.html?doc=procuracao">Procurações<small>leitura de RG/CNH e comprovante</small></a>
+ <a class="b" href="gerador.html?doc=hipossuficiencia">Hipossuficiência<small>declaração</small></a>
+ <button class="b" id="bc" aria-expanded="false">Contratos<small>escolher modelo ▾</small></button>
+ <div id="sub">
+  <a class="b" href="gerador.html?doc=salario-maternidade">Contrato salário-maternidade</a>
+  <a class="b" href="gerador.html?doc=previdenciario">Contrato serviços previdenciários</a>
+ </div>
+</nav>
+<footer>OAB/GO 73.211 · Piracanjuba/GO</footer>
+<script>const bc=document.getElementById('bc'),s=document.getElementById('sub');bc.onclick=()=>{const o=s.classList.toggle('on');bc.setAttribute('aria-expanded',o)}</script>
+</body></html>
