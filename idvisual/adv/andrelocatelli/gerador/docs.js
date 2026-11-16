@@ -101,8 +101,8 @@ function blocoAssinatura(modeloP,v){
 function assinaturaPessoa(pData,v){
   const rp=rPrDe(pData.match(/<w:r>[\s\S]*?<\/w:r>/)[0]),rb=rp.replace('<w:color','<w:b/><w:bCs/><w:color');
   const pBase=pData.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0];
-  const pNome=pBase.replace('<w:pStyle w:val="Normal"/>','<w:pStyle w:val="Normal"/><w:keepNext/><w:pBdr><w:top w:val="single" w:sz="6" w:space="2" w:color="000000"/></w:pBdr>').replace(/<w:spacing [^>]*\/>/,'<w:spacing w:before="500" w:after="0" w:lineRule="auto" w:line="360"/><w:ind w:left="1417" w:right="1417"/>');
-  return `<w:p>${pNome}${run(rb,ou(v,'nome',B).toUpperCase())}</w:p><w:p>${pBase}${run(rp,'CPF nº '+ou(v,'cpf',B))}</w:p>`;
+  const pNome=pBase.replace('<w:pStyle w:val="Normal"/>','<w:pStyle w:val="Normal"/><w:keepNext/><w:pBdr><w:top w:val="single" w:sz="6" w:space="2" w:color="000000"/></w:pBdr>').replace(/<w:spacing [^>]*\/>|<w:ind [^>]*\/>/g,'').replace(/<w:jc /,'<w:spacing w:before="720" w:after="0" w:lineRule="auto" w:line="360"/><w:ind w:left="1417" w:right="1417"/><w:jc ');
+  return `<w:p>${pNome}${run(rb,ou(v,'nome',B).toUpperCase())}</w:p><w:p>${pBase.replace(/<w:b\/>|<w:bCs\/>/g,'')}${run(rp.replace(/<w:b\/>|<w:bCs\/>/g,''),'CPF nº '+ou(v,'cpf',B))}</w:p>`;
 }
 
 /* ---------- procuração e hipossuficiência (mesmo modelo-base) ---------- */
@@ -202,7 +202,10 @@ async function contratoFC(v,data){
   const dt=`${ou(v,'local','Piracanjuba/GO')}, ${dataExt(data)}.`;
   const p42=ps[42],pp=p42.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:tabs>[\s\S]*?<\/w:tabs>/,'');
   subst(42,`<w:p>${pp}${run(rPrDe(p42.match(/<w:r>[\s\S]*?<\/w:r>/g).pop()),dt)}</w:p>`);
-  subst(47,ps[47]+blocoAssinatura(ps[47],v));
+  [43,44,45,48,49,50,51,55,56,57,58,59,60].forEach(i=>subst(i,'')); // parágrafos vazios: a assinatura do advogado volta para a mesma página
+  subst(52,ps[52].replace('w:before="720"','w:before="360"'));
+  subst(46,''); // tira a linha desenhada (fixa na página) e a palavra CONTRATANTE: a assinatura é nome + CPF sob uma linha
+  subst(47,assinaturaPessoa(ps[47],v));
   zip.file('word/document.xml',x);
   return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
 }
