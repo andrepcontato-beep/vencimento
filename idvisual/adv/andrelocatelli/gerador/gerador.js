@@ -43,7 +43,7 @@ $('#campos').innerHTML=BASE.map(f=>{
    <div id="boxPtxt" hidden style="margin-top:6px"><div class="st" style="color:var(--mut)">O rótulo <b>PODERES:</b> já vem em negrito; o que você digitar entra logo depois dele.</div><textarea id="ptxt" rows="6" style="width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:var(--card);color:var(--tx)" placeholder="pelo presente instrumento o outorgante confere aos outorgados poderes para…"></textarea></div></div>`;
   const ctl=f.sel?`<select id="${f.k}">${f.sel.map(o=>Array.isArray(o)?`<option value="${o[0]}">${o[1]}</option>`:`<option>${o}</option>`).join('')}</select>`
    :`<input type="${f.t||'text'}" id="${f.k}" value="${f.v||''}" placeholder="${f.ph||''}">`;
-  return `<div class="fld" data-k="${f.k}"><label>${f.r}</label>${ctl}</div>`}).join('');
+  return `<div class="fld" data-k="${f.k}"><label>${f.r}</label>${ctl}${f.k==='sexo'?'<div class="st" id="dicaSexo" style="color:var(--mut)"></div>':''}</div>`}).join('');
 const IDS=BASE.map(f=>f.k),PRECISA=BASE.filter(f=>f.need).map(f=>f.k);
 const vazio=k=>!$('#'+k).value.trim();
 const valores=()=>{const o={};IDS.forEach(k=>{if(k==='pmodo'){const r=document.querySelector('[name=pmodo]:checked');o.pmodo=r?r.value:'prev';o.ptxt=$('#ptxt').value}else o[k]=$('#'+k).value});o.local=$('#local').value;return o};
@@ -89,7 +89,17 @@ async function montaDocumento(){
   const buf=await DOCS.gerar(tipo,valores(),dataEscolhida());
   return IDV.aplicarIdentidade(buf,perfil,imgs);
 }
+let sexoManual=false,sexoAuto='';
+function inferirSexo(){
+  const sel=document.getElementById('sexo');if(!sel||sexoManual)return;
+  const r=SEXO.por($('#nome').value),dica=$('#dicaSexo');
+  if(r.sexo){sel.value=r.sexo;sel.classList.add('auto');sexoAuto=r.sexo;
+    if(dica)dica.textContent='Detectado pelo nome ('+(r.sexo==='F'?'feminino':'masculino')+(r.base==='terminação'?', menos certo':'')+') — confira.'}
+  else{if(sexoAuto){sel.value='';sexoAuto=''}sel.classList.remove('auto');
+    if(dica)dica.textContent=$('#nome').value.trim()?'Não consegui saber pelo nome: sai como "brasileiro(a)", "casado(a)"… Escolha para ajustar.':''}
+}
 function render(){
+  inferirSexo();
   const f=PRECISA.filter(vazio).map(k=>BASE.find(b=>b.k===k).r);if(!dataEscolhida())f.push('data');
   $('#falta').textContent=f.length?'Falta: '+f.join(', '):'';
   clearTimeout(timer);timer=setTimeout(previa,400);
@@ -126,12 +136,14 @@ $('#pdf').onclick=async()=>{
 };
 $('#limpar').onclick=()=>location.reload();
 $('#cpf').addEventListener('blur',()=>{const d=$('#cpf').value.replace(/\D/g,'');if(d.length===11){$('#cpf').value=`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;render()}});
+if($('#sexo'))$('#sexo').addEventListener('change',()=>{sexoManual=true;$('#sexo').classList.remove('auto');$('#dicaSexo').textContent=''});
 document.querySelectorAll('[name=pmodo]').forEach(r=>r.addEventListener('change',()=>{$('#boxPtxt').hidden=document.querySelector('[name=pmodo]:checked').value!=='digitar'}));
 document.querySelectorAll('#campos input,#campos select,#campos textarea,#local').forEach(el=>{el.addEventListener('input',()=>{el.classList.remove('auto');render()});el.addEventListener('change',render)});
 
 /* ---------- navegação ---------- */
 let pag=1,lidos=false,manualMode=false;
 function organiza(manual){
+  inferirSexo();
   const F=$('#boxFalta'),L=$('#boxLido');
   IDS.forEach(k=>{const w=document.querySelector('.fld[data-k='+k+']');
     const falta=k==='pmodo'?false:manual?true:(PRECISA.includes(k)?vazio(k):k==='sexo'?!$('#sexo').value:false);
