@@ -46,7 +46,7 @@ $('#campos').innerHTML=BASE.map(f=>{
   return `<div class="fld" data-k="${f.k}"><label>${f.r}</label>${ctl}${f.k==='sexo'?'<div class="st" id="dicaSexo" style="color:var(--mut)"></div>':''}</div>`}).join('');
 const IDS=BASE.map(f=>f.k),PRECISA=BASE.filter(f=>f.need).map(f=>f.k);
 const vazio=k=>!$('#'+k).value.trim();
-const valores=()=>{const o={};IDS.forEach(k=>{if(k==='pmodo'){const r=document.querySelector('[name=pmodo]:checked');o.pmodo=r?r.value:'prev';o.ptxt=$('#ptxt').value}else o[k]=$('#'+k).value});o.local=$('#local').value;return o};
+const valores=()=>{const o={};IDS.forEach(k=>{if(k==='pmodo'){const r=document.querySelector('[name=pmodo]:checked');o.pmodo=r?r.value:'prev';o.ptxt=$('#ptxt').value}else o[k]=$('#'+k).value});o.local=$('#local').value;if(T.sexoFixo)o.sexo='F';return o};
 
 /* ---------- data ---------- */
 function proxUtil(d){const x=new Date(d);do{x.setDate(x.getDate()+1)}while([0,6].includes(x.getDay()));return x}
@@ -69,25 +69,36 @@ function dataEscolhida(){
 }
 
 /* ---------- identidade + prévia ---------- */
-let perfil=null,imgs=null,blobFinal=null,tok=0,timer=null;
-async function carregaPerfil(){
-  if(perfil)return;
+let perfil=null,imgs=null,blobFinal=null,tok=0,timer=null,base=null;
+const PESSOA=t=>t==='procuracao'||t==='hipossuficiencia';
+const variantes={};
+async function carregaBase(){
+  if(base)return base;
   const url=new URL('perfis/andrelocatelli/perfil.json',location.href),p=await (await fetch(url)).json();
-  p.logoUrl=new URL(p.logo,url).href;perfil=IDV.normalizarPerfil(p);perfil.logoUrl=p.logoUrl;
-  perfil.assinatura=Object.assign({},perfil.assinatura,{ativa:false}); // os modelos já trazem a assinatura própria
-  if(tipo==='procuracao'||tipo==='hipossuficiencia'){ // formato do modelo da procuração: logo maior, margens de 2,5 cm
-    perfil.cabecalho=Object.assign({},perfil.cabecalho,{logoLarguraCm:1.75});
-    perfil.margensCm=Object.assign({},perfil.margensCm,{topo:4.6,esquerda:2.5,direita:2.5,rodapeCm:0.9});
-    perfil.fileteExtEsquerdaCm=0.3;
-    perfil.rodape=Object.assign({},perfil.rodape,{tamanhoPt:6.5});
-    perfil.marcaDagua=Object.assign({},perfil.marcaDagua,{posicao:'centro',larguraCm:12,opacidade:0.07});
-  }
-  imgs=await IDV.prepararImagens(perfil);
+  p.logoUrl=new URL(p.logo,url).href;base=p;return p;
 }
-async function montaDocumento(){
-  await carregaPerfil();
-  const buf=await DOCS.gerar(tipo,valores(),dataEscolhida());
-  return IDV.aplicarIdentidade(buf,perfil,imgs);
+/* identidade por tipo: procuração e declaração seguem o modelo (logo maior, margens 2,5 cm); contratos, a identidade padrão */
+async function identidade(tp){
+  const chave=PESSOA(tp)?'pessoa':'padrao';
+  if(variantes[chave])return variantes[chave];
+  const p0=await carregaBase(),pf=IDV.normalizarPerfil(JSON.parse(JSON.stringify(p0)));pf.logoUrl=p0.logoUrl;
+  pf.assinatura=Object.assign({},pf.assinatura,{ativa:false}); // os modelos já trazem a assinatura própria
+  if(chave==='pessoa'){
+    pf.cabecalho=Object.assign({},pf.cabecalho,{logoLarguraCm:1.75});
+    pf.margensCm=Object.assign({},pf.margensCm,{topo:4.6,esquerda:2.5,direita:2.5,rodapeCm:0.9});
+    pf.fileteExtEsquerdaCm=0.3;
+    pf.rodape=Object.assign({},pf.rodape,{tamanhoPt:6.5});
+    pf.marcaDagua=Object.assign({},pf.marcaDagua,{posicao:'centro',larguraCm:12,opacidade:0.07});
+  }
+  return variantes[chave]={perfil:pf,imgs:await IDV.prepararImagens(pf)};
+}
+async function carregaPerfil(){const v=await identidade(tipo);perfil=v.perfil;imgs=v.imgs}
+async function montaDocumento(tp){
+  tp=tp||tipo;const v=await identidade(tp);
+  const vals=valores();if(tp!==tipo){vals.pmodo='prev'} // documentos extras usam o texto padrão
+  if(T.sexoFixo&&tp!==tipo)vals.sexo='F';
+  const buf=await DOCS.gerar(tp,vals,dataEscolhida());
+  return IDV.aplicarIdentidade(buf,v.perfil,v.imgs);
 }
 let sexoManual=false,sexoAuto='';
 function inferirSexo(){
@@ -134,6 +145,19 @@ $('#pdf').onclick=async()=>{
   await previa();if(!document.querySelector('#paginas .pagina')){m.textContent='⚠ Prévia indisponível.';return}
   m.textContent='Na janela de impressão, escolha "Salvar como PDF".';PAGINAR.imprimir(nomeArq());
 };
+async function baixaExtra(tp,rotulo,arq){
+  const m=$('#msgBaixar');
+  if(!dataEscolhida()){vai(3);$('#falta').textContent='Escolha a data para baixar.';return}
+  try{
+    m.textContent='Gerando…';const b=await montaDocumento(tp),a=document.createElement('a'),n=arq+($('#nome').value.trim()?'-'+slug($('#nome').value):'')+'.docx';
+    a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000);m.textContent='✔ '+n;
+  }catch(e){m.textContent='⚠ '+(e.message||'erro ao gerar')}
+}
+if(!PESSOA(tipo)){
+  const barra=document.querySelector('.barra'),mk=(id,t,tp,arq)=>{const b=document.createElement('button');b.id=id;b.className='sec';b.textContent=t;b.onclick=()=>baixaExtra(tp,t,arq);barra.insertBefore(b,$('#msgBaixar'))};
+  mk('baixaProc','⬇ Baixar procuração','procuracao','procuracao');
+  mk('baixaHipo','⬇ Baixar dec. de hipossuficiência','hipossuficiencia','hipossuficiencia');
+}
 $('#limpar').onclick=()=>location.reload();
 $('#cpf').addEventListener('blur',()=>{const d=$('#cpf').value.replace(/\D/g,'');if(d.length===11){$('#cpf').value=`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;render()}});
 if($('#sexo'))$('#sexo').addEventListener('change',()=>{sexoManual=true;$('#sexo').classList.remove('auto');$('#dicaSexo').textContent=''});

@@ -117,7 +117,8 @@ async function basePessoa(v,data,tipo){
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, ${c.inscrito} no CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}, ${ou(v,'cid',B)}${q.cep}`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
   const rpTit='<w:rPr><w:rFonts w:cs="Arial" w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:bCs/><w:color w:val="9C7D33"/><w:spacing w:val="77"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
-  subst(0,`<w:p>${ps[0].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0]}${run(rpTit,tipo==='procuracao'?'PROCURAÇÃO':'DECLARAÇÃO DE HIPOSSUFICIÊNCIA')}</w:p>`);
+  const respiro=tipo==='hipossuficiencia'?'<w:p><w:pPr><w:pStyle w:val="Normal"/><w:spacing w:before="0" w:after="0" w:lineRule="auto" w:line="360"/><w:rPr><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:pPr></w:p>'.repeat(10):'';
+  subst(0,`<w:p>${ps[0].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0]}${run(rpTit,tipo==='procuracao'?'PROCURAÇÃO':'DECLARAÇÃO DE HIPOSSUFICIÊNCIA')}</w:p>${respiro}`);
   const p10=ps[10].replace(/w:left="-397"/,'w:left="-454"').replace(/w:line="360"/,'w:line="323"').replace(/<w:sz w:val="20"\/>/g,'<w:sz w:val="19"/>').replace(/<w:szCs w:val="20"\/>/g,'<w:szCs w:val="19"/>');
   if(tipo==='procuracao')subst(8,ps[8].replace(/<w:sz w:val="22"\/>/g,'<w:sz w:val="21"/>').replace(/<w:szCs w:val="22"\/>/g,'<w:szCs w:val="21"/>'));
   if(tipo==='procuracao'){
@@ -179,6 +180,7 @@ async function contratoSM(v,data){
   subst(30,sub(ps[30],'Piracanjuba/GO',ou(v,'foro','Piracanjuba/GO')));
   subst(32,sub(ps[32],'Piracanjuba, 16 de novembro de 2026.',`${ou(v,'local','Piracanjuba/GO')}, ${dataExt(data)}.`));
   subst(34,sub(ps[34],'DAYANNE MOREIRA DA SILVA',q.nome));
+  subst(38,ps[38].replace('w:before="760"','w:before="1300"'));
   subst(36,sub(ps[36],'064.420.551-24',ou(v,'cpf',B)));
   zip.file('word/document.xml',x);
   return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
@@ -217,8 +219,8 @@ async function contratoFC(v,data){
   const dt=`${ou(v,'local','Piracanjuba/GO')}, ${dataExt(data)}.`;
   const p42=ps[42],pp=p42.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:tabs>[\s\S]*?<\/w:tabs>/,'');
   subst(42,`<w:p>${pp}${run(rPrDe(p42.match(/<w:r>[\s\S]*?<\/w:r>/g).pop()),dt)}</w:p>`);
-  [43,44,45,48,49,50,51,55,56,57,58,59,60].forEach(i=>subst(i,'')); // parágrafos vazios: a assinatura do advogado volta para a mesma página
-  subst(52,ps[52].replace('w:before="720"','w:before="360"'));
+  [39,41,43,44,45,48,49,50,51,55,56,57,58,59,60].forEach(i=>subst(i,'')); // parágrafos vazios: a assinatura do advogado volta para a mesma página
+  subst(52,ps[52].replace('w:before="720"','w:before="1000"'));
   subst(46,''); // tira a linha desenhada (fixa na página) e a palavra CONTRATANTE: a assinatura é nome + CPF sob uma linha
   subst(47,assinaturaPessoa(ps[47],v));
   zip.file('word/document.xml',x);
