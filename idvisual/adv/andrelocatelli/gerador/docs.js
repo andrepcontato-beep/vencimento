@@ -187,7 +187,13 @@ async function contratoSM(v,data){
 }
 
 /* ---------- contrato de prestação de serviços previdenciários ---------- */
-async function contratoFC(v,data,generico){
+/* BPC/benefício do(a) filho(a): a mãe/o pai contrata representando o(a) beneficiário(a) */
+function representa(v){
+  const M=v.fsexo==='M',dt=v.fnasc&&/^\d{4}-\d{2}-\d{2}$/.test(v.fnasc)?(()=>{const[a,m,d]=v.fnasc.split('-').map(Number);return `${d} de ${MESES[m-1]} de ${a}`})():'____ de ______________ de ______';
+  const cond=v.fcond==='incapaz'?'incapaz':'menor de idade';
+  return `, neste ato representando ${M?'seu filho':'sua filha'} ${ou(v,'fnome',B)}, ${M?'brasileiro':'brasileira'}, ${cond}, nascid${M?'o':'a'} em ${dt}, inscrit${M?'o':'a'} no CPF sob o nº ${ou(v,'fcpf',B)}`;
+}
+async function contratoFC(v,data,generico,incapaz){
   const zip=await abre(MODELOS.fc);let x=await zip.file('word/document.xml').async('string');
   const ps=paragrafos(x);
   if(!/CONTRATA/.test(txt(ps[3]))||!/cinquenta/.test(txt(ps[26]))||!/R\$ 5\.000,00/.test(txt(ps[26]))||!/Piracanjuba/.test(txt(ps[38])))modelo();
@@ -195,7 +201,7 @@ async function contratoFC(v,data,generico){
   const rs=ps[3].match(/<w:r[ >][\s\S]*?<\/w:r>/g);
   const rB=rPrDe(rs[0]),rN=rPrDe(rs[2]);
   const pPr=ps[3].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:ind [^>]*\/>/,'<w:ind w:right="156"/>'); // alinha com os demais parágrafos
-  const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}, telefone/WhatsApp ${ou(v,'tel',B)}.`;
+  const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}, telefone/WhatsApp ${ou(v,'tel',B)}${incapaz?representa(v):''}.`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
   subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
   subst(4,'');subst(5,'');subst(6,'');
@@ -222,12 +228,14 @@ async function contratoFC(v,data,generico){
   ed(35,[['A CONTRATADA se responsabiliza por manterem','O CONTRATADO se responsabiliza por manter'],['protegerem','proteger']]);
   subst(38,sub(ps[38],'Comarca de Piracanjuba','Comarca de '+ou(v,'foro','Piracanjuba')));
   const dt=`${ou(v,'local','Piracanjuba/GO')}, ${dataExt(data)}.`;
-  const p42=ps[42],pp=p42.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:tabs>[\s\S]*?<\/w:tabs>/,'');
+  const kn=p=>incapaz?p.replace(/<w:pPr>(<w:pStyle [^>]*\/>)?/,m=>m+'<w:keepNext/>'):p; /* qualificação mais longa: fecho, data e assinaturas ficam juntos na última página */
+  if(incapaz)subst(40,ps[40].replace(/(<\/w:pPr>)/,'$1<w:r><w:br w:type="page"/></w:r>'));
+  const p42=ps[42],pp=kn(p42.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:tabs>[\s\S]*?<\/w:tabs>/,''));
   subst(42,`<w:p>${pp}${run(rPrDe(p42.match(/<w:r>[\s\S]*?<\/w:r>/g).pop()),dt)}</w:p>`);
-  [39,41,43,44,45,48,49,50,51,55,56,57,58,59,60].forEach(i=>subst(i,'')); // parágrafos vazios: a assinatura do advogado volta para a mesma página
-  subst(52,ps[52].replace('w:before="720"','w:before="1000"'));
+  [30,36,39,41,43,44,45,48,49,50,51,55,56,57,58,59,60].forEach(i=>subst(i,'')); // parágrafos vazios: a assinatura do advogado volta para a mesma página
+  subst(52,ps[52].replace('w:before="720"','w:before="700"'));
   subst(46,''); // tira a linha desenhada (fixa na página) e a palavra CONTRATANTE: a assinatura é nome + CPF sob uma linha
-  subst(47,assinaturaPessoa(ps[47],v));
+  subst(47,assinaturaPessoa(ps[47],v).replace('w:before="720"','w:before="560"'));
   zip.file('word/document.xml',x);
   return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
 }
@@ -237,7 +245,8 @@ const GERADORES={
   hipossuficiencia:(v,d)=>basePessoa(v,d,'hipossuficiencia'),
   'salario-maternidade':contratoSM,
   previdenciario:contratoFC,
-  'previdenciario-generico':(v,d)=>contratoFC(v,d,true)
+  'previdenciario-generico':(v,d)=>contratoFC(v,d,true),
+  'previdenciario-incapaz':(v,d)=>contratoFC(v,d,false,true)
 };
 window.DOCS={conc,extenso,reais,numBR,MESES,dataExt,gerar:(tipo,v,data)=>GERADORES[tipo](v,data)};
 })();

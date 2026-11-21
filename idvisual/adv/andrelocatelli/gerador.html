@@ -48,6 +48,7 @@ body.p1 main{grid-template-columns:minmax(330px,560px);justify-content:center}bo
   <div class="card"><h2>Documentos do cliente</h2>
   <label class="up" id="u1"><b>Identidade / CNH / documento com foto</b><span>foto, PDF ou imagem — frente (e verso, se precisar)</span><input type="file" id="f1" accept="image/*,application/pdf" multiple><div class="st" id="s1"></div></label>
   <label class="up" id="u2"><b>Comprovante de endereço</b><span>conta de luz/água/telefone etc.</span><input type="file" id="f2" accept="image/*,application/pdf"><div class="st" id="s2"></div></label>
+  <label class="up" id="u3" hidden><b>Certidão de nascimento do(a) beneficiário(a)</b><span>da filha/do filho representado(a) — foto, PDF ou imagem</span><input type="file" id="f3" accept="image/*,application/pdf"><div class="st" id="s3"></div></label>
   <div class="st" style="color:var(--mut)">A leitura é feita no seu navegador (OCR); nada é enviado a servidor.</div>
   <div class="acoes"><button id="seguir" disabled>Continuar →</button><button class="sec" id="manual">Preencher manualmente</button></div></div>
  </section>
@@ -63,7 +64,7 @@ body.p1 main{grid-template-columns:minmax(330px,560px);justify-content:center}bo
   <div class="card"><button class="sec" data-vai="2">← Dados</button> <button class="sec" id="limpar">Limpar tudo</button></div>
  </section>
  <div id="campos" hidden></div>
- <p class="st versao" style="color:var(--mut)">Versão da página: 2026-11-21 14:30</p>
+ <p class="st versao" style="color:var(--mut)">Versão da página: 2026-11-21 16:10</p>
 </div>
 <div id="previa">
  <div class="barra"><button id="baixar"></button><button id="pdf" class="sec"></button><span class="st" id="msgBaixar"></span></div>
@@ -77,12 +78,12 @@ body.p1 main{grid-template-columns:minmax(330px,560px);justify-content:center}bo
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="gerador/ocr/tesseract.min.js"></script>
 <script src="gerador/ocr/pdf.min.js"></script>
-<script src="engine.js?v=202611211430"></script>
-<script src="gerador/paginar.js?v=202611211430"></script>
-<script src="gerador/modelos.js?v=202611211430"></script>
-<script src="gerador/sexo.js?v=202611211430"></script>
-<script src="gerador/docs.js?v=202611211430"></script>
+<script src="engine.js?v=202611211610"></script>
+<script src="gerador/paginar.js?v=202611211610"></script>
+<script src="gerador/modelos.js?v=202611211610"></script>
+<script src="gerador/sexo.js?v=202611211610"></script>
+<script src="gerador/docs.js?v=202611211610"></script>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="gerador/extrair.js?v=202611211430"></script>
-<script src="gerador/gerador.js?v=202611211430"></script>
+<script src="gerador/extrair.js?v=202611211610"></script>
+<script src="gerador/gerador.js?v=202611211610"></script>
 </body></html>

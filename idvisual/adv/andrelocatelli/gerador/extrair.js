@@ -71,6 +71,58 @@ function extrairEndGenerico(t){
   if(cu){const x=cu.map(s=>s.match(/^(.*?)\s*[-\/,]\s*([A-Z]{2})$/)).filter(Boolean).find(m=>/^[A-ZÀ-Ú]/.test(m[1])&&m[1].trim().split(' ').length<=3&&!/CEP|RUA|AV/i.test(m[1]));if(x)o.cid=x[1].trim()+'/'+x[2]}
   return o;
 }
+/* Certidão de nascimento (modelo padrão do Registro Civil): nome, CPF, data de nascimento, sexo */
+function extrairCert(t){
+  t=limpa(t);const o={},L=t.split('\n').map(s=>s.trim()).filter(Boolean);
+  const PARE=/NOME|REP[ÚU]BLICA|REGISTRO|CERTID|NASCIMENTO|CPF|MATR[ÍI]CULA|DATA|HORA|NATURAL|MUNIC|LOCAL|SEXO|FILIA|AVOS|G[ÊE]MEOS|HOSPITAL|PIRACANJUBA|CART[ÓO]RIO|ANOTA|AVERBA|ESTADUAL|PESSOAS/i;
+  /* nome: primeira linha só de letras (2+ palavras) logo depois do título "CERTIDÃO DE NASCIMENTO"/"NOME:" */
+  let ini=L.findIndex(l=>/CERTID[ÃA]O\s+DE\s+NASC/i.test(l));if(ini<0)ini=L.findIndex(l=>/\bOME\s*:/i.test(l));
+  if(ini>=0)for(let j=ini+1;j<Math.min(L.length,ini+7)&&!o.fnome;j++){
+    const seg=L[j].split(/\s{3,}/)[0].replace(/[^A-ZÀ-Ú\s]/gi,' ').replace(/\s+/g,' ').trim(),pal=seg.split(' ');
+    if(pal.length>=2&&seg.length>=8&&pal.every(w=>w.length>=2||/^[A-Z]$/i.test(w)&&false)&&!PARE.test(seg)&&seg===seg.toUpperCase())o.fnome=seg;
+  }
+  for(let i=0;i<L.length;i++)if(!o.fcpf&&/^\W*CPF\b/i.test(L[i])){for(const j of [i,i+1,i+2]){const m=L[j]&&L[j].match(/(?<!\d)(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/);if(m){o.fcpf=`${m[1]}.${m[2]}.${m[3]}-${m[4]}`;break}}}
+  if(!o.fcpf){const m=t.match(/(?<!\d)(\d{3})\.(\d{3})\.(\d{3})-(\d{2})(?!\d)/);if(m)o.fcpf=`${m[1]}.${m[2]}.${m[3]}-${m[4]}`}
+  /* data: caixas DIA / MÊS / ANO (15 03 2025) ou dd/mm/aaaa */
+  const m=t.match(/(?<!\d)([0-3]\d)\s*[\s\/\-.|\[\]]\s*(0\d|1[0-2])\s*[\s\/\-.|\[\]]\s*((?:19|20)\d{2})(?!\d)/);
+  if(m)o.fnasc=`${m[3]}-${m[2]}-${m[1]}`;
+  if(/FEMININO/i.test(t))o.fsexo='F';else if(/MASCULINO/i.test(t))o.fsexo='M';
+  else for(let i=0;i<L.length;i++)if(/\bSEXO\b/i.test(L[i])){const x=L[i].match(/\bSEXO\b\W*([FM])\b/i)||(L[i+1]||'').match(/\s([FM])\s*\W*$/i);if(x){o.fsexo=x[1].toUpperCase();break}}
+  return o;
+}
+/* leitura ampliada das caixinhas DIA/MÊS/ANO e SEXO (o OCR geral lê mal texto dentro de caixa colorida) */
+async function recorta(w,cv,x0,y0,x1,y1,whitelist,psm,th){
+  x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(cv.width,x1);y1=Math.min(cv.height,y1);
+  const k=Math.max(2,Math.min(5,1800/(x1-x0))),c=document.createElement('canvas');c.width=Math.round((x1-x0)*k);c.height=Math.round((y1-y0)*k);
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(cv,x0,y0,x1-x0,y1-y0,0,0,c.width,c.height);
+  /* binariza: o texto da certidão é bem escuro; o fundo holográfico/guilhochê fica claro */
+  const im=g.getImageData(0,0,c.width,c.height),d=im.data;for(let i=0;i<d.length;i+=4){const v=d[i]<(th||115)?0:255;d[i]=d[i+1]=d[i+2]=v}g.putImageData(im,0,0);
+  await w.setParameters({tessedit_pageseg_mode:psm,tessedit_char_whitelist:whitelist});
+  const r=await w.recognize(c);await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'6'});return r.data.text||'';
+}
+extrairCert.refina=async function(w,cv,data,o){
+  const W=(data&&data.words)||[],ach=re=>W.find(x=>re.test((x.text||'').replace(/[^A-Za-zÀ-ú]/g,'')));
+  const cx=b=>(b.x0+b.x1)/2;
+  /* lê o conteúdo de UMA caixa: janela estreita no centro do rótulo, sem as bordas da caixa */
+  const caixa=(lab,meia,wl,psm)=>{const b=lab.bbox,h=Math.max(12,b.y1-b.y0),c=cx(b);return recorta(w,cv,c-meia,b.y1+h*.9,c+meia,b.y1+h*2.7,wl,psm)};
+  if(!o.fnasc){
+    const dia=ach(/^DIA$/i),mes=ach(/^M[ÊE]S$/i),ano=ach(/^ANO$/i);
+    if(dia&&ano){
+      const lw=Math.max(30,dia.bbox.x1-dia.bbox.x0),mc=mes?cx(mes.bbox):(cx(dia.bbox)+cx(ano.bbox))/2;
+      const hh=dia.bbox.y1-dia.bbox.y0,dc=cx(dia.bbox);
+      let d='';for(const [e,dr] of [[.5,1.1],[.8,.8],[.3,1.4]]){d=(await recorta(w,cv,dc-lw*e,dia.bbox.y1+hh*.9,dc+lw*dr,dia.bbox.y1+hh*2.7,'0123456789','7')).replace(/\D/g,'');if(/^(0[1-9]|[12]\d|3[01])$/.test(d))break}
+      const
+            m=await(async()=>{let u='';for(const th of [150,115,190,90]){u=(await recorta(w,cv,mc-lw*.75,dia.bbox.y1+hh*.9,mc+lw*.75,dia.bbox.y1+hh*2.7,'0123456789','7',th)).replace(/\D/g,'');if(/^(0[1-9]|1[0-2])$/.test(u))return u}return /^[1-9]$/.test(u)?'0'+u:u})(),
+            y=(await caixa(ano,lw*1.2,'0123456789','7')).replace(/\D/g,'');
+      if(/^(0[1-9]|[12]\d|3[01])$/.test(d)&&/^(0[1-9]|1[0-2])$/.test(m)&&/^(19|20)\d{2}$/.test(y))o.fnasc=`${y}-${m}-${d}`;
+    }
+  }
+  if(!o.fsexo){
+    const sx=ach(/^SEXO$/i);
+    if(sx){const lw=Math.max(30,sx.bbox.x1-sx.bbox.x0),b=sx.bbox,h=Math.max(12,b.y1-b.y0),c=cx(b);
+      for(const [e,psm,wl] of [[.55,'10','FM'],[.7,'7','FM'],[.7,'8',''],[.9,'6','']]){const m=(await recorta(w,cv,c-lw*e,b.y1+h*.9,c+lw*e,b.y1+h*2.3,wl,psm)).match(/[FM]/i);if(m){o.fsexo=m[0].toUpperCase();break}}}
+  }
+};
 function aplica(o,mapa,alvoStatus){
   let n=0;for(const k in mapa){const el=$('#'+mapa[k]);if(o[k]&&!el.value.trim()){el.value=o[k];el.classList.add('auto');n++}}
   render();return n;
@@ -105,7 +157,7 @@ async function paraImagens(file){
   if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){
     pdfjsLib.GlobalWorkerOptions.workerSrc=window.PDF_WORKER?window.PDF_WORKER():'gerador/ocr/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,out=[];
-    for(let i=1;i<=Math.min(pdf.numPages,3);i++){const pg=await pdf.getPage(i),vp=pg.getViewport({scale:2.5}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;out.push(preprocessa(cv,cv.width,cv.height))}
+    for(let i=1;i<=Math.min(pdf.numPages,3);i++){const pg=await pdf.getPage(i),v1=pg.getViewport({scale:1}),vp=pg.getViewport({scale:Math.min(2.5,3000/Math.max(v1.width,v1.height))}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;out.push(preprocessa(cv,cv.width,cv.height))}
     return out;
   }
   const im=await carregaImg(file);return [preprocessa(im,im.naturalWidth,im.naturalHeight)];
@@ -118,17 +170,19 @@ async function lerUm(files,st,extrator,mapa,box){
     if(!window.Tesseract)throw new Error('motor de OCR não carregou — recarregue a página');
     const w=await getWorker(S);let txt='';
     let o={};const esperados=Object.keys(mapa);
-    const NOMES={nome:'nome',cpf:'CPF',rg:'RG',end:'endereço',cep:'CEP',cid:'cidade/UF'};
+    const NOMES={nome:'nome',cpf:'CPF',rg:'RG',end:'endereço',cep:'CEP',cid:'cidade/UF',fnome:'nome do(a) beneficiário(a)',fcpf:'CPF do(a) beneficiário(a)',fnasc:'data de nascimento',fsexo:'sexo'};
     for(const f of files){
       const imgs=await paraImagens(f);
       for(const cv of imgs){
+        let last=null;
         /* 1 passada (rápida); só repete com outro modo se ainda faltar algum campo */
         for(const psm of ['4','6']){
           if(esperados.every(k=>o[k]))break;
           await w.setParameters({tessedit_pageseg_mode:psm});S.textContent='Lendo…'+(psm==='6'?' (conferindo o que faltou)':'');
-          const t=(await w.recognize(cv)).data.text;txt+='\n'+t;
+          const rr=(await w.recognize(cv)).data;last=rr;const t=rr.text;txt+='\n'+t;
           const x=extrator(t);for(const k in x)if(x[k]&&!o[k])o[k]=x[k];
         }
+        if(extrator.refina&&last&&esperados.some(k=>!o[k])){S.textContent='Lendo as caixas de data e sexo…';try{await extrator.refina(w,cv,last,o)}catch(e){console.warn('refina',e)}}
       }
     }
     window.__ocr=(window.__ocr||'')+txt;
@@ -139,4 +193,5 @@ async function lerUm(files,st,extrator,mapa,box){
   }catch(e){S.textContent='⚠ '+e.message;console.error(e)}
 }
 $('#f1').onchange=e=>ler([...e.target.files],'#s1',extrairId,{nome:'nome',cpf:'cpf',rg:'rg'},'#u1');
+$('#f3').onchange=e=>ler([...e.target.files],'#s3',extrairCert,{fnome:'fnome',fcpf:'fcpf',fnasc:'fnasc',fsexo:'fsexo'},'#u3').then(()=>{const n=$('#fnasc');if(n)n.dispatchEvent(new Event('change'))});
 $('#f2').onchange=e=>ler([...e.target.files],'#s2',extrairEnd,{end:'end',cep:'cep',cid:'cid'},'#u2');

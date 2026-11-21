@@ -19,6 +19,16 @@ const TIPOS={
     {k:'pct',r:'Percentual dos honorários (%)',v:'50'},
     {k:'minimo',r:'Valor mínimo dos honorários (R$)',v:'5.000,00',need:true},
     {k:'foro',r:'Foro (comarca)',v:'Piracanjuba'}]},
+  'previdenciario-incapaz':{nome:'Contrato PREV incapaz | 50% - 5k',arq:'contrato-prev-incapaz',cert:true,extras:[
+    {k:'tel',r:'Telefone / WhatsApp',ph:'64-99999-9999',need:true},
+    {k:'fnome',r:'Beneficiário(a) representado(a) — nome completo',need:true},
+    {k:'fsexo',r:'Beneficiário(a) é',sel:[['F','Filha'],['M','Filho']]},
+    {k:'fnasc',r:'Data de nascimento do(a) beneficiário(a)',t:'date'},
+    {k:'fcpf',r:'CPF do(a) beneficiário(a)'},
+    {k:'fcond',r:'Condição do(a) beneficiário(a)',sel:[['menor','Menor de idade'],['incapaz','Incapaz (maior de idade)']]},
+    {k:'pct',r:'Percentual dos honorários (%)',v:'50'},
+    {k:'minimo',r:'Valor mínimo dos honorários (R$)',v:'5.000,00',need:true},
+    {k:'foro',r:'Foro (comarca)',v:'Piracanjuba'}]},
   'previdenciario-generico':{nome:'Contrato genérico previdenciário',arq:'contrato-previdenciario-generico',extras:[
     {k:'tel',r:'Telefone / WhatsApp',ph:'64-99999-9999',need:true},
     {k:'obj',r:'Objeto do contrato',sel:[['','Benefícios previdenciários (genérico)'],['smr-gest','Salário-maternidade rural — gestante (informar a DPP)'],['smr-nasc','Salário-maternidade rural — criança já nascida']]},
@@ -53,6 +63,7 @@ $('#campos').innerHTML=BASE.map(f=>{
    :`<input type="${f.t||'text'}" id="${f.k}" value="${f.v||''}" placeholder="${f.ph||''}">`;
   return `<div class="fld" data-k="${f.k}"><label>${f.r}</label>${ctl}${f.k==='sexo'?'<div class="st" id="dicaSexo" style="color:var(--mut)"></div>':''}</div>`}).join('');
 if(tipo==='previdenciario-generico'){const ajusta=()=>{const o=$('#obj').value;document.querySelector('.fld[data-k=dpp]').hidden=o!=='smr-gest';document.querySelector('.fld[data-k=nasc]').hidden=o!=='smr-nasc'};$('#obj').addEventListener('change',ajusta);ajusta()}
+if(T.cert){$('#u3').hidden=false;$('#fnasc').addEventListener('change',()=>{const v=$('#fnasc').value;if(!v)return;const[y,m,d]=v.split('-').map(Number),n=new Date();let i=n.getFullYear()-y;if(n.getMonth()+1<m||(n.getMonth()+1===m&&n.getDate()<d))i--;$('#fcond').value=i<18?'menor':'incapaz';render()})}
 const IDS=BASE.map(f=>f.k),PRECISA=BASE.filter(f=>f.need).map(f=>f.k);
 const vazio=k=>!$('#'+k).value.trim();
 const valores=()=>{const o={};IDS.forEach(k=>{if(k==='pmodo'){const r=document.querySelector('[name=pmodo]:checked');o.pmodo=r?r.value:'prev';o.ptxt=$('#ptxt').value}else o[k]=$('#'+k).value});o.local=$('#local').value;if(T.sexoFixo)o.sexo='F';return o};
