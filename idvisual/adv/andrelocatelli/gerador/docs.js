@@ -191,7 +191,7 @@ async function contratoSM(v,data){
 function representa(v){
   const M=v.fsexo==='M',dt=v.fnasc&&/^\d{4}-\d{2}-\d{2}$/.test(v.fnasc)?(()=>{const[a,m,d]=v.fnasc.split('-').map(Number);return `${d} de ${MESES[m-1]} de ${a}`})():'____ de ______________ de ______';
   const cond=v.fcond==='incapaz'?'incapaz':'menor de idade';
-  return `, neste ato representando ${M?'seu filho':'sua filha'} ${ou(v,'fnome',B)}, ${M?'brasileiro':'brasileira'}, ${cond}, nascid${M?'o':'a'} em ${dt}, inscrit${M?'o':'a'} no CPF sob o nº ${ou(v,'fcpf',B)}`;
+  return {a:`, neste ato representando ${M?'seu filho':'sua filha'} `,nome:ou(v,'fnome',B).toUpperCase(),b:`, ${M?'brasileiro':'brasileira'}, ${cond}, nascid${M?'o':'a'} em ${dt}, inscrit${M?'o':'a'} no CPF sob o nº ${ou(v,'fcpf',B)}.`};  /* nome do(a) beneficiário(a) em negrito */
 }
 async function contratoFC(v,data,generico,incapaz){
   const zip=await abre(MODELOS.fc);let x=await zip.file('word/document.xml').async('string');
@@ -201,9 +201,10 @@ async function contratoFC(v,data,generico,incapaz){
   const rs=ps[3].match(/<w:r[ >][\s\S]*?<\/w:r>/g);
   const rB=rPrDe(rs[0]),rN=rPrDe(rs[2]);
   const pPr=ps[3].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:ind [^>]*\/>/,'<w:ind w:right="156"/>'); // alinha com os demais parágrafos
-  const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}, telefone/WhatsApp ${ou(v,'tel',B)}${incapaz?representa(v):''}.`;
+  const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}, telefone/WhatsApp ${ou(v,'tel',B)}${incapaz?'':'.'}`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
-  subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
+  const rep=incapaz?representa(v):null;
+  subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${rep?run(rN,q.nome+resto+rep.a)+run(rB,rep.nome)+run(rN,rep.b):run(rN,q.nome+resto)}</w:p>`);
   subst(4,'');subst(5,'');subst(6,'');
   const pct=parseFloat(String(v.pct).replace(',','.'))||(generico?30:50),min=numBR(v.minimo);
   if(!generico&&!(min>0))throw new Error('Informe o valor mínimo dos honorários.');
