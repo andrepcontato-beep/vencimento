@@ -14,7 +14,8 @@ const TIPOS={
     {k:'pix',r:'Chave PIX',v:'032.195.131-07'},
     {k:'resc',r:'Honorários proporcionais em caso de rescisão (%)',v:'50'},
     {k:'foro',r:'Foro (comarca)',v:'Piracanjuba/GO'}]},
-  previdenciario:{nome:'Contrato de serviços previdenciários',arq:'contrato-previdenciario',extras:[
+  previdenciario:{nome:'Contrato de serviços previdenciários (50% / mínimo R$ 5 mil)',arq:'contrato-previdenciario',extras:[
+    {k:'tel',r:'Telefone / WhatsApp',ph:'64-99999-9999',need:true},
     {k:'pct',r:'Percentual dos honorários (%)',v:'50'},
     {k:'minimo',r:'Valor mínimo dos honorários (R$)',v:'5.000,00',need:true},
     {k:'foro',r:'Foro (comarca)',v:'Piracanjuba'}]},
