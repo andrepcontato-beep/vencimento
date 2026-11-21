@@ -19,6 +19,10 @@ const TIPOS={
     {k:'minimo',r:'Valor mínimo dos honorários (R$)',v:'5.000,00',need:true},
     {k:'foro',r:'Foro (comarca)',v:'Piracanjuba'}]},
   'previdenciario-generico':{nome:'Contrato genérico previdenciário',arq:'contrato-previdenciario-generico',extras:[
+    {k:'tel',r:'Telefone / WhatsApp',ph:'64-99999-9999',need:true},
+    {k:'obj',r:'Objeto do contrato',sel:[['','Benefícios previdenciários (genérico)'],['smr-gest','Salário-maternidade rural — gestante (informar a DPP)'],['smr-nasc','Salário-maternidade rural — criança já nascida']]},
+    {k:'dpp',r:'Data provável do parto (DPP)',t:'date'},
+    {k:'nasc',r:'Data do nascimento da criança',t:'date'},
     {k:'pct',r:'Percentual dos honorários (%)',v:'30'},
     {k:'foro',r:'Foro (comarca)',v:'Piracanjuba'}]}
 };
@@ -47,6 +51,7 @@ $('#campos').innerHTML=BASE.map(f=>{
   const ctl=f.sel?`<select id="${f.k}">${f.sel.map(o=>Array.isArray(o)?`<option value="${o[0]}">${o[1]}</option>`:`<option>${o}</option>`).join('')}</select>`
    :`<input type="${f.t||'text'}" id="${f.k}" value="${f.v||''}" placeholder="${f.ph||''}">`;
   return `<div class="fld" data-k="${f.k}"><label>${f.r}</label>${ctl}${f.k==='sexo'?'<div class="st" id="dicaSexo" style="color:var(--mut)"></div>':''}</div>`}).join('');
+if(tipo==='previdenciario-generico'){const ajusta=()=>{const o=$('#obj').value;document.querySelector('.fld[data-k=dpp]').hidden=o!=='smr-gest';document.querySelector('.fld[data-k=nasc]').hidden=o!=='smr-nasc'};$('#obj').addEventListener('change',ajusta);ajusta()}
 const IDS=BASE.map(f=>f.k),PRECISA=BASE.filter(f=>f.need).map(f=>f.k);
 const vazio=k=>!$('#'+k).value.trim();
 const valores=()=>{const o={};IDS.forEach(k=>{if(k==='pmodo'){const r=document.querySelector('[name=pmodo]:checked');o.pmodo=r?r.value:'prev';o.ptxt=$('#ptxt').value}else o[k]=$('#'+k).value});o.local=$('#local').value;if(T.sexoFixo)o.sexo='F';return o};

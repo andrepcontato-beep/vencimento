@@ -195,7 +195,7 @@ async function contratoFC(v,data,generico){
   const rs=ps[3].match(/<w:r[ >][\s\S]*?<\/w:r>/g);
   const rB=rPrDe(rs[0]),rN=rPrDe(rs[2]);
   const pPr=ps[3].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0].replace(/<w:ind [^>]*\/>/,'<w:ind w:right="156"/>'); // alinha com os demais parágrafos
-  const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}.`;
+  const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}${q.cep}, ${ou(v,'cid',B)}${generico?`, telefone/WhatsApp ${ou(v,'tel',B)}`:''}.`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
   subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
   subst(4,'');subst(5,'');subst(6,'');
@@ -208,7 +208,11 @@ async function contratoFC(v,data,generico){
   // um único contratado (o advogado): singular em todo o contrato
   const ed=(i,pares)=>{let p=ps[i];pares.forEach(([a,b])=>{p=sub(p,a,b)});subst(i,p)};
   ed(10,[['CONTRATADOS','CONTRATADO']]);
-  ed(13,[['Os Contratados, obrigam-se','O Contratado obriga-se']]);
+  const dtx=(iso,vazio)=>{if(iso){const[a,m,d]=iso.split('-').map(Number);if(a)return `${d} de ${MESES[m-1]} de ${a}`}return vazio};
+  let objeto=null;
+  if(generico&&v.obj==='smr-gest')objeto=`visando o requerimento, acompanhamento e concessão do benefício de Salário-Maternidade Rural (Segurada Especial), em razão de sua atual gestação, com data provável do parto (DPP) prevista para o dia ${dtx(v.dpp,'____ de ______________ de ______')}`;
+  if(generico&&v.obj==='smr-nasc')objeto=`visando o requerimento, acompanhamento e concessão do benefício de Salário-Maternidade Rural (Segurada Especial), em razão do nascimento de seu(sua) filho(a), ocorrido no dia ${dtx(v.nasc,'____ de ______________ de ______')}`;
+  ed(13,[['Os Contratados, obrigam-se','O Contratado obriga-se']].concat(objeto?[['objetivando benefícios previdenciários',objeto]]:[]));
   ed(17,[['pelos CONTRATADOS','pelo CONTRATADO']]);
   ed(18,[['CONTRATADO(A)','CONTRATADO']]);
   ed(19,[['estes ficam, desde já, obrigados','este fica, desde já, obrigado']]);
