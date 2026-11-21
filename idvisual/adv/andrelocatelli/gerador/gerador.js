@@ -17,6 +17,9 @@ const TIPOS={
   previdenciario:{nome:'Contrato de serviços previdenciários',arq:'contrato-previdenciario',extras:[
     {k:'pct',r:'Percentual dos honorários (%)',v:'50'},
     {k:'minimo',r:'Valor mínimo dos honorários (R$)',v:'5.000,00',need:true},
+    {k:'foro',r:'Foro (comarca)',v:'Piracanjuba'}]},
+  'previdenciario-generico':{nome:'Contrato genérico previdenciário',arq:'contrato-previdenciario-generico',extras:[
+    {k:'pct',r:'Percentual dos honorários (%)',v:'30'},
     {k:'foro',r:'Foro (comarca)',v:'Piracanjuba'}]}
 };
 const tipo=(new URLSearchParams(location.search).get('doc'))||'procuracao';

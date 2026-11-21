@@ -187,7 +187,7 @@ async function contratoSM(v,data){
 }
 
 /* ---------- contrato de prestação de serviços previdenciários ---------- */
-async function contratoFC(v,data){
+async function contratoFC(v,data,generico){
   const zip=await abre(MODELOS.fc);let x=await zip.file('word/document.xml').async('string');
   const ps=paragrafos(x);
   if(!/CONTRATA/.test(txt(ps[3]))||!/cinquenta/.test(txt(ps[26]))||!/R\$ 5\.000,00/.test(txt(ps[26]))||!/Piracanjuba/.test(txt(ps[38])))modelo();
@@ -199,10 +199,11 @@ async function contratoFC(v,data){
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
   subst(3,`<w:p>${pPr}${run(rB,'CONTRATANTE: ')}${run(rN,q.nome+resto)}</w:p>`);
   subst(4,'');subst(5,'');subst(6,'');
-  const pct=parseFloat(String(v.pct).replace(',','.'))||50,min=numBR(v.minimo);
-  if(!(min>0))throw new Error('Informe o valor mínimo dos honorários.');
+  const pct=parseFloat(String(v.pct).replace(',','.'))||(generico?30:50),min=numBR(v.minimo);
+  if(!generico&&!(min>0))throw new Error('Informe o valor mínimo dos honorários.');
   let p26=sub(ps[26],'50% (cinquenta por cento)',`${String(pct).replace('.',',')}% (${extenso(Math.floor(pct))} por cento)`);
-  p26=sub(p26,'R$ 5.000,00 (cinco mil reais)',reais(min));
+  if(generico)p26=sub(p26,', sendo o valor mínimo de R$ 5.000,00 (cinco mil reais) em caso dos seguintes benefícios: APOSENTADORIA POR INVALIDEZ, APOSENTADORIA POR IDADE, APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO OU POR IDADE PCD, PENSÃO POR MORTE, AUXÍLIO-ACIDENTE, BPC LOAS DEFICIENTE OU IDOSO, em ocorrendo êxito da Ação pleiteada','');
+  else p26=sub(p26,'R$ 5.000,00 (cinco mil reais)',reais(min));
   subst(26,p26);
   // um único contratado (o advogado): singular em todo o contrato
   const ed=(i,pares)=>{let p=ps[i];pares.forEach(([a,b])=>{p=sub(p,a,b)});subst(i,p)};
@@ -231,7 +232,8 @@ const GERADORES={
   procuracao:(v,d)=>basePessoa(v,d,'procuracao'),
   hipossuficiencia:(v,d)=>basePessoa(v,d,'hipossuficiencia'),
   'salario-maternidade':contratoSM,
-  previdenciario:contratoFC
+  previdenciario:contratoFC,
+  'previdenciario-generico':(v,d)=>contratoFC(v,d,true)
 };
 window.DOCS={conc,extenso,reais,numBR,MESES,dataExt,gerar:(tipo,v,data)=>GERADORES[tipo](v,data)};
 })();
