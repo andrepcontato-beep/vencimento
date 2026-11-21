@@ -113,6 +113,7 @@ async function basePessoa(v,data,tipo){
   const c=conc(v.sexo),q=qualificacao(v,c);
   const pPr=ps[3].match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0],rs=ps[3].match(/<w:r>[\s\S]*?<\/w:r>/g);
   const rB=rPrDe(rs[0]),rN=rPrDe(rs[1]);
+  const rep=tipo==='procuracao'&&!!(v.fnome&&v.fnome.trim());
   const dt=`${ou(v,'local','Piracanjuba/GO')}, ${dataExt(data)}.`;
   const resto=`, ${q.nac}, ${q.ec}, ${ou(v,'prof',B)}, ${c.portador} do RG nº ${ou(v,'rg',B)}, ${c.inscrito} no CPF nº ${ou(v,'cpf',B)}, residente e ${c.domic} na ${ou(v,'end',B)}, ${ou(v,'cid',B)}${q.cep}`;
   const subst=(i,novo)=>{x=x.replace(ps[i],()=>novo)};
@@ -122,12 +123,15 @@ async function basePessoa(v,data,tipo){
   const p10=ps[10].replace(/w:left="-397"/,'w:left="-454"').replace(/w:line="360"/,'w:line="323"').replace(/<w:sz w:val="20"\/>/g,'<w:sz w:val="19"/>').replace(/<w:szCs w:val="20"\/>/g,'<w:szCs w:val="19"/>');
   if(tipo==='procuracao')subst(8,ps[8].replace(/<w:sz w:val="22"\/>/g,'<w:sz w:val="21"/>').replace(/<w:szCs w:val="22"\/>/g,'<w:szCs w:val="21"/>'));
   if(tipo==='procuracao'){
-    subst(3,`<w:p>${pPr}${run(rB,'OUTORGANTE: ')}${run(rB,q.nome)}${run(rN,resto+'.')}</w:p>`);
+    if(rep){   /* contrato "PREV incapaz": o(a) outorgante é o(a) beneficiário(a), representado(a) pelo genitor(a) */
+      const M=v.fsexo==='M',fem=v.sexo!=='M',cur=v.fcond==='incapaz'?(fem?'curadora':'curador'):(fem?'genitora':'genitor');
+      subst(3,`<w:p>${pPr}${run(rB,'OUTORGANTE: ')}${run(rB,ou(v,'fnome',B).toUpperCase())}${run(rN,`, ${M?'brasileiro':'brasileira'}, ${v.fcond==='incapaz'?'incapaz':'menor de idade'}, nascid${M?'o':'a'} em ${dtNasc(v)}, inscrit${M?'o':'a'} no CPF nº ${ou(v,'fcpf',B)}, neste ato representad${M?'o':'a'} por ${fem?'sua':'seu'} ${cur}, `)}${run(rB,q.nome)}${run(rN,resto+'.')}</w:p>`);
+    }else subst(3,`<w:p>${pPr}${run(rB,'OUTORGANTE: ')}${run(rB,q.nome)}${run(rN,resto+'.')}</w:p>`);
     if(v.pmodo==='digitar'){
       const pp=p10.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)[0],r10=p10.match(/<w:r>[\s\S]*?<\/w:r>/g);
       const digitado=(v.ptxt||'').trim().replace(/\s*\n\s*/g,' ')||'__________________________________________________';
       subst(10,`<w:p>${pp}${r10[0]}${r10[1]}${run(rPrDe(r10[2]),digitado)}</w:p>`);
-    }else subst(10,p10.replace(/defendê-lo/,c.lo).replace(/o outorgante/,c.ele));
+    }else{const co=rep?conc(v.fsexo==='M'?'M':'F'):c;subst(10,p10.replace(/defendê-lo/,co.lo).replace(/o outorgante/,co.ele))}
   }else{
     const t1='em razão de minha atual condição financeira, não tenho condições de arcar com nenhum tipo de pagamento de custos processuais, pois o pagamento implicaria prejuízo ao meu sustento e ao de minha família, nos termos do Art. 5º, LXXIV, da Constituição da República, da Lei nº 1.060/50, bem como nos artigos 82, 98 e 99, §3º, do Código de Processo Civil.';
     const t2='Reiterando minha incapacidade de custear quaisquer ações, solicito, ainda, que tal benefício abranja todos os atos do processo, de acordo com o artigo 98 do Código de Processo Civil.';
@@ -137,8 +141,8 @@ async function basePessoa(v,data,tipo){
     subst(10,'');
   }
   subst(4,'');subst(5,'');subst(6,'');
-  x=x.replace(ps[11],()=>ps[11].replace(/<w:t>[^<]*<\/w:t>/,()=>`<w:t>${X(dt)}</w:t>`).replace('w:line="360"/>','w:line="360" w:before="480"/>'));
-  x=x.replace(ps[13],()=>assinaturaPessoa(ps[11],v,tipo==='hipossuficiencia'?'DECLARANTE':''));
+  x=x.replace(ps[11],()=>ps[11].replace(/<w:t>[^<]*<\/w:t>/,()=>`<w:t>${X(dt)}</w:t>`).replace('w:line="360"/>','w:line="360" w:before="'+(rep?'200':'480')+'"/>'));
+  x=x.replace(ps[13],()=>assinaturaPessoa(ps[11],v,tipo==='hipossuficiencia'?'DECLARANTE':(rep?'REPRESENTANTE LEGAL':'')).replace(rep?'w:before="720"':'@@','w:before="400"'));
   x=x.replace(/w:line="360"/g,'w:line="313"').replace(/w:left="-(454|397)"/g,'w:left="0"'); // entrelinha e alinhamento do modelo
   zip.file('word/document.xml',x);
   return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
@@ -188,8 +192,9 @@ async function contratoSM(v,data){
 
 /* ---------- contrato de prestação de serviços previdenciários ---------- */
 /* BPC/benefício do(a) filho(a): a mãe/o pai contrata representando o(a) beneficiário(a) */
+function dtNasc(v){return v.fnasc&&/^\d{4}-\d{2}-\d{2}$/.test(v.fnasc)?(()=>{const[a,m,d]=v.fnasc.split('-').map(Number);return `${d} de ${MESES[m-1]} de ${a}`})():'____ de ______________ de ______'}
 function representa(v){
-  const M=v.fsexo==='M',dt=v.fnasc&&/^\d{4}-\d{2}-\d{2}$/.test(v.fnasc)?(()=>{const[a,m,d]=v.fnasc.split('-').map(Number);return `${d} de ${MESES[m-1]} de ${a}`})():'____ de ______________ de ______';
+  const M=v.fsexo==='M',dt=dtNasc(v);
   const cond=v.fcond==='incapaz'?'incapaz':'menor de idade';
   return {a:`, neste ato representando ${M?'seu filho':'sua filha'} `,nome:ou(v,'fnome',B).toUpperCase(),b:`, ${M?'brasileiro':'brasileira'}, ${cond}, nascid${M?'o':'a'} em ${dt}, inscrit${M?'o':'a'} no CPF sob o nº ${ou(v,'fcpf',B)}.`};  /* nome do(a) beneficiário(a) em negrito */
 }
