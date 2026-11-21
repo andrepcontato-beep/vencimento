@@ -100,6 +100,7 @@ async function recorta(w,cv,x0,y0,x1,y1,whitelist,psm,th){
   await w.setParameters({tessedit_pageseg_mode:psm,tessedit_char_whitelist:whitelist});
   const r=await w.recognize(c);await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'6'});return r.data.text||'';
 }
+extrairCert.maxLado=3000;   /* certidão em PDF costuma ser página enorme: limita a resolução só para ela */
 extrairCert.refina=async function(w,cv,data,o){
   const W=(data&&data.words)||[],ach=re=>W.find(x=>re.test((x.text||'').replace(/[^A-Za-zÀ-ú]/g,'')));
   const cx=b=>(b.x0+b.x1)/2;
@@ -153,11 +154,11 @@ function preprocessa(src,w,h){
   for(let i=0;i<d.length;i+=4){let y=Math.max(0,Math.min(255,(d[i]-lo)*255/r));d[i]=d[i+1]=d[i+2]=y;d[i+3]=255}
   g.putImageData(im,0,0);return cv;
 }
-async function paraImagens(file){
+async function paraImagens(file,maxLado){
   if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){
     pdfjsLib.GlobalWorkerOptions.workerSrc=window.PDF_WORKER?window.PDF_WORKER():'gerador/ocr/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,out=[];
-    for(let i=1;i<=Math.min(pdf.numPages,3);i++){const pg=await pdf.getPage(i),v1=pg.getViewport({scale:1}),vp=pg.getViewport({scale:Math.min(2.5,3000/Math.max(v1.width,v1.height))}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;out.push(preprocessa(cv,cv.width,cv.height))}
+    for(let i=1;i<=Math.min(pdf.numPages,3);i++){const pg=await pdf.getPage(i),v1=pg.getViewport({scale:1}),vp=pg.getViewport({scale:maxLado?Math.min(2.5,maxLado/Math.max(v1.width,v1.height)):2.5}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;out.push(preprocessa(cv,cv.width,cv.height))}
     return out;
   }
   const im=await carregaImg(file);return [preprocessa(im,im.naturalWidth,im.naturalHeight)];
@@ -172,7 +173,7 @@ async function lerUm(files,st,extrator,mapa,box){
     let o={};const esperados=Object.keys(mapa);
     const NOMES={nome:'nome',cpf:'CPF',rg:'RG',end:'endereço',cep:'CEP',cid:'cidade/UF',fnome:'nome do(a) beneficiário(a)',fcpf:'CPF do(a) beneficiário(a)',fnasc:'data de nascimento',fsexo:'sexo'};
     for(const f of files){
-      const imgs=await paraImagens(f);
+      const imgs=await paraImagens(f,extrator.maxLado);
       for(const cv of imgs){
         let last=null;
         /* 1 passada (rápida); só repete com outro modo se ainda faltar algum campo */
