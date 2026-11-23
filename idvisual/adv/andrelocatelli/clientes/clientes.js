@@ -68,7 +68,7 @@ async function entra(){
   for(const c of clientes){if(c.etapa!==undefined){if(c.etapa&&!(c.andamento||[]).length)c.andamento=[{e:c.etapa,t:c.atualizado||Date.now()}];delete c.etapa;delete c.fluxo;await COFRE.salvar(c,{semHistorico:true})}}
   clientes=await COFRE.listar();
   const q=new URLSearchParams(location.search).get('id');
-  sel=q&&clientes.find(c=>c.id===q)?q:(visiveis()[0]&&visiveis()[0].id)||null;
+  sel=q&&clientes.find(c=>c.id===q)?q:null;
   lista();painel();
 }
 
@@ -105,7 +105,7 @@ function campo(k,r,c,pre){pre=pre||'';const dk=pre+k;
 }
 async function painel(){
   const P=$('#painel');
-  if(!sel){P.innerHTML=`<div class="card"><div class="vazio">Escolha um cliente na lista ou clique em <b>+ Novo</b>.</div></div>`;return}
+  if(!sel){P.innerHTML=`<div class="card marca"><div class="vazio">Clique em um cliente na lista ou em <b>+ Novo</b>.</div></div>`;return}
   const c=clientes.find(x=>x.id===sel);if(!c){P.innerHTML='';return}
   const arqs=await COFRE.arquivos(c.id),hist=await COFRE.historico(c.id);
   const docs=c.repr?DOCS.filter(d=>d[0]==='previdenciario-incapaz'):DOCS;
