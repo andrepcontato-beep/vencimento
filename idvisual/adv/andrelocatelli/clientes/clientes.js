@@ -64,6 +64,7 @@ async function painel(){
   const c=clientes.find(x=>x.id===sel);if(!c){P.innerHTML='';return}
   const arqs=await COFRE.arquivos(c.id),tem=c.fnome||c.fcpf||c.fnasc;
   P.innerHTML=`
+  <div class="duo">
   <div class="card"><h2>Benefícios <span class="esp"></span></h2>
     <div id="bens">${(c.beneficios||[]).length?(c.beneficios||[]).map((b,i)=>`<div class="arq"><div class="t"><b>${esc(b)}</b></div><button class="perigo mini" data-menos="${i}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum benefício vinculado.</div>'}</div>
     <div class="linha" style="margin-top:10px"><select id="selBen" style="flex:1;min-width:220px"><option value="">Escolha o benefício…</option>${BENEFICIOS.map(b=>`<option>${esc(b)}</option>`).join('')}<option value="__outro">Outro (digitar)…</option></select><input type="text" id="outroBen" placeholder="Nome do benefício" hidden style="flex:1;min-width:200px"><button class="mini" id="bMais" title="Adicionar">+</button></div>
@@ -77,6 +78,7 @@ async function painel(){
     </div>
     <div class="linha" style="margin-top:10px"><input type="password" id="novaSenha" placeholder="${c.govSenha?'Nova senha (substitui a atual)':'Digite a senha do gov.br'}" style="flex:1;min-width:200px" autocomplete="off"><button class="sec" id="bSenha">${c.govSenha?'Alterar':'Guardar'}</button>${c.govSenha?'<button class="perigo mini" id="bApagaSenha">Apagar senha</button>':''}</div>
     <div class="aviso" style="margin-bottom:0">A senha fica criptografada junto com os demais dados (cofre protegido pela sua senha mestra).</div>
+  </div>
   </div>
 
   <div class="card"><h2>Dados do cliente <button class="sec mini" id="bZap" title="Abrir conversa no WhatsApp" style="text-transform:none;letter-spacing:0"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:5px"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z"/></svg>Falar com este cliente</button><span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
