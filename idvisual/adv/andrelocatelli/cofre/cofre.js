@@ -43,6 +43,7 @@ function diff(a,b){
   if(!a.excluido!==!b.excluido)r.push(b.excluido?'Cliente excluído':'Cliente restaurado');
   return r}
 
+const avisa=()=>{try{COFRE.aoMudar&&COFRE.aoMudar()}catch(e){}};
 const COFRE={
   async configurado(){return !!(await get('meta','verif'))},
   /* primeira vez: cria a senha mestra */
@@ -73,7 +74,7 @@ const COFRE={
   async salvar(c,o){o=o||{};if(!c.id)c.id=uid();
     const prev=await COFRE.obter(c.id);c.atualizado=Date.now();if(!c.criado)c.criado=c.atualizado;
     if(prev&&!o.semHistorico){const r=diff(prev,c);if(r.length)await put('historico',{id:uid(),cid:c.id,t:Date.now(),...await cifraJSON({antes:prev,resumo:o.restauracao?['Versão restaurada',...r]:r})})}
-    await put('clientes',{id:c.id,...await cifraJSON(c)});return c},
+    await put('clientes',{id:c.id,u:Date.now(),...await cifraJSON(c)});avisa();return c},
   /* histórico do cliente (mais recente primeiro) */
   async historico(cid){const d=await abreDB(),r=await new Promise((ok,err)=>{const q=d.transaction('historico','readonly').objectStore('historico').index('cid').getAll(cid);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error)}),o=[];
     for(const x of r){try{o.push({id:x.id,t:x.t,...await decifraJSON(x)})}catch(e){}}return o.sort((a,b)=>b.t-a.t)},
@@ -88,11 +89,11 @@ const COFRE={
   /* ----- arquivos ----- */
   async addArquivo(cid,{nome,tipo,origem,blob}){
     const buf=await blob.arrayBuffer(),id=uid(),h=await cifraJSON({nome,tipo:tipo||blob.type||'',origem:origem||'',data:Date.now(),tamanho:buf.byteLength}),d=await cifra(buf);
-    await put('arquivos',{id,cid,h,d});return id},
+    await put('arquivos',{id,cid,u:Date.now(),h,d});avisa();return id},
   async arquivos(cid,todos){const d=await abreDB(),r=await new Promise((ok,err)=>{const q=d.transaction('arquivos','readonly').objectStore('arquivos').index('cid').getAll(cid);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error)}),o=[];
     for(const x of r){try{const m=await decifraJSON(x.h);if(todos||!m.del)o.push({id:x.id,cid:x.cid,...m})}catch(e){}}return o.sort((a,b)=>b.data-a.data)},
   /* exclusão de arquivo vai para a lixeira (continua no cofre) e fica registrada no histórico, onde pode ser restaurada */
-  async marcarArquivo(id,del){const x=await get('arquivos',id);if(!x)return;const m=await decifraJSON(x.h);if(del)m.del=Date.now();else delete m.del;await put('arquivos',{...x,h:await cifraJSON(m)})},
+  async marcarArquivo(id,del){const x=await get('arquivos',id);if(!x)return;const m=await decifraJSON(x.h);if(del)m.del=Date.now();else delete m.del;await put('arquivos',{...x,u:Date.now(),h:await cifraJSON(m)});avisa()},
   async arquivoParaLixeira(id){const x=await get('arquivos',id);if(!x)return;const m=await decifraJSON(x.h);await COFRE.marcarArquivo(id,true);await put('historico',{id:uid(),cid:x.cid,t:Date.now(),...await cifraJSON({arq:id,arqNome:m.nome,resumo:['Arquivo excluído: '+m.nome]})})},
   async lerArquivo(id){const x=await get('arquivos',id);if(!x)return null;const m=await decifraJSON(x.h);return new Blob([await decifra(x.d)],{type:m.tipo||'application/octet-stream'})},
   async excluirArquivo(id){await del('arquivos',id)},
@@ -102,8 +103,8 @@ const COFRE={
     const o={versao:1,meta:await todos('meta'),clientes:await todos('clientes'),arquivos:await todos('arquivos'),historico:await todos('historico')};
     const cv=r=>({...r,ct:r.ct?b64(r.ct):undefined});
     const j=JSON.stringify({versao:1,meta:o.meta.map(m=>m.k==='verif'?{k:m.k,v:{iv:m.v.iv,ct:b64(m.v.ct)}}:m),
-      clientes:o.clientes.map(c=>({id:c.id,iv:c.iv,ct:b64(c.ct)})),
-      arquivos:o.arquivos.map(a=>({id:a.id,cid:a.cid,h:{iv:a.h.iv,ct:b64(a.h.ct)},d:{iv:a.d.iv,ct:b64(a.d.ct)}})),
+      clientes:o.clientes.map(c=>({id:c.id,u:c.u,iv:c.iv,ct:b64(c.ct)})),
+      arquivos:o.arquivos.map(a=>({id:a.id,cid:a.cid,u:a.u,h:{iv:a.h.iv,ct:b64(a.h.ct)},d:{iv:a.d.iv,ct:b64(a.d.ct)}})),
       historico:o.historico.map(h=>({id:h.id,cid:h.cid,t:h.t,iv:h.iv,ct:b64(h.ct)}))});
     return new Blob([j],{type:'application/json'})},
   async importar(file){
@@ -111,10 +112,13 @@ const COFRE={
     const sal=j.meta.find(m=>m.k==='sal'),atual=await get('meta','sal');
     if(atual&&atual.v!==sal.v)throw new Error('Este backup foi feito com outra senha mestra. Importe-o num navegador ainda sem cofre.');
     if(!atual){for(const m of j.meta)await put('meta',m.k==='verif'?{k:m.k,v:{iv:m.v.iv,ct:deb64(m.v.ct).buffer}}:m)}
-    for(const c of j.clientes)await put('clientes',{id:c.id,iv:c.iv,ct:deb64(c.ct).buffer});
-    for(const a of j.arquivos)await put('arquivos',{id:a.id,cid:a.cid,h:{iv:a.h.iv,ct:deb64(a.h.ct).buffer},d:{iv:a.d.iv,ct:deb64(a.d.ct).buffer}});
+    for(const c of j.clientes)await put('clientes',{id:c.id,u:c.u,iv:c.iv,ct:deb64(c.ct).buffer});
+    for(const a of j.arquivos)await put('arquivos',{id:a.id,cid:a.cid,u:a.u,h:{iv:a.h.iv,ct:deb64(a.h.ct).buffer},d:{iv:a.d.iv,ct:deb64(a.d.ct).buffer}});
     for(const h of (j.historico||[]))await put('historico',{id:h.id,cid:h.cid,t:h.t,iv:h.iv,ct:deb64(h.ct).buffer});
     return{clientes:j.clientes.length,arquivos:j.arquivos.length,precisaAbrir:!atual}},
+  /* acesso bruto (só dados já criptografados) para a sincronização com a nuvem */
+  raw:{todos,get,put,del,b64,deb64},
+  async aplicarMeta(sal,ivV,ctV){await put('meta',{k:'sal',v:sal});await put('meta',{k:'verif',v:{iv:ivV,ct:deb64(ctV).buffer}})},
   uid
 };
 window.COFRE=COFRE;

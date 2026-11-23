@@ -20,7 +20,7 @@ async function inicia(){
   $('#barraCofre').hidden=true;$('#app').hidden=true;
   if(await COFRE.retomar())return entra();
   const novo=!(await COFRE.configurado());
-  $('#trava').hidden=false;$('#travaNovo').hidden=!novo;$('#travaAbrir').hidden=novo;$('#lbImp0').hidden=!novo;
+  $('#trava').hidden=false;$('#bNuvem0').hidden=!novo;$('#travaNovo').hidden=!novo;$('#travaAbrir').hidden=novo;$('#lbImp0').hidden=!novo;
   $('#travaT').textContent=novo?'Criar senha mestra':'Desbloquear clientes';
   setTimeout(()=>(novo?$('#s1'):$('#s0')).focus(),50);
   $('#bTrava').onclick=async()=>{
@@ -30,10 +30,37 @@ async function inicia(){
       else await COFRE.abrir($('#s0').value);
       $('#trava').hidden=true;entra();
     }catch(e){er.textContent=e.message}};
+  $('#bNuvem0').onclick=async()=>{const er=$('#erroTrava');er.textContent='';
+    try{if(!SYNC.configurado())throw new Error('A nuvem ainda não está configurada neste site (falta o projeto Firebase).');
+      er.textContent='Entrando e baixando…';const st=await SYNC.executar(true);
+      if(st&&st.novoAparelho){er.textContent='';return inicia()}
+      throw new Error(st&&st.vazio?'Não há cofre na nuvem para esta conta (envie primeiro a partir do aparelho que já tem os clientes).':'Não foi possível baixar.')}
+    catch(e){er.textContent=e.message==='SEM_CONFIG'?'A nuvem ainda não está configurada neste site.':e.message}};
   ['#s0','#s2'].forEach(s=>$(s).onkeydown=e=>{if(e.key==='Enter')$('#bTrava').click()});
 }
+/* ---- sincronização com a nuvem ---- */
+function statusNuvem(t,cor){const e=$('#stNuvem');if(e){e.textContent=t;e.style.color=cor||''}}
+const hhmm=t=>new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+function ligaNuvem(){
+  if(ligaNuvem.ok)return;ligaNuvem.ok=true;
+  COFRE.aoMudar=()=>SYNC.agendar();
+  SYNC.aoMudarEstado(async(tipo,x)=>{
+    if(tipo==='inicio')statusNuvem('Sincronizando…');
+    else if(tipo==='prog')statusNuvem('Sincronizando… '+x);
+    else if(tipo==='erro')statusNuvem('⚠ '+(x&&x.message==='SEM_CONFIG'?'nuvem não configurada':'falha ao sincronizar'),'var(--red)');
+    else if(tipo==='fim'){
+      if(x&&x.precisaEntrar)return statusNuvem('Nuvem: não conectado');
+      statusNuvem('☁ Sincronizado às '+hhmm(Date.now())+(x&&(x.subiu||x.baixou)?` (↑${x.subiu} ↓${x.baixou})`:''));
+      if(x&&x.baixou){clientes=await COFRE.listar();const a=document.activeElement;lista();if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName))painel()}
+    }});
+  $('#bNuvem').onclick=async()=>{
+    if(!SYNC.configurado()){toast('A nuvem ainda não está configurada neste site (falta o projeto Firebase)');return}
+    try{await SYNC.executar(true)}catch(e){if(e&&e.message!=='SEM_CONFIG')toast('Erro: '+(e.message||e))}};
+  if(SYNC.configurado())SYNC.executar(false).catch(()=>{});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SYNC.configurado()&&Date.now()-SYNC.ultima()>60000)SYNC.executar(false).catch(()=>{})});
+}
 async function entra(){
-  $('#trava').hidden=true;$('#barraCofre').hidden=false;$('#app').hidden=false;
+  $('#trava').hidden=true;$('#barraCofre').hidden=false;$('#app').hidden=false;ligaNuvem();
   clientes=await COFRE.listar();
   for(const c of clientes){if(!c.repr&&(c.fnome||c.fcpf)){   /* cadastros antigos: passa o cadastro para o nome do(a) representado(a) */
     const r={};['nome','cpf','rg','tel','nac','ec','prof','sexo','end','cep','cid'].forEach(k=>{if(c[k])r[k]=c[k];delete c[k]});

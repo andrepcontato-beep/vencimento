@@ -55,6 +55,7 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
  <div><h1>Clientes</h1><small>André Locatelli — Advocacia</small></div>
  <span class="esp"></span>
  <span id="barraCofre" class="linha" hidden>
+  <span id="stNuvem" style="font-size:12px;color:var(--mut)"></span><button class="sec mini" id="bNuvem" title="Sincroniza com a nuvem (criptografado) para acessar de outros aparelhos">☁ Sincronizar</button>
   <button class="sec mini" id="bExp" title="Baixa um arquivo criptografado com todos os clientes e arquivos">⬇ Backup</button>
   <label class="btn sec mini" style="margin:0;cursor:pointer">⬆ Restaurar<input type="file" id="fImp" accept=".json,application/json" hidden></label>
   <button class="sec mini" id="bLock">🔒 Bloquear</button>
@@ -75,7 +76,7 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
  <div id="travaAbrir" hidden><label>Senha mestra</label><input type="password" id="s0" autocomplete="current-password"></div>
  <div class="erro" id="erroTrava"></div>
  <div class="linha" style="margin-top:6px"><button id="bTrava">Continuar</button>
-  <label class="btn sec" id="lbImp0" style="margin:0;cursor:pointer" hidden>Restaurar backup<input type="file" id="fImp0" accept=".json,application/json" hidden></label></div>
+  <button class="sec" id="bNuvem0" hidden>☁ Já uso em outro aparelho — baixar da nuvem</button><label class="btn sec" id="lbImp0" style="margin:0;cursor:pointer" hidden>Restaurar backup<input type="file" id="fImp0" accept=".json,application/json" hidden></label></div>
 </section>
 
 <!-- app -->
@@ -94,8 +95,10 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
 <script src="gerador/ocr/tesseract.min.js"></script>
 <script src="gerador/ocr/pdf.min.js"></script>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="gerador/sexo.js?v=202611230310"></script>
-<script src="gerador/extrair.js?v=202611230310"></script>
-<script src="cofre/cofre.js?v=202611230310"></script>
-<script src="clientes/clientes.js?v=202611230310"></script>
+<script src="gerador/sexo.js?v=202611231410"></script>
+<script src="gerador/extrair.js?v=202611231410"></script>
+<script src="cofre/cofre.js?v=202611231410"></script>
+<script src="cofre/firebase-config.js?v=202611231410"></script>
+<script src="cofre/sync.js?v=202611231410"></script>
+<script src="clientes/clientes.js?v=202611231410"></script>
 </body></html>
