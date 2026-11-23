@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clientes · André Locatelli</title>
+<style>
+:root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc;--up:#fffdf7;--okbg:#f4faf0;--sel:#fffbef;--warn:#fff3cd;--warnbd:#e6c55a;--red:#b3261e}
+@media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b;--up:#27241a;--okbg:#1d2a1b;--sel:#2c2717;--warn:#3a3217;--warnbd:#8a7424;--red:#ff8a80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif}
+header{padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:2px solid var(--ouro);background:var(--card);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header img{height:38px}header h1{font-size:17px;margin:0}header small{display:block;color:var(--mut);font-size:12px}
+header .esp{flex:1}header a.vt{color:var(--ouro2);text-decoration:none;font-weight:600}
+main{padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1300px;margin:auto}
+.cols{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:860px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ouro2);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.card h2 .esp{flex:1}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 2px}
+input[type=text],input[type=password],input[type=date],input[type=search],select,textarea{width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:var(--card);color:var(--tx)}
+textarea{min-height:64px;resize:vertical}
+button,.btn{background:var(--ouro);color:#fff;border:0;border-radius:7px;padding:8px 13px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+button.sec,.btn.sec{background:var(--card);color:var(--ouro2);border:1px solid var(--ouro)}
+button.mini{padding:4px 9px;font-size:12px}button.perigo{background:var(--card);color:var(--red);border:1px solid var(--red)}
+button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
+.linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}@media(max-width:560px){.g2{grid-template-columns:1fr}}
+/* lista */
+.item{display:block;width:100%;text-align:left;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:7px;font-weight:400;cursor:pointer}
+.item b{display:block;font-size:14px}.item span{font-size:12px;color:var(--mut)}
+.item.on{border-color:var(--ouro);background:var(--sel);border-left:4px solid var(--ouro)}
+.vazio{color:var(--mut);text-align:center;padding:26px 10px;font-size:13px}
+/* tela de senha */
+.trava{max-width:440px;margin:60px auto}
+.aviso{background:var(--warn);border:1px solid var(--warnbd);border-radius:8px;padding:9px 11px;font-size:13px;margin:10px 0}
+.erro{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
+/* gov */
+.gov{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center}
+.gov .k{font-size:12px;color:var(--mut)}.gov .v{font-family:ui-monospace,Consolas,monospace;font-size:15px;word-break:break-all}
+/* arquivos */
+.arq{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bd)}.arq:first-of-type{border-top:0}
+.arq .ic{width:28px;height:28px;flex:none}.arq .t{flex:1;min-width:0}.arq .t b{display:block;overflow-wrap:anywhere;font-weight:600}.arq .t span{font-size:12px;color:var(--mut)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:var(--sel);border:1px solid var(--ouro);color:var(--ouro2);margin-right:5px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:9}.toast.on{opacity:1}
+.rod{margin:6px 0 30px;font-size:12px;color:var(--mut)}
+</style></head><body>
+<header>
+ <img src="perfis/andrelocatelli/logo.png" alt="">
+ <div><h1>Clientes</h1><small>André Locatelli — Advocacia</small></div>
+ <span class="esp"></span>
+ <span id="barraCofre" class="linha" hidden>
+  <button class="sec mini" id="bExp" title="Baixa um arquivo criptografado com todos os clientes e arquivos">⬇ Backup</button>
+  <label class="btn sec mini" style="margin:0;cursor:pointer">⬆ Restaurar<input type="file" id="fImp" accept=".json,application/json" hidden></label>
+  <button class="sec mini" id="bLock">🔒 Bloquear</button>
+ </span>
+ <a class="vt" href="index.html">← Início</a>
+</header>
+<main>
+
+<!-- criar / desbloquear -->
+<section id="trava" class="card trava" hidden>
+ <h2 id="travaT">Senha mestra</h2>
+ <div id="travaNovo" hidden>
+  <div class="aviso"><b>Como funciona:</b> os dados dos clientes (inclusive a senha do gov.br e os arquivos) ficam guardados <b>só neste navegador, neste computador</b>, criptografados com uma senha mestra que você escolhe agora. Nada vai para a internet nem para o GitHub.<br><br>
+  <b>Se você esquecer a senha mestra, não há como recuperar.</b> Use o botão “Backup” de vez em quando.</div>
+  <label>Crie a senha mestra (mínimo 8 caracteres)</label><input type="password" id="s1" autocomplete="new-password">
+  <label>Repita a senha</label><input type="password" id="s2" autocomplete="new-password">
+ </div>
+ <div id="travaAbrir" hidden><label>Senha mestra</label><input type="password" id="s0" autocomplete="current-password"></div>
+ <div class="erro" id="erroTrava"></div>
+ <div class="linha" style="margin-top:6px"><button id="bTrava">Continuar</button>
+  <label class="btn sec" id="lbImp0" style="margin:0;cursor:pointer" hidden>Restaurar backup<input type="file" id="fImp0" accept=".json,application/json" hidden></label></div>
+</section>
+
+<!-- app -->
+<div id="app" class="cols" hidden>
+ <aside>
+  <div class="card">
+   <h2>Lista de clientes <span class="esp"></span><button class="mini" id="bNovo">+ Novo</button></h2>
+   <input type="search" id="busca" placeholder="Buscar por nome ou CPF…">
+   <div id="lista" style="margin-top:10px"></div>
+  </div>
+ </aside>
+ <section id="painel"></section>
+</div>
+</main>
+<div class="toast" id="toast"></div>
+<script src="cofre/cofre.js?v=202611222345"></script>
+<script src="clientes/clientes.js?v=202611222345"></script>
+</body></html>

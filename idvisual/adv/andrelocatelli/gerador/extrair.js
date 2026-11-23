@@ -164,7 +164,7 @@ async function paraImagens(file,maxLado){
   const im=await carregaImg(file);return [preprocessa(im,im.naturalWidth,im.naturalHeight)];
 }
 let _fila=Promise.resolve();
-function ler(files,st,extrator,mapa,box){$(st).textContent='Na fila…';_fila=_fila.then(()=>lerUm(files,st,extrator,mapa,box));return _fila}   /* um documento por vez */
+function ler(files,st,extrator,mapa,box){(window.__uploads=window.__uploads||[]).push(...[...files].map(f=>({f,rot:{'#s1':'Identidade','#s2':'Comprovante de endereço','#s3':'Certidão de nascimento'}[st]||'Documento',salvo:false})));$(st).textContent='Na fila…';_fila=_fila.then(()=>lerUm(files,st,extrator,mapa,box));return _fila}   /* um documento por vez */
 async function lerUm(files,st,extrator,mapa,box){
   const S=$(st);S.textContent='Preparando…';
   try{

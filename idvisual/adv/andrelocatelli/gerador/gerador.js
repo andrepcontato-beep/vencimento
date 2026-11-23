@@ -156,13 +156,13 @@ $('#baixar').onclick=async()=>{
   try{
     m.textContent='Gerando…';const b=await montaDocumento(),a=document.createElement('a');
     a.href=URL.createObjectURL(b);a.download=nomeArq()+'.docx';document.body.appendChild(a);a.click();
-    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000);m.textContent='✔ '+nomeArq()+'.docx';
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000);m.textContent='✔ '+nomeArq()+'.docx';registra(b,nomeArq()+'.docx');
   }catch(e){m.textContent='⚠ '+(e.message||'erro ao gerar')}
 };
 const IC_W='<svg class="ic" viewBox="0 0 24 24"><path fill="#2B579A" d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path fill="#fff" fill-opacity=".45" d="M14 2l5 5h-4a1 1 0 0 1-1-1z"/><path fill="#fff" d="M7.2 9.5h1.4l1.2 5 1.3-5h1.1l1.3 5 1.2-5h1.4l-1.9 7h-1.2l-1.2-4.6-1.2 4.6H9.1z"/></svg>';
 const IC_P='<svg class="ic" viewBox="0 0 24 24"><path fill="#D32F2F" d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path fill="#fff" fill-opacity=".45" d="M14 2l5 5h-4a1 1 0 0 1-1-1z"/><text x="12" y="17.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="6.2" fill="#fff">PDF</text></svg>';
 const setBtn=(b,ic,t)=>{b.innerHTML=ic+'<span>'+t+'</span>'};
-function salva(blob,n){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)}
+function salva(blob,n){registra(blob,n);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)}
 async function baixaPdf(tp,arq){
   const m=$('#msgBaixar');
   if(!dataEscolhida()){vai(3);$('#falta').textContent='Escolha a data para baixar.';return}
@@ -221,5 +221,44 @@ document.querySelectorAll('[data-vai]').forEach(b=>b.onclick=()=>vai(+b.dataset.
 $('#manual').onclick=()=>{manualMode=true;vai(2)};
 $('#seguir').onclick=()=>{manualMode=false;vai(2)};
 $('#seguir2').onclick=()=>vai(3);
+
+/* ---------- lista de clientes (cofre local criptografado) ---------- */
+const GERADOS=[];let cliId=null,ofertaFeita={},ofertaRecusada={};
+function registra(blob,n){GERADOS.push({blob,nome:n,salvo:false});setTimeout(oferece,600)}
+const CHAVES=['nome','sexo','nac','ec','prof','rg','cpf','end','cid','cep','tel','fnome','fsexo','fnasc','fcpf','fcond'];
+function dadosCliente(){const v=valores(),o={};CHAVES.forEach(k=>{if(v[k]!==undefined&&String(v[k]).trim()!=='')o[k]=String(v[k]).trim()});return o}
+async function sincroniza(){
+  const novo=dadosCliente(),ex=(await COFRE.porCpf(novo.cpf))||{},c=Object.assign(ex,novo);
+  const sal=await COFRE.salvar(c);cliId=sal.id;
+  const ja=await COFRE.arquivos(sal.id);
+  for(const g of GERADOS)if(!g.salvo&&!ja.some(a=>a.nome===g.nome&&a.tamanho===g.blob.size)){await COFRE.addArquivo(sal.id,{nome:g.nome,origem:'Gerado',blob:g.blob})}
+  GERADOS.forEach(g=>g.salvo=true);
+  for(const u of (window.__uploads||[]))if(!u.salvo){{const nm=u.rot+' - '+u.f.name;if(!ja.some(a=>a.nome===nm&&a.tamanho===u.f.size))await COFRE.addArquivo(sal.id,{nome:nm,tipo:u.f.type,origem:'Enviado',blob:u.f})};u.salvo=true}
+  return sal}
+function faixa(html){let f=document.getElementById('faixaCli');if(!f){f=document.createElement('div');f.id='faixaCli';f.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:2px solid var(--ouro);padding:12px max(16px,env(safe-area-inset-left,0px));box-shadow:0 -4px 18px rgba(0,0,0,.12);display:flex;gap:12px;align-items:center;flex-wrap:wrap';document.body.appendChild(f)}f.innerHTML=html;f.hidden=false;return f}
+const fecha=()=>{const f=document.getElementById('faixaCli');if(f)f.hidden=true};
+async function oferece(){
+  const cpf=($('#cpf').value||'').replace(/\D/g,'');if(cpf.length!==11||!window.COFRE)return;
+  if(cliId&&await COFRE.retomar()){try{await sincroniza()}catch(e){}return}          /* já salvo nesta sessão: só acrescenta os novos arquivos */
+  if(ofertaRecusada[cpf])return;
+  faixa(`<div style="flex:1;min-width:240px"><b>Salvar ${$('#nome').value.trim()?$('#nome').value.trim().toUpperCase():'este cliente'} na lista de clientes?</b><div style="font-size:12px;color:var(--mut)">Guarda os dados, os documentos enviados e os gerados, e permite anotar a senha do gov.br. Fica só neste navegador, criptografado.</div></div><button id="cliSim">Salvar cliente</button><button class="sec" id="cliNao">Agora não</button>`);
+  $('#cliNao').onclick=()=>{ofertaRecusada[cpf]=true;fecha()};
+  $('#cliSim').onclick=async()=>{
+    if(await COFRE.retomar())return conclui();
+    const novo=!(await COFRE.configurado());
+    faixa(`<div style="flex:1;min-width:260px"><b>${novo?'Crie a senha mestra do cofre':'Digite a senha mestra'}</b><div style="font-size:12px;color:var(--mut)">${novo?'Ela protege todos os clientes salvos neste navegador. <b>Não há como recuperá-la se for esquecida.</b> Mínimo 8 caracteres.':'Para abrir o cofre de clientes.'}</div></div><input type="password" id="cs1" placeholder="Senha mestra" style="max-width:200px" autocomplete="${novo?'new-password':'current-password'}">${novo?'<input type="password" id="cs2" placeholder="Repita a senha" style="max-width:200px" autocomplete="new-password">':''}<button id="csOk">${novo?'Criar e salvar':'Abrir e salvar'}</button><button class="sec" id="cliNao2">Cancelar</button><span id="csErr" class="falta" style="flex-basis:100%;margin:0"></span>`);
+    $('#cliNao2').onclick=()=>{ofertaRecusada[cpf]=true;fecha()};$('#cs1').focus();
+    $('#csOk').onclick=async()=>{try{if(novo){if($('#cs1').value!==$('#cs2').value)throw new Error('As senhas não conferem.');await COFRE.criar($('#cs1').value)}else await COFRE.abrir($('#cs1').value);await conclui()}catch(e){$('#csErr').textContent=e.message}};
+    $('#cs1').onkeydown=e=>{if(e.key==='Enter')$('#csOk').click()};
+  };
+  async function conclui(){try{const c=await sincroniza();faixa(`<div style="flex:1"><b>✔ Cliente salvo.</b> <span style="color:var(--mut)">Dados e arquivos guardados no cofre.</span></div><a class="btn sec" style="text-decoration:none;display:inline-block;padding:9px 14px;border-radius:7px" href="clientes.html?id=${c.id}" target="_blank">Abrir ficha (senha gov.br…)</a><button class="sec" id="cliFecha">Fechar</button>`);$('#cliFecha').onclick=fecha}catch(e){faixa(`<div style="flex:1;color:#b3261e">⚠ ${e.message||'Não consegui salvar'}</div><button class="sec" id="cliFecha">Fechar</button>`);$('#cliFecha').onclick=fecha}}
+}
+/* abrir o gerador a partir da ficha do cliente: preenche os dados */
+(function(){let pf=null;try{pf=JSON.parse(sessionStorage.getItem('prefill')||'null');sessionStorage.removeItem('prefill')}catch(e){}
+  if(!pf||!new URLSearchParams(location.search).get('cliente'))return;
+  IDS.forEach(k=>{if(k==='pmodo'||pf[k]===undefined||pf[k]==='')return;const e=$('#'+k);if(e)e.value=pf[k]});
+  const fn=$('#fnasc');if(fn)fn.dispatchEvent(new Event('change'));
+  cliId=pf.id;manualMode=true;setTimeout(()=>vai(2),0)})();
+
 montaData();vai(1);carregaPerfil().catch(()=>{});
 })();
