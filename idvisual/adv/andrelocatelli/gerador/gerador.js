@@ -225,15 +225,24 @@ $('#seguir2').onclick=()=>vai(3);
 /* ---------- lista de clientes (cofre local criptografado) ---------- */
 const GERADOS=[];let cliId=null,ofertaFeita={},ofertaRecusada={};
 function registra(blob,n){GERADOS.push({blob,nome:n,salvo:false});setTimeout(oferece,600)}
-const CHAVES=['nome','sexo','nac','ec','prof','rg','cpf','end','cid','cep','tel','fnome','fsexo','fnasc','fcpf','fcond'];
-function dadosCliente(){const v=valores(),o={};CHAVES.forEach(k=>{if(v[k]!==undefined&&String(v[k]).trim()!=='')o[k]=String(v[k]).trim()});return o}
+const CH_REP=['nome','sexo','nac','ec','prof','rg','cpf','end','cid','cep','tel'];
+/* com beneficiário(a) representado(a) (fnome), o cadastro é dele(a) e quem assina vira "representante" */
+function dadosCliente(){const v=valores(),g=k=>String(v[k]===undefined?'':v[k]).trim();
+  if(g('fnome')){const rep={};CH_REP.forEach(k=>{if(g(k))rep[k]=g(k)});
+    const o={repr:true,rep,nome:g('fnome'),cpf:g('fcpf'),nasc:g('fnasc'),sexo:g('fsexo'),cond:g('fcond')};Object.keys(o).forEach(k=>{if(o[k]==='')delete o[k]});return o}
+  const o={};CH_REP.forEach(k=>{if(g(k))o[k]=g(k)});return o}
 async function sincroniza(){
-  const novo=dadosCliente(),ex=(await COFRE.porCpf(novo.cpf))||{},c=Object.assign(ex,novo);
+  const novo=dadosCliente(),nm=x=>String(x||'').trim().toLowerCase();
+  let ex=cliId?await COFRE.obter(cliId):null;
+  if(!ex)ex=(novo.cpf&&await COFRE.porCpf(novo.cpf))||(novo.repr&&novo.nome&&(await COFRE.listar()).find(x=>x.repr&&nm(x.nome)===nm(novo.nome)))||null;
+  const c=ex||{};
+  if(novo.repr){c.repr=true;c.rep=Object.assign(c.rep||{},novo.rep);delete novo.rep}
+  Object.assign(c,novo);
   const sal=await COFRE.salvar(c);cliId=sal.id;
   const ja=await COFRE.arquivos(sal.id);
   for(const g of GERADOS)if(!g.salvo&&!ja.some(a=>a.nome===g.nome&&a.tamanho===g.blob.size)){await COFRE.addArquivo(sal.id,{nome:g.nome,origem:'Gerado',blob:g.blob})}
   GERADOS.forEach(g=>g.salvo=true);
-  for(const u of (window.__uploads||[]))if(!u.salvo){{const nm=u.rot+' - '+u.f.name;if(!ja.some(a=>a.nome===nm&&a.tamanho===u.f.size))await COFRE.addArquivo(sal.id,{nome:nm,tipo:u.f.type,origem:'Enviado',blob:u.f})};u.salvo=true}
+  for(const u of (window.__uploads||[]))if(!u.salvo){{const nmU=u.rot+(c.repr&&u.rot!=='Certidão de nascimento'?' do representante':'')+' - '+u.f.name;if(!ja.some(a=>a.nome===nmU&&a.tamanho===u.f.size))await COFRE.addArquivo(sal.id,{nome:nmU,tipo:u.f.type,origem:'Enviado',blob:u.f})};u.salvo=true}
   return sal}
 function faixa(html){let f=document.getElementById('faixaCli');if(!f){f=document.createElement('div');f.id='faixaCli';f.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:2px solid var(--ouro);padding:12px max(16px,env(safe-area-inset-left,0px));box-shadow:0 -4px 18px rgba(0,0,0,.12);display:flex;gap:12px;align-items:center;flex-wrap:wrap';document.body.appendChild(f)}f.innerHTML=html;f.hidden=false;return f}
 const fecha=()=>{const f=document.getElementById('faixaCli');if(f)f.hidden=true};
@@ -241,7 +250,7 @@ async function oferece(){
   const cpf=($('#cpf').value||'').replace(/\D/g,'');if(cpf.length!==11||!window.COFRE)return;
   if(cliId&&await COFRE.retomar()){try{await sincroniza()}catch(e){}return}          /* já salvo nesta sessão: só acrescenta os novos arquivos */
   if(ofertaRecusada[cpf])return;
-  faixa(`<div style="flex:1;min-width:240px"><b>Salvar ${$('#nome').value.trim()?$('#nome').value.trim().toUpperCase():'este cliente'} na lista de clientes?</b><div style="font-size:12px;color:var(--mut)">Guarda os dados, os documentos enviados e os gerados, e permite anotar a senha do gov.br. Fica só neste navegador, criptografado.</div></div><button id="cliSim">Salvar cliente</button><button class="sec" id="cliNao">Agora não</button>`);
+  faixa(`<div style="flex:1;min-width:240px"><b>Salvar ${(()=>{const n=$('#nome').value.trim().toUpperCase(),f=($('#fnome')||{value:''}).value.trim().toUpperCase();return f?f+' (representado(a) por '+(n||'—')+')':(n||'este cliente')})()} na lista de clientes?</b><div style="font-size:12px;color:var(--mut)">Guarda os dados, os documentos enviados e os gerados, e permite anotar a senha do gov.br. Fica só neste navegador, criptografado.</div></div><button id="cliSim">Salvar cliente</button><button class="sec" id="cliNao">Agora não</button>`);
   $('#cliNao').onclick=()=>{ofertaRecusada[cpf]=true;fecha()};
   $('#cliSim').onclick=async()=>{
     if(await COFRE.retomar())return conclui();
