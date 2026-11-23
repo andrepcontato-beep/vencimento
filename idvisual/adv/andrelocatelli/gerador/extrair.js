@@ -193,6 +193,26 @@ async function lerUm(files,st,extrator,mapa,box){
     $(box).classList.add('ok');liberaSeguir();
   }catch(e){S.textContent='⚠ '+e.message;console.error(e)}
 }
+/* leitura sem tela do gerador (usada pela página Clientes): devolve só os dados lidos */
+async function ocrLer(files,extrator,keys,status){
+  const S={set textContent(v){status&&status(v)},set innerHTML(v){}},w=await getWorker(S),o={};
+  for(const f of files){
+    const imgs=await paraImagens(f,extrator.maxLado);
+    for(const cv of imgs){
+      let last=null;
+      for(const psm of ['4','6']){
+        if(keys.every(k=>o[k]))break;
+        await w.setParameters({tessedit_pageseg_mode:psm});status&&status('Lendo…'+(psm==='6'?' (conferindo o que faltou)':''));
+        const rr=(await w.recognize(cv)).data;last=rr;const x=extrator(rr.text);for(const k in x)if(x[k]&&!o[k])o[k]=x[k];
+      }
+      if(extrator.refina&&last&&keys.some(k=>!o[k])){status&&status('Lendo as caixas de data e sexo…');try{await extrator.refina(w,cv,last,o)}catch(e){console.warn('refina',e)}}
+    }
+  }
+  return o;
+}
+window.OCR_LER=ocrLer;window.OCR_EXTRATORES={ident:extrairId,end:extrairEnd,cert:extrairCert};
+if($('#f1')){
 $('#f1').onchange=e=>ler([...e.target.files],'#s1',extrairId,{nome:'nome',cpf:'cpf',rg:'rg'},'#u1');
 $('#f3').onchange=e=>ler([...e.target.files],'#s3',extrairCert,{fnome:'fnome',fcpf:'fcpf',fnasc:'fnasc',fsexo:'fsexo'},'#u3').then(()=>{const n=$('#fnasc');if(n)n.dispatchEvent(new Event('change'))});
 $('#f2').onchange=e=>ler([...e.target.files],'#s2',extrairEnd,{end:'end',cep:'cep',cid:'cid'},'#u2');
+}

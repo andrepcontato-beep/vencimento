@@ -64,13 +64,6 @@ async function painel(){
   const c=clientes.find(x=>x.id===sel);if(!c){P.innerHTML='';return}
   const arqs=await COFRE.arquivos(c.id),tem=c.fnome||c.fcpf||c.fnasc;
   P.innerHTML=`
-  <div class="card"><h2>Dados do cliente <span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
-    <div class="g2">${CAMPOS.map(([k,r])=>campo(k,r,c)).join('')}</div>
-    <details ${tem?'open':''} style="margin-top:10px"><summary style="cursor:pointer;color:var(--ouro2);font-weight:600">Beneficiário(a) representado(a) (contrato “PREV incapaz”)</summary>
-      <div class="g2">${BEN.map(([k,r])=>campo(k,r,c)).join('')}</div></details>
-    <label>Observações</label><textarea data-k="notas">${esc(c.notas)}</textarea>
-  </div>
-
   <div class="card"><h2>Benefícios <span class="esp"></span></h2>
     <div id="bens">${(c.beneficios||[]).length?(c.beneficios||[]).map((b,i)=>`<div class="arq"><div class="t"><b>${esc(b)}</b></div><button class="perigo mini" data-menos="${i}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum benefício vinculado.</div>'}</div>
     <div class="linha" style="margin-top:10px"><select id="selBen" style="flex:1;min-width:220px"><option value="">Escolha o benefício…</option>${BENEFICIOS.map(b=>`<option>${esc(b)}</option>`).join('')}<option value="__outro">Outro (digitar)…</option></select><input type="text" id="outroBen" placeholder="Nome do benefício" hidden style="flex:1;min-width:200px"><button class="mini" id="bMais" title="Adicionar">+</button></div>
@@ -84,6 +77,13 @@ async function painel(){
     </div>
     <div class="linha" style="margin-top:10px"><input type="password" id="novaSenha" placeholder="${c.govSenha?'Nova senha (substitui a atual)':'Digite a senha do gov.br'}" style="flex:1;min-width:200px" autocomplete="off"><button class="sec" id="bSenha">${c.govSenha?'Alterar':'Guardar'}</button>${c.govSenha?'<button class="perigo mini" id="bApagaSenha">Apagar senha</button>':''}</div>
     <div class="aviso" style="margin-bottom:0">A senha fica criptografada junto com os demais dados (cofre protegido pela sua senha mestra).</div>
+  </div>
+
+  <div class="card"><h2>Dados do cliente <button class="sec mini" id="bZap" title="Abrir conversa no WhatsApp" style="text-transform:none;letter-spacing:0"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:5px"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z"/></svg>Falar com este cliente</button><span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
+    <div class="g2">${CAMPOS.map(([k,r])=>campo(k,r,c)).join('')}</div>
+    <details ${tem?'open':''} style="margin-top:10px"><summary style="cursor:pointer;color:var(--ouro2);font-weight:600">Beneficiário(a) representado(a) (contrato “PREV incapaz”)</summary>
+      <div class="g2">${BEN.map(([k,r])=>campo(k,r,c)).join('')}</div></details>
+    <label>Observações</label><textarea data-k="notas">${esc(c.notas)}</textarea>
   </div>
 
   <div class="card"><h2>Arquivos <span class="esp"></span><label class="btn mini" style="margin:0;cursor:pointer">+ Adicionar<input type="file" id="fAdd" multiple hidden></label></h2>
@@ -101,6 +101,7 @@ async function painel(){
   $('#selBen').onchange=e=>{$('#outroBen').hidden=e.target.value!=='__outro';if(!$('#outroBen').hidden)$('#outroBen').focus()};
   $('#bMais').onclick=async()=>{let v=$('#selBen').value;if(v==='__outro')v=$('#outroBen').value.trim();if(!v)return toast('Escolha o benefício');dados();c.beneficios=c.beneficios||[];if(c.beneficios.includes(v))return toast('Já está na lista');c.beneficios.push(v);await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
   P.querySelectorAll('[data-menos]').forEach(b=>b.onclick=async()=>{dados();c.beneficios.splice(+b.dataset.menos,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
+  $('#bZap').onclick=()=>{let d=((P.querySelector('[data-k=tel]')||{}).value||'').replace(/\D/g,'');if(d.length<10)return toast('Informe o telefone do cliente (com DDD)');if(!d.startsWith('55')||d.length<12)d='55'+d;window.open('https://wa.me/'+d,'_blank','noopener')};
   $('#bCopLogin').onclick=()=>copia(String(c.cpf).replace(/\D/g,''),'Login');
   if($('#bVer'))$('#bVer').onclick=()=>{mostraSenha=!mostraSenha;painel()};
   if($('#bCopSenha'))$('#bCopSenha').onclick=()=>copia(c.govSenha,'Senha');
@@ -113,7 +114,57 @@ async function painel(){
   $('#bGerar').onclick=()=>{dados();try{sessionStorage.setItem('prefill',JSON.stringify(c))}catch(e){}location.href='gerador.html?doc='+$('#selDoc').value+'&cliente='+c.id};
   $('#bExcluir').onclick=async()=>{if(!confirm('Excluir '+(c.nome||'este cliente')+' e todos os arquivos dele? Isso não pode ser desfeito.'))return;await COFRE.excluir(c.id);clientes=await COFRE.listar();sel=clientes[0]?clientes[0].id:null;lista();painel();toast('Cliente excluído')};
 }
-$('#bNovo').onclick=async()=>{const c=await COFRE.salvar({nome:'Novo cliente'});clientes=await COFRE.listar();sel=c.id;$('#busca').value='';lista();painel();setTimeout(()=>{const i=document.querySelector('[data-k=nome]');if(i){i.focus();i.select()}},50)};
+/* ---------- novo cliente: documentos (lidos por OCR) ou digitação manual ---------- */
+let fila=Promise.resolve(),ocupado=0;
+function novoFluxo(){
+  sel=null;lista();
+  const nd={o:{},arq:[]};  /* arq: {f,rot,origem} */
+  const P=$('#painel');
+  const slot=(id,tit,sub,mult)=>`<label class="up" style="display:block;border:2px dashed var(--ouro);background:var(--up);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer"><b>${tit}</b><div style="font-size:12px;color:var(--mut)">${sub}</div><input type="file" id="${id}" accept="image/*,application/pdf" ${mult?'multiple':''} hidden><div class="st" id="st_${id}" style="font-size:12px;margin-top:6px"></div></label>`;
+  P.innerHTML=`<div class="card"><h2>Novo cliente <span class="esp"></span><button class="sec mini" id="nCancela">Cancelar</button></h2>
+    <p style="margin:0 0 10px;color:var(--mut)">Envie os documentos e eu leio os dados. Pode enviar só o que tiver.</p>
+    ${slot('nIdent','Identidade / CNH / documento com foto','foto, PDF ou imagem — frente (e verso, se precisar)',true)}
+    ${slot('nEnd','Comprovante de endereço','conta de luz/água/telefone etc.')}
+    ${slot('nCert','Certidão de nascimento do(a) beneficiário(a)','da filha/do filho representado(a). Se não enviar, entende-se que o beneficiário é o próprio cliente.')}
+    <label class="up" style="display:block;border:2px dashed var(--bd);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer"><b>Outros documentos</b><div style="font-size:12px;color:var(--mut)">um por vez — só vai para os arquivos do cliente (não é lido)</div><input type="file" id="nOut" hidden><div id="nOutLista" style="margin-top:6px"></div></label>
+    <div class="linha" style="margin-top:6px"><button id="nVai" disabled>Continuar →</button><button class="sec" id="nManual">Digitar manualmente</button></div>
+  </div>`;
+  const status=(id,t)=>{$('#st_'+id).innerHTML=t};
+  const atualiza=()=>{$('#nVai').disabled=ocupado>0||!nd.arq.length;$('#nOutLista').innerHTML=nd.arq.filter(a=>a.rot==='Outro').map(a=>`<div style="font-size:13px">${esc(a.f.name)} <a href="#" data-x="${nd.arq.indexOf(a)}" style="color:var(--red)">remover</a></div>`).join('');
+    P.querySelectorAll('[data-x]').forEach(x=>x.onclick=e=>{e.preventDefault();nd.arq.splice(+x.dataset.x,1);atualiza()})};
+  const ocr=(id,rot,ext,keys,NOMES)=>{$('#'+id).onchange=e=>{
+    const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+    fs.forEach(f=>nd.arq.push({f,rot,origem:'Enviado'}));ocupado++;atualiza();status(id,'Na fila…');
+    fila=fila.then(async()=>{
+      try{if(!window.Tesseract||!window.OCR_LER)throw new Error('motor de leitura não carregou — recarregue a página');
+        const o=await OCR_LER(fs,OCR_EXTRATORES[ext],keys,t=>status(id,t));
+        keys.forEach(k=>{if(o[k]&&!nd.o[k])nd.o[k]=o[k]});
+        const achou=keys.filter(k=>o[k]),falta=keys.filter(k=>!o[k]);
+        status(id,(achou.length?'✔ Li: '+achou.map(k=>NOMES[k]).join(', '):'')+(falta.length?(achou.length?'<br>':'')+'⚠ Não consegui ler: '+falta.map(k=>NOMES[k]).join(', ')+' — complete na ficha':''));
+      }catch(err){status(id,'⚠ '+esc(err.message));console.error(err)}
+      ocupado--;atualiza()})}};
+  ocr('nIdent','Identidade','ident',['nome','cpf','rg'],{nome:'nome',cpf:'CPF',rg:'RG'});
+  ocr('nEnd','Comprovante de endereço','end',['end','cep','cid'],{end:'endereço',cep:'CEP',cid:'cidade/UF'});
+  ocr('nCert','Certidão de nascimento','cert',['fnome','fcpf','fnasc','fsexo'],{fnome:'nome do(a) beneficiário(a)',fcpf:'CPF do(a) beneficiário(a)',fnasc:'data de nascimento',fsexo:'sexo'});
+  $('#nOut').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;nd.arq.push({f,rot:'Outro',origem:'Adicionado'});atualiza()};
+  $('#nCancela').onclick=()=>{sel=clientes[0]?clientes[0].id:null;lista();painel()};
+  $('#nManual').onclick=async()=>{const c=await COFRE.salvar({nome:'Novo cliente'});clientes=await COFRE.listar();sel=c.id;$('#busca').value='';lista();painel();setTimeout(()=>{const i=document.querySelector('[data-k=nome]');if(i){i.focus();i.select()}},50)};
+  $('#nVai').onclick=async()=>{
+    $('#nVai').disabled=true;const o=nd.o,novo={};
+    ['nome','cpf','rg','end','cep','cid','fnome','fcpf','fnasc','fsexo'].forEach(k=>{if(o[k])novo[k]=o[k]});
+    if(novo.cpf)novo.cpf=fmtCpf(novo.cpf);if(novo.fcpf)novo.fcpf=fmtCpf(novo.fcpf);
+    if(novo.nome&&window.SEXO){const r=SEXO.por(novo.nome);if(r&&r.sexo)novo.sexo=r.sexo}
+    if(novo.fnome&&!novo.fcond)novo.fcond='menor';
+    const ex=novo.cpf?await COFRE.porCpf(novo.cpf):null;
+    const c=ex?Object.assign(novo,ex,Object.fromEntries(Object.entries(novo).filter(([k])=>!ex[k]))):novo;
+    if(!c.nome)c.nome='Novo cliente';
+    const sv=await COFRE.salvar(c),ja=await COFRE.arquivos(sv.id);
+    for(const a of nd.arq){const nm=a.rot==='Outro'?a.f.name:a.rot+' - '+a.f.name;if(!ja.some(x=>x.nome===nm&&x.tamanho===a.f.size))await COFRE.addArquivo(sv.id,{nome:nm,tipo:a.f.type,origem:a.origem,blob:a.f})}
+    clientes=await COFRE.listar();sel=sv.id;$('#busca').value='';lista();painel();
+    toast(ex?'Cliente já existia — dados e arquivos acrescentados':'Cliente criado — confira os dados');
+  };
+}
+$('#bNovo').onclick=novoFluxo;
 
 /* ---------- backup ---------- */
 $('#bExp').onclick=async()=>{const b=await COFRE.exportar(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='backup-clientes-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);toast('Backup criptografado baixado')};
