@@ -1,10 +1,14 @@
 /* Leitura dos documentos do cliente (OCR no navegador) e extração dos dados */
 /* ---------- extração ---------- */
 function limpa(t){return t.replace(/[|]/g,'I').replace(/\r/g,'')}
+function cpfOk(c){c=String(c).replace(/\D/g,'');if(c.length!==11||/^(\d)\1+$/.test(c))return false;const d=[...c].map(Number);
+  const f=n=>{let s=0;for(let i=0;i<n;i++)s+=d[i]*(n+1-i);return (s*10)%11%10};return f(9)===d[9]&&f(10)===d[10]}
 function extrairId(t){
   t=limpa(t);const o={};
   const cl=t.match(/C\s?P\s?F\W{0,12}(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/i);
-  const cpf=cl||t.match(/(?<!\d)(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/);
+  let cpf=cl||t.match(/(?<!\d)(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/);
+  if(!cl||!cpfOk(cl.slice(1,5).join(''))){   /* vários números de 11 dígitos no documento (ex.: CNH): fica o que tem dígitos verificadores válidos */
+    const todos=[...t.matchAll(/(?<!\d)(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/g)],v=todos.find(m=>cpfOk(m.slice(1,5).join('')));if(v)cpf=v}
   if(cpf)o.cpf=`${cpf[1]}.${cpf[2]}.${cpf[3]}-${cpf[4]}`;
   const L=t.split('\n').map(s=>s.trim()).filter(Boolean);
   for(let i=0;i<L.length;i++){
@@ -14,6 +18,10 @@ function extrairId(t){
       r=r.split(/\s{3,}|\s[|!¡]/)[0];
       r=r.replace(/[^A-ZÀ-Ú\s]/gi,' ').replace(/\s+/g,' ').trim();
       if(r.split(' ').length>=2)o.nome=r;
+    }
+    if(!o.nome&&/NOME\s+E\s+SOBRENOME/i.test(L[i])&&!/^NOME/i.test(L[i])&&L[i+1]){   /* CNH: o rótulo vem com lixo antes e o nome fica na linha de baixo */
+      const r=L[i+1].split(/\s{3,}/)[0].replace(/[^A-ZÀ-Ú\s]/g,' ').replace(/\s+/g,' ').trim();
+      if(r.split(' ').length>=2&&r.length>=8)o.nome=r;
     }
     if(!o.rg&&/EXPEDI[ÇC]/i.test(L[i])&&!/\b(SSP|SDS|SESP|DGPC|PCGO|IFP|DETRAN)\b/i.test(L[i])){   /* CIN (nova identidade): o RG fica na linha de "DATA DE EXPEDIÇÃO" */
       const tx=L[i].replace(/\b\d{2}\/\d{2}\/\d{4}\b/g,' ').replace(/\b\d[\dOo]?\s?[ªº°]\s*VIA/gi,' ');
@@ -36,6 +44,48 @@ function extrairId(t){
   if(!o.rg){const m=t.match(/(\d{5,9}[-.]?\d?)\s*(SSP|SDS|DGPC|PC|IFP)[\s\/-]*([A-Z]{2})/i);if(m)o.rg=`${m[1]} ${m[2].toUpperCase()}/${m[3].toUpperCase()}`}
   return o;
 }
+/* Documento pequeno numa página grande (ex.: CNH escaneada no meio de uma folha A4): recorta o conteúdo e lê de novo.
+   Só roda se faltou algum campo, então não muda nada para os documentos que já são lidos de primeira. */
+async function leCampoCnh(w,cv,xa,xb,ya,yb,k){
+  xa=Math.max(0,xa);ya=Math.max(0,ya);xb=Math.min(cv.width,xb);yb=Math.min(cv.height,yb);const cw=xb-xa,ch=yb-ya;if(cw<20||ch<10)return '';
+  const pad=30,c=document.createElement('canvas');c.width=Math.round(cw*k)+pad*2;c.height=Math.round(ch*k)+pad*2;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(cv,xa,ya,cw,ch,pad,pad,Math.round(cw*k),Math.round(ch*k));
+  const im=g.getImageData(0,0,c.width,c.height),d=im.data,h=new Uint32Array(256);let lo=255;
+  for(let i=0;i<d.length;i+=4){const y=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0;d[i]=d[i+1]=d[i+2]=y;h[y]++;if(y<lo)lo=y}
+  const tot=d.length/4;let sum=0;for(let i=0;i<256;i++)sum+=i*h[i];let sb=0,wb=0,mx=0,th=128;   /* limiar de Otsu só para escolher o ponto branco */
+  for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=tot-wb;if(!wf)break;sb+=i*h[i];const mb=sb/wb,mf=(sum-sb)/wf,v=wb*wf*(mb-mf)*(mb-mf);if(v>mx){mx=v;th=i}}
+  const hi=Math.max(lo+30,th*1.4);for(let i=0;i<d.length;i+=4){const v=Math.max(0,Math.min(255,(d[i]-lo)*255/(hi-lo)));d[i]=d[i+1]=d[i+2]=v}
+  g.putImageData(im,0,0);await w.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:''});
+  const r=await w.recognize(c);await w.setParameters({tessedit_pageseg_mode:'6'});return r.data.text||'';
+}
+extrairId.refina=async function(w,cv,last,o){
+  if(o.nome&&o.cpf&&o.rg)return;
+  const W=cv.width,H=cv.height,d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H).data;let x0=W,y0=H,x1=0,y1=0;
+  for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2){if(d[(y*W+x)*4]<215){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+  let r=null,t='',c2=null,achou=false;
+  for(const [m,psm] of [[4,'6'],[4,'4'],[14,'6'],[0,'6']]){   /* a segmentação do OCR varia com o recorte: tenta algumas variantes */
+    const ax=Math.max(0,x0-m),ay=Math.max(0,y0-m),bx=Math.min(W,x1+m),by=Math.min(H,y1+m),cw=bx-ax,ch=by-ay;if(cw<200||ch<200||cw*ch>.8*W*H)return;
+    const k=Math.min(3,2600/Math.max(cw,ch)),c=document.createElement('canvas');c.width=Math.round(cw*k);c.height=Math.round(ch*k);
+    c.getContext('2d').drawImage(cv,ax,ay,cw,ch,0,0,c.width,c.height);
+    await w.setParameters({tessedit_pageseg_mode:psm});
+    const rr=(await w.recognize(c)).data,x=extrairId(rr.text);for(const q in x)if(x[q]&&!o[q])o[q]=x[q];
+    if(/HABILITA/i.test(rr.text)||!r){r=rr;t=rr.text;c2=c}
+    if(o.nome&&o.cpf){achou=true;break}
+  }
+  if(!r)return;
+  if(!o.rg&&/HABILITA/i.test(t)){   /* CNH: o RG é a caixa "DOC. IDENTIDADE / ÓRG. EMISSOR / UF" */
+    const Wd=r.words||[],lab=Wd.find(q=>/^IDENTIDADE$/i.test((q.text||'').replace(/[^A-Za-zÀ-ú]/g,'')));
+    if(lab){const bb=lab.bbox,h=Math.max(12,bb.y1-bb.y0),votos={};
+      /* a leitura de um campo pequeno oscila com o recorte: lê em várias janelas e só aceita se pelo menos 2 leituras idênticas concordarem */
+      for(const dx of [3.1,3.3,3.45])for(const dy of [.15,.25])for(const k of [3.5,5]){
+        const tx=await leCampoCnh(w,c2,bb.x0-h*dx,bb.x1+h*2.5,bb.y1+h*dy,bb.y1+h*(dy+1.7),k);
+        const mm=tx.replace(/\s+/g,' ').trim().match(/^(\d{5,10}[\dXx]?)\s?(DGPC|SSP|SDS|SESP|PCGO|PC|IFP|DETRAN|SJS|SJTC|PM)\s?([A-Z]{2})$/);
+        if(mm){const v=`${mm[1]} ${mm[2]}/${mm[3]}`;votos[v]=(votos[v]||0)+1;if(votos[v]>=3)break}
+      }
+      const top=Object.entries(votos).sort((x,y)=>y[1]-x[1])[0];if(top&&top[1]>=2)o.rg=top[0];
+    }
+  }
+};
+
 /* ---------- padrões por emissor do comprovante ---------- */
 const MINUS=new Set(['de','da','do','das','dos','e']);
 function titulo(x){return x.toLowerCase().split(/(\s+)/).map((w,i)=>{if(!w.trim()||MINUS.has(w)&&i>0)return w;if(/\d|[.\/]|^.{1,2}$/.test(w))return w.toUpperCase().replace(/^([A-Z])([A-Z]+)$/,(m,a,b)=>a+b.toLowerCase());return w[0].toUpperCase()+w.slice(1)}).join('')}
