@@ -9,6 +9,7 @@ function extrairId(t){
   let cpf=cl||t.match(/(?<!\d)(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/);
   if(!cl||!cpfOk(cl.slice(1,5).join(''))){   /* vários números de 11 dígitos no documento (ex.: CNH): fica o que tem dígitos verificadores válidos */
     const todos=[...t.matchAll(/(?<!\d)(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/g)],v=todos.find(m=>cpfOk(m.slice(1,5).join('')));if(v)cpf=v}
+  if(cpf&&/HABILITA|CARTEIRA\s+NACIONAL/i.test(t)&&!cpfOk(cpf.slice(1,5).join('')))cpf=null;
   if(cpf)o.cpf=`${cpf[1]}.${cpf[2]}.${cpf[3]}-${cpf[4]}`;
   const L=t.split('\n').map(s=>s.trim()).filter(Boolean);
   for(let i=0;i<L.length;i++){
@@ -46,7 +47,7 @@ function extrairId(t){
 }
 /* Documento pequeno numa página grande (ex.: CNH escaneada no meio de uma folha A4): recorta o conteúdo e lê de novo.
    Só roda se faltou algum campo, então não muda nada para os documentos que já são lidos de primeira. */
-async function leCampoCnh(w,cv,xa,xb,ya,yb,k){
+async function leCampoCnh(w,cv,xa,xb,ya,yb,k,psm){
   xa=Math.max(0,xa);ya=Math.max(0,ya);xb=Math.min(cv.width,xb);yb=Math.min(cv.height,yb);const cw=xb-xa,ch=yb-ya;if(cw<20||ch<10)return '';
   const pad=30,c=document.createElement('canvas');c.width=Math.round(cw*k)+pad*2;c.height=Math.round(ch*k)+pad*2;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(cv,xa,ya,cw,ch,pad,pad,Math.round(cw*k),Math.round(ch*k));
   const im=g.getImageData(0,0,c.width,c.height),d=im.data,h=new Uint32Array(256);let lo=255;
@@ -54,7 +55,7 @@ async function leCampoCnh(w,cv,xa,xb,ya,yb,k){
   const tot=d.length/4;let sum=0;for(let i=0;i<256;i++)sum+=i*h[i];let sb=0,wb=0,mx=0,th=128;   /* limiar de Otsu só para escolher o ponto branco */
   for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=tot-wb;if(!wf)break;sb+=i*h[i];const mb=sb/wb,mf=(sum-sb)/wf,v=wb*wf*(mb-mf)*(mb-mf);if(v>mx){mx=v;th=i}}
   const hi=Math.max(lo+30,th*1.4);for(let i=0;i<d.length;i+=4){const v=Math.max(0,Math.min(255,(d[i]-lo)*255/(hi-lo)));d[i]=d[i+1]=d[i+2]=v}
-  g.putImageData(im,0,0);await w.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:''});
+  g.putImageData(im,0,0);await w.setParameters({tessedit_pageseg_mode:psm||'7',tessedit_char_whitelist:''});
   const r=await w.recognize(c);await w.setParameters({tessedit_pageseg_mode:'6'});return r.data.text||'';
 }
 extrairId.refina=async function(w,cv,last,o){
@@ -72,17 +73,30 @@ extrairId.refina=async function(w,cv,last,o){
     if(o.nome&&o.cpf){achou=true;break}
   }
   if(!r)return;
-  if(!o.rg&&/HABILITA/i.test(t)){   /* CNH: o RG é a caixa "DOC. IDENTIDADE / ÓRG. EMISSOR / UF" */
-    const Wd=r.words||[],lab=Wd.find(q=>/^IDENTIDADE$/i.test((q.text||'').replace(/[^A-Za-zÀ-ú]/g,'')));
-    if(lab){const bb=lab.bbox,h=Math.max(12,bb.y1-bb.y0),votos={};
-      /* a leitura de um campo pequeno oscila com o recorte: lê em várias janelas e só aceita se pelo menos 2 leituras idênticas concordarem */
-      for(const dx of [3.1,3.3,3.45])for(const dy of [.15,.25])for(const k of [3.5,5]){
-        const tx=await leCampoCnh(w,c2,bb.x0-h*dx,bb.x1+h*2.5,bb.y1+h*dy,bb.y1+h*(dy+1.7),k);
-        const mm=tx.replace(/\s+/g,' ').trim().match(/^(\d{5,10}[\dXx]?)\s?(DGPC|SSP|SDS|SESP|PCGO|PC|IFP|DETRAN|SJS|SJTC|PM)\s?([A-Z]{2})$/);
-        if(mm){const v=`${mm[1]} ${mm[2]}/${mm[3]}`;votos[v]=(votos[v]||0)+1;if(votos[v]>=3)break}
+  if(!o.rg&&/HABILITA/i.test(t)){   /* CNH: o RG é a caixa fixa "DOC. IDENTIDADE / ÓRG. EMISSOR / UF" */
+    const UFS=new Set('AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' '));
+    const RGRE=/(?<!\d)(\d{5,10}[\dXx]?)\s?(DGPC|SSP|SDS|SESP|PCGO|PC|IFP|DETRAN|SJS|SJTC|PM)\s?([A-Z]{2})(?![A-Z])/,votos={};
+    const voto=txt=>{for(const ln of String(txt).split('\n')){const mm=ln.replace(/\s+/g,' ').trim().match(RGRE);if(mm&&UFS.has(mm[3])){const v=`${mm[1]} ${mm[2]}/${mm[3]}`;votos[v]=(votos[v]||0)+1}}};
+    voto(t);
+    /* a leitura de um campo pequeno oscila com o recorte: lê várias faixas em torno do rótulo e só aceita o que pelo menos 2 leituras idênticas confirmarem */
+    const Wd=r.words||[],lw=q=>(q.text||'').replace(/[^A-Za-zÀ-ú]/g,''),lab=Wd.find(q=>/^IDENTIDADE$/i.test(lw(q)));
+    if(lab){
+      const mh=lab.bbox.y1-lab.bbox.y0,lin=Wd.filter(q=>Math.abs(q.bbox.y0-lab.bbox.y0)<mh*1.3);
+      const doc=lin.find(q=>/^DOC$/i.test(lw(q))),emi=lin.find(q=>/^EMISSOR$/i.test(lw(q)));
+      if(doc&&emi){
+        const u=Math.max(.5,Math.min(2,(emi.bbox.x1-doc.bbox.x0)/440)),ys=lin.map(q=>q.bbox.y0).sort((p,q)=>p-q),y0=ys[Math.floor(ys.length/2)];
+        for(const k of [3.5,5,4])for(const [da,db,dx] of [[-10,135,52],[0,130,60],[-6,125,46],[4,140,56],[-14,128,50]]){
+          voto(await leCampoCnh(w,c2,doc.bbox.x0-dx*u,emi.bbox.x1+55*u,y0+da*u,y0+db*u,k,'6'));
+          const top=Object.entries(votos).sort((x,y)=>y[1]-x[1])[0];if(top&&top[1]>=3)break;
+        }
       }
-      const top=Object.entries(votos).sort((x,y)=>y[1]-x[1])[0];if(top&&top[1]>=2)o.rg=top[0];
     }
+    const top=Object.entries(votos).sort((x,y)=>y[1]-x[1])[0];if(top&&top[1]>=2)o.rg=top[0];
+    if(!o.cpf&&lab){const mh=lab.bbox.y1-lab.bbox.y0,lin=(r.words||[]).filter(q=>Math.abs(q.bbox.y0-lab.bbox.y0)<mh*1.3),doc=lin.find(q=>/^DOC$/i.test(lw(q))),emi=lin.find(q=>/^EMISSOR$/i.test(lw(q)));
+      if(doc&&emi){const u=Math.max(.5,Math.min(2,(emi.bbox.x1-doc.bbox.x0)/440)),ys=lin.map(q=>q.bbox.y0).sort((p,q)=>p-q),y0=ys[Math.floor(ys.length/2)];
+        for(const k of [3.5,5,4]){for(const [da,db] of [[105,215],[115,205],[95,225]]){
+          const tx=await leCampoCnh(w,c2,doc.bbox.x0-52*u,doc.bbox.x0+330*u,y0+da*u,y0+db*u,k,'6'),mm=[...tx.matchAll(/(?<!\d)(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?!\d)/g)].find(q=>cpfOk(q.slice(1,5).join('')));
+          if(mm){o.cpf=`${mm[1]}.${mm[2]}.${mm[3]}-${mm[4]}`;break}}if(o.cpf)break}}}
   }
 };
 

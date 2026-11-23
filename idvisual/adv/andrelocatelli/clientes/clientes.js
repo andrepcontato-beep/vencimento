@@ -63,6 +63,9 @@ const CAMPOS=[['nome','Nome completo'],['cpf','CPF (é o login do gov.br)'],['rg
 /* andamentos possíveis (nem sempre acontecem em ordem: você adiciona conforme vão ocorrendo; dá para repetir e digitar outros) */
 const ANDAMENTOS=['Assinar contrato','Contrato assinado','Refazer senha','Atualizar dados cadastrais','Aguardando atualização cadastral','Aguardando docs do cliente','Aguardando agendamento médico','Aguardando laudo médico','Aguardando protocolar','Protocolado','Aguardando perícia','Entrar em contato com o cliente'];
 const atualDe=c=>{const a=c.andamento||[];return a.length?a[a.length-1]:null};
+const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const numBR=t=>{t=String(t||'').replace(/[R$\s]/g,'');if(!t)return NaN;if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');return Number(t)};
+const hoje=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const BENEFICIOS=['Aposentadoria por idade urbana','Regras de transição (antiga aposentadoria por tempo de contribuição)','Aposentadoria por idade rural','Aposentadoria por idade híbrida','Aposentadoria por idade da pessoa com deficiência','Aposentadoria por tempo de contribuição da pessoa com deficiência','Aposentadoria especial','Aposentadoria do professor','Auxílio-doença (incapacidade temporária)','Aposentadoria por invalidez (incapacidade permanente)','Auxílio-acidente','BPC/LOAS da pessoa com deficiência','BPC/LOAS do idoso','Salário-maternidade urbano','Salário-maternidade rural (segurada especial)','Pensão por morte urbana','Pensão por morte rural','Auxílio-reclusão'];
 const REP=CAMPOS.map(([k,r])=>[k,k==='nome'?'Nome completo do(a) representante':k==='cpf'?'CPF do(a) representante':r]);
 const BEN=[['fnome','Nome do(a) beneficiário(a)'],['fcpf','CPF do(a) beneficiário(a)'],['fnasc','Data de nascimento'],['fsexo','Sexo'],['fcond','Condição']];
@@ -85,6 +88,15 @@ async function painel(){
   <div class="card"><h2>Serviços contratados <span class="esp"></span></h2>
     <div id="bens">${(c.beneficios||[]).length?(c.beneficios||[]).map((b,i)=>`<div class="arq"><div class="t"><b>${esc(b)}</b></div><button class="perigo mini" data-menos="${i}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum serviço contratado.</div>'}</div>
     <div class="linha" style="margin-top:10px"><select id="selBen" style="flex:1;min-width:220px"><option value="">Escolha o serviço…</option><optgroup label="Previdenciário">${BENEFICIOS.map(b=>`<option>${esc(b)}</option>`).join('')}</optgroup><option value="__outro">Outro serviço (digitar)…</option></select><input type="text" id="outroBen" placeholder="Nome do serviço" hidden style="flex:1;min-width:200px"><button class="mini" id="bMais" title="Adicionar">+</button></div>
+    ${(()=>{const H=c.honorarios||{},P=H.pagamentos||[],pago=P.reduce((a,x)=>a+(Number(x.v)||0),0),falta=(Number(H.valor)||0)-pago;return `<div style="border-top:1px solid var(--bd);margin-top:14px;padding-top:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--ouro2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Honorários</div>
+      <div class="linha"><div style="flex:1;min-width:130px"><label style="margin-top:0">Valor combinado (R$)</label><input type="text" id="honVal" inputmode="decimal" placeholder="0,00" value="${H.valor?esc(Number(H.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})):''}"></div>
+        <div style="flex:2;min-width:170px"><label style="margin-top:0">Observação</label><input type="text" id="honObs" placeholder="ex.: 30% do êxito, entrada + parcelas" value="${esc(H.obs)}"></div><button class="sec mini" id="bHonSalva" style="align-self:flex-end;margin-bottom:2px">Salvar</button></div>
+      <label>Pagamentos recebidos (abatem o valor)</label>
+      ${P.length?P.map((x,i)=>`<div class="arq"><div class="t"><b>${brl(x.v)}</b><span>${x.d?new Date(x.d+'T12:00:00').toLocaleDateString('pt-BR'):''}${x.o?' · '+esc(x.o):''}</span></div><button class="perigo mini" data-pagx="${i}" title="Remover pagamento">−</button></div>`).join(''):'<div class="vazio" style="padding:6px">Nenhum pagamento registrado.</div>'}
+      <div class="linha" style="margin-top:6px"><input type="text" id="pagVal" inputmode="decimal" placeholder="Valor (R$)" style="flex:1 1 90px;min-width:0"><input type="date" id="pagData" value="${hoje()}" style="flex:1 1 130px;min-width:0"><input type="text" id="pagObs" placeholder="Forma/local (Pix…)" style="flex:2 1 110px;min-width:0"><button class="mini" id="bPagMais" title="Registrar pagamento">+</button></div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13px"><span>Combinado: <b>${brl(H.valor)}</b></span><span>Pago: <b>${brl(pago)}</b></span><span style="color:${H.valor&&falta<=0?'#2e7d32':'var(--ouro2)'}">${H.valor?(falta<=0?'<b>Quitado</b>'+(falta<0?' (pago a mais: '+brl(-falta)+')':''):'Falta: <b>'+brl(falta)+'</b>'):''}</span></div>
+    </div>`})()}
   </div>
 
   <div class="card"><h2>Acesso gov.br / Meu INSS</h2>
@@ -132,6 +144,10 @@ async function painel(){
   $('#selBen').onchange=e=>{$('#outroBen').hidden=e.target.value!=='__outro';if(!$('#outroBen').hidden)$('#outroBen').focus()};
   $('#bMais').onclick=async()=>{let v=$('#selBen').value;if(v==='__outro')v=$('#outroBen').value.trim();if(!v)return toast('Escolha o serviço');dados();c.beneficios=c.beneficios||[];if(c.beneficios.includes(v))return toast('Já está na lista');c.beneficios.push(v);await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
   P.querySelectorAll('[data-menos]').forEach(b=>b.onclick=async()=>{dados();c.beneficios.splice(+b.dataset.menos,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
+  const salvaHon=async(f)=>{dados();c.honorarios=c.honorarios||{};f(c.honorarios);await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
+  $('#bHonSalva').onclick=()=>{const v=numBR($('#honVal').value);if($('#honVal').value.trim()&&!(v>=0))return toast('Valor inválido');salvaHon(h=>{h.valor=v>=0?v:0;h.obs=$('#honObs').value.trim()});toast('Honorários salvos')};
+  $('#bPagMais').onclick=()=>{const v=numBR($('#pagVal').value);if(!(v>0))return toast('Informe o valor pago');const d=$('#pagData').value||hoje(),o=$('#pagObs').value.trim();salvaHon(h=>{(h.pagamentos=h.pagamentos||[]).push({id:COFRE.uid(),v,d,o})});toast('Pagamento registrado')};
+  P.querySelectorAll('[data-pagx]').forEach(b=>b.onclick=()=>{if(!confirm('Remover este pagamento?'))return;salvaHon(h=>{h.pagamentos.splice(+b.dataset.pagx,1)})});
   const addAnd=async n=>{n=String(n||'').trim();if(!n)return;dados();(c.andamento=c.andamento||[]).push({e:n,t:Date.now()});await COFRE.salvar(c);clientes=await COFRE.listar();painel();toast('Andamento: '+n)};
   $('#detAnd').ontoggle=e=>{andAberto=e.target.open};
   P.querySelectorAll('[data-andadd]').forEach(b=>b.onclick=()=>addAnd(b.dataset.andadd));

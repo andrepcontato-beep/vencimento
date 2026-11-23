@@ -36,6 +36,10 @@ function diff(a,b){
   if(g(a,'govSenha')!==g(b,'govSenha'))r.push(!g(a,'govSenha')?'Senha do gov.br cadastrada':!g(b,'govSenha')?'Senha do gov.br apagada':'Senha do gov.br alterada');
   const A=a.beneficios||[],B=b.beneficios||[];B.filter(x=>!A.includes(x)).forEach(x=>r.push('Serviço adicionado: '+x));A.filter(x=>!B.includes(x)).forEach(x=>r.push('Serviço removido: '+x));
   {const ch=x=>(x.andamento||[]).map(y=>y.e+'|'+y.t),A2=ch(a),B2=ch(b);(b.andamento||[]).filter(y=>!A2.includes(y.e+'|'+y.t)).forEach(y=>r.push('Andamento adicionado: '+y.e));(a.andamento||[]).filter(y=>!B2.includes(y.e+'|'+y.t)).forEach(y=>r.push('Andamento removido: '+y.e))}
+  {const ha=a.honorarios||{},hb=b.honorarios||{},m=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+   if((Number(ha.valor)||0)!==(Number(hb.valor)||0))r.push('Honorários: '+m(ha.valor)+' → '+m(hb.valor));
+   if((ha.obs||'')!==(hb.obs||''))r.push('Honorários · observação: '+vz(ha.obs)+' → '+vz(hb.obs));
+   const PA=ha.pagamentos||[],PB=hb.pagamentos||[];PB.filter(x=>!PA.some(y=>y.id===x.id)).forEach(x=>r.push('Pagamento registrado: '+m(x.v)+(x.o?' ('+x.o+')':'')));PA.filter(x=>!PB.some(y=>y.id===x.id)).forEach(x=>r.push('Pagamento removido: '+m(x.v)))}
   if(!a.excluido!==!b.excluido)r.push(b.excluido?'Cliente excluído':'Cliente restaurado');
   return r}
 
