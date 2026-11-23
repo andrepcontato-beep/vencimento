@@ -34,7 +34,7 @@ function diff(a,b){
   for(const k in ROT){if(k==='notas'||k==='nasc'||k==='cond')continue;if(g(a.rep,k)!==g(b.rep,k)&&(g(a.rep,k)||g(b.rep,k)))r.push('Representante · '+ROT[k]+': '+vz(g(a.rep,k))+' → '+vz(g(b.rep,k)))}
   if(!!a.repr!==!!b.repr)r.push(b.repr?'Cadastro passou a ser de representado(a)':'Cadastro deixou de ser de representado(a)');
   if(g(a,'govSenha')!==g(b,'govSenha'))r.push(!g(a,'govSenha')?'Senha do gov.br cadastrada':!g(b,'govSenha')?'Senha do gov.br apagada':'Senha do gov.br alterada');
-  const A=a.beneficios||[],B=b.beneficios||[];B.filter(x=>!A.includes(x)).forEach(x=>r.push('Benefício adicionado: '+x));A.filter(x=>!B.includes(x)).forEach(x=>r.push('Benefício removido: '+x));
+  const A=a.beneficios||[],B=b.beneficios||[];B.filter(x=>!A.includes(x)).forEach(x=>r.push('Serviço adicionado: '+x));A.filter(x=>!B.includes(x)).forEach(x=>r.push('Serviço removido: '+x));
   {const ch=x=>(x.andamento||[]).map(y=>y.e+'|'+y.t),A2=ch(a),B2=ch(b);(b.andamento||[]).filter(y=>!A2.includes(y.e+'|'+y.t)).forEach(y=>r.push('Andamento adicionado: '+y.e));(a.andamento||[]).filter(y=>!B2.includes(y.e+'|'+y.t)).forEach(y=>r.push('Andamento removido: '+y.e))}
   if(!a.excluido!==!b.excluido)r.push(b.excluido?'Cliente excluído':'Cliente restaurado');
   return r}

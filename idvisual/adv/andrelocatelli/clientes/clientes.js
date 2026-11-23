@@ -82,9 +82,9 @@ async function painel(){
   P.innerHTML=`
   ${c.excluido?`<div class="aviso" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="flex:1"><b>Cliente excluído</b> em ${new Date(c.excluido).toLocaleString('pt-BR')}. Os dados continuam guardados.</span><button id="bRestCli">Restaurar cliente</button></div>`:''}
   <div class="duo">
-  <div class="card"><h2>Benefícios <span class="esp"></span></h2>
-    <div id="bens">${(c.beneficios||[]).length?(c.beneficios||[]).map((b,i)=>`<div class="arq"><div class="t"><b>${esc(b)}</b></div><button class="perigo mini" data-menos="${i}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum benefício vinculado.</div>'}</div>
-    <div class="linha" style="margin-top:10px"><select id="selBen" style="flex:1;min-width:220px"><option value="">Escolha o benefício…</option>${BENEFICIOS.map(b=>`<option>${esc(b)}</option>`).join('')}<option value="__outro">Outro (digitar)…</option></select><input type="text" id="outroBen" placeholder="Nome do benefício" hidden style="flex:1;min-width:200px"><button class="mini" id="bMais" title="Adicionar">+</button></div>
+  <div class="card"><h2>Serviços contratados <span class="esp"></span></h2>
+    <div id="bens">${(c.beneficios||[]).length?(c.beneficios||[]).map((b,i)=>`<div class="arq"><div class="t"><b>${esc(b)}</b></div><button class="perigo mini" data-menos="${i}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum serviço contratado.</div>'}</div>
+    <div class="linha" style="margin-top:10px"><select id="selBen" style="flex:1;min-width:220px"><option value="">Escolha o serviço…</option><optgroup label="Previdenciário">${BENEFICIOS.map(b=>`<option>${esc(b)}</option>`).join('')}</optgroup><option value="__outro">Outro serviço (digitar)…</option></select><input type="text" id="outroBen" placeholder="Nome do serviço" hidden style="flex:1;min-width:200px"><button class="mini" id="bMais" title="Adicionar">+</button></div>
   </div>
 
   <div class="card"><h2>Acesso gov.br / Meu INSS</h2>
@@ -129,7 +129,7 @@ async function painel(){
   const dados=()=>{P.querySelectorAll('[data-k]').forEach(e=>{const k=e.dataset.k;if(k.startsWith('rep.')){(c.rep=c.rep||{})[k.slice(4)]=e.value}else c[k]=e.value});c.cpf=fmtCpf(c.cpf);if(c.rep&&c.rep.cpf)c.rep.cpf=fmtCpf(c.rep.cpf)};
   $('#bSalvar').onclick=async()=>{dados();await COFRE.salvar(c);clientes=await COFRE.listar();lista();painel();toast('Cliente salvo')};
   $('#selBen').onchange=e=>{$('#outroBen').hidden=e.target.value!=='__outro';if(!$('#outroBen').hidden)$('#outroBen').focus()};
-  $('#bMais').onclick=async()=>{let v=$('#selBen').value;if(v==='__outro')v=$('#outroBen').value.trim();if(!v)return toast('Escolha o benefício');dados();c.beneficios=c.beneficios||[];if(c.beneficios.includes(v))return toast('Já está na lista');c.beneficios.push(v);await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
+  $('#bMais').onclick=async()=>{let v=$('#selBen').value;if(v==='__outro')v=$('#outroBen').value.trim();if(!v)return toast('Escolha o serviço');dados();c.beneficios=c.beneficios||[];if(c.beneficios.includes(v))return toast('Já está na lista');c.beneficios.push(v);await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
   P.querySelectorAll('[data-menos]').forEach(b=>b.onclick=async()=>{dados();c.beneficios.splice(+b.dataset.menos,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
   const addAnd=async n=>{n=String(n||'').trim();if(!n)return;dados();(c.andamento=c.andamento||[]).push({e:n,t:Date.now()});await COFRE.salvar(c);clientes=await COFRE.listar();painel();toast('Andamento: '+n)};
   P.querySelectorAll('[data-andadd]').forEach(b=>b.onclick=()=>addAnd(b.dataset.andadd));
