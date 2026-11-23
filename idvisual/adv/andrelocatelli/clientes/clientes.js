@@ -105,7 +105,7 @@ function campo(k,r,c,pre){pre=pre||'';const dk=pre+k;
 }
 async function painel(){
   const P=$('#painel');
-  if(!sel){P.innerHTML=`<div class="card marca"><div class="vazio">Clique em um cliente na lista ou em <b>+ Novo</b>.</div></div>`;return}
+  if(!sel){P.innerHTML=`<div class="marca"></div>`;return}
   const c=clientes.find(x=>x.id===sel);if(!c){P.innerHTML='';return}
   const arqs=await COFRE.arquivos(c.id),hist=await COFRE.historico(c.id);
   const docs=c.repr?DOCS.filter(d=>d[0]==='previdenciario-incapaz'):DOCS;
