@@ -21,18 +21,24 @@ async function sincronizar(T,prog){
   for(const l of await R.todos('clientes')){
     if(!l.u){l.u=Date.now();await R.put('clientes',l)}
     const r=rem.get(l.id);rem.delete(l.id);
-    if(!r||(r.u||0)<l.u){await T.gravar('clientes',{id:l.id,u:l.u,iv:l.iv,ct:b64(l.ct)});st.subiu++}
-    else if((r.u||0)>l.u){await R.put('clientes',{id:r.id,u:r.u,iv:r.iv,ct:deb64(r.ct).buffer});st.baixou++}
+    if(!r||(r.u||0)<l.u){await T.gravar('clientes',l.apagado?{id:l.id,u:l.u,apagado:true}:{id:l.id,u:l.u,iv:l.iv,ct:b64(l.ct)});st.subiu++}
+    else if((r.u||0)>l.u){await R.put('clientes',r.apagado?{id:r.id,u:r.u,apagado:true}:{id:r.id,u:r.u,iv:r.iv,ct:deb64(r.ct).buffer});st.baixou++}
   }
-  for(const r of rem.values()){await R.put('clientes',{id:r.id,u:r.u,iv:r.iv,ct:deb64(r.ct).buffer});st.baixou++}
+  for(const r of rem.values()){await R.put('clientes',r.apagado?{id:r.id,u:r.u,apagado:true}:{id:r.id,u:r.u,iv:r.iv,ct:deb64(r.ct).buffer});st.baixou++}
+  /* clientes apagados definitivamente: some o que sobrou deles (aqui e na nuvem) */
+  const morto=new Set((await R.todos('clientes')).filter(c=>c.apagado).map(c=>c.id));
+  for(const h of await R.todos('historico'))if(morto.has(h.cid))await R.del('historico',h.id);
+  for(const a of await R.todos('arquivos'))if(morto.has(a.cid))await R.del('arquivos',a.id);
 
   say('Histórico…');
   const remH=new Map((await T.listar('historico')).map(d=>[d.id,d]));
+  for(const x of [...remH.values()])if(morto.has(x.cid)){if(T.apagar)await T.apagar('historico',x.id);remH.delete(x.id)}
   for(const l of await R.todos('historico')){if(!remH.has(l.id)){await T.gravar('historico',{id:l.id,cid:l.cid,t:l.t,iv:l.iv,ct:b64(l.ct)});st.subiu++}remH.delete(l.id)}
   for(const r of remH.values()){await R.put('historico',{id:r.id,cid:r.cid,t:r.t,iv:r.iv,ct:deb64(r.ct).buffer});st.baixou++}
 
   say('Arquivos…');
   const remA=new Map((await T.listar('arquivos')).map(d=>[d.id,d]));
+  for(const x of [...remA.values()])if(morto.has(x.cid)){if(T.apagar)await T.apagar('arquivos',x.id,true);remA.delete(x.id)}
   for(const l of await R.todos('arquivos')){
     if(!l.u){l.u=Date.now();await R.put('arquivos',l)}
     const r=remA.get(l.id);remA.delete(l.id);
@@ -72,6 +78,7 @@ async function transporteFirebase(entrar){
     async setMeta(m){await base.collection('meta').doc('cofre').set(m)},
     async listar(n){const q=await col(n).get();return q.docs.map(d=>d.data())},
     async gravar(n,doc){await col(n).doc(doc.id).set(doc)},
+    async apagar(n,id,blob){await col(n).doc(id).delete();if(blob){try{await f.st.ref(`users/${u.uid}/arquivos/${id}`).delete()}catch(e){}}},
     async blobPut(id,bytes){await f.st.ref(`users/${u.uid}/arquivos/${id}`).put(new Blob([bytes],{type:'application/octet-stream'}))},
     async blobGet(id){return new Uint8Array(await f.st.ref(`users/${u.uid}/arquivos/${id}`).getBytes())}
   };

@@ -110,7 +110,7 @@ async function painel(){
   const arqs=await COFRE.arquivos(c.id),hist=await COFRE.historico(c.id);
   const docs=c.repr?DOCS.filter(d=>d[0]==='previdenciario-incapaz'):DOCS;
   P.innerHTML=`
-  ${c.excluido?`<div class="aviso" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="flex:1"><b>Cliente excluído</b> em ${new Date(c.excluido).toLocaleString('pt-BR')}. Os dados continuam guardados.</span><button id="bRestCli">Restaurar cliente</button></div>`:''}
+  ${c.excluido?`<div class="aviso" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="flex:1"><b>Cliente excluído</b> em ${new Date(c.excluido).toLocaleString('pt-BR')}. Os dados continuam guardados.</span><button id="bRestCli">Restaurar cliente</button><button class="btn" id="bApagaCli" style="border-color:#b03a2e;color:#b03a2e">Apagar definitivamente</button></div>`:''}
   <div class="duo">
   <div class="card"><h2>Serviços contratados <span class="esp"></span></h2>
     <div id="bens">${(c.beneficios||[]).length?(c.beneficios||[]).map((b,i)=>`<div class="arq"><div class="t"><b>${esc(b)}</b></div><button class="perigo mini" data-menos="${i}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum serviço contratado.</div>'}</div>
@@ -192,6 +192,7 @@ async function painel(){
   P.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Excluir este arquivo? Ele fica registrado no histórico e pode ser restaurado.'))return;await COFRE.arquivoParaLixeira(b.dataset.del);histAberto=true;painel()});
   $('#detHist').ontoggle=e=>{histAberto=e.target.open};
   P.querySelectorAll('[data-rest]').forEach(b=>b.onclick=async()=>{if(!confirm('Restaurar? O cadastro volta ao estado de antes dessa alteração, desfazendo também o que foi alterado depois dela. A restauração fica registrada no histórico, então dá para desfazer.'))return;try{const r=await COFRE.restaurar(b.dataset.rest);clientes=await COFRE.listar();histAberto=true;lista();painel();toast(r==='arquivo'?'Arquivo restaurado':'Versão restaurada')}catch(e){alert(e.message)}});
+  if($('#bApagaCli'))$('#bApagaCli').onclick=async()=>{if(!confirm('APAGAR DEFINITIVAMENTE '+(c.nome||'este cliente')+'?\n\nOs dados, os arquivos e o histórico dele serão destruídos, aqui e na nuvem. Isso NÃO pode ser desfeito.'))return;await COFRE.apagarDefinitivo(c.id);clientes=await COFRE.listar();sel=null;if(!clientes.some(x=>x.excluido))verExcl=false;lista();painel();toast('Cliente apagado definitivamente')};
   if($('#bRestCli'))$('#bRestCli').onclick=async()=>{delete c.excluido;await COFRE.salvar(c);clientes=await COFRE.listar();verExcl=false;lista();painel();toast('Cliente restaurado')};
   $('#bGerar').onclick=()=>{dados();try{sessionStorage.setItem('prefill',JSON.stringify(paraGerador(c)))}catch(e){}location.href='gerador.html?doc='+$('#selDoc').value+'&cliente='+c.id};
   $('#bExcluir').onclick=async()=>{if(!confirm('Excluir '+(c.nome||'este cliente')+'? Ele vai para “Excluídos” e pode ser restaurado.'))return;dados();c.excluido=Date.now();await COFRE.salvar(c);clientes=await COFRE.listar();sel=visiveis()[0]?visiveis()[0].id:null;lista();painel();toast('Cliente excluído (pode ser restaurado em “Ver excluídos”)')};

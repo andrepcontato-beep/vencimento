@@ -68,7 +68,7 @@ const COFRE={
   bloquear(){chave=null;try{sessionStorage.removeItem(SK)}catch(e){}},
 
   /* ----- clientes ----- */
-  async listar(){const r=await todos('clientes'),o=[];for(const x of r){try{o.push(await decifraJSON(x))}catch(e){}}
+  async listar(){const r=await todos('clientes'),o=[];for(const x of r){if(x.apagado)continue;try{o.push(await decifraJSON(x))}catch(e){}}
     return o.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'))},
   async obter(id){const x=await get('clientes',id);return x?decifraJSON(x):null},
   async salvar(c,o){o=o||{};if(!c.id)c.id=uid();
@@ -82,6 +82,7 @@ const COFRE={
   async restaurar(hid){const x=await get('historico',hid);if(!x)throw new Error('Entrada não encontrada.');const e=await decifraJSON(x);
     if(e.arq){await COFRE.marcarArquivo(e.arq,false);await put('historico',{id:uid(),cid:x.cid,t:Date.now(),...await cifraJSON({resumo:['Arquivo restaurado: '+(e.arqNome||'')]})});return 'arquivo'}
     const atual=await COFRE.obter(x.cid)||{};const c=Object.assign({},e.antes);c.criado=atual.criado||c.criado;await COFRE.salvar(c,{restauracao:true});return 'cliente'},
+  async apagarDefinitivo(id){for(const a of await COFRE.arquivos(id,true))await del('arquivos',a.id);for(const h of await COFRE.historico(id))await del('historico',h.id);await put('clientes',{id,u:Date.now(),apagado:true});avisa()},
   async excluir(id){for(const a of await COFRE.arquivos(id,true))await del('arquivos',a.id);for(const h of await COFRE.historico(id))await del('historico',h.id);await del('clientes',id)},
   /* procura por CPF (só dígitos) */
   async porCpf(cpf){const d=String(cpf||'').replace(/\D/g,'');if(d.length!==11)return null;return(await COFRE.listar()).find(c=>!c.excluido&&String(c.cpf||'').replace(/\D/g,'')===d)||null},
@@ -103,7 +104,7 @@ const COFRE={
     const o={versao:1,meta:await todos('meta'),clientes:await todos('clientes'),arquivos:await todos('arquivos'),historico:await todos('historico')};
     const cv=r=>({...r,ct:r.ct?b64(r.ct):undefined});
     const j=JSON.stringify({versao:1,meta:o.meta.map(m=>m.k==='verif'?{k:m.k,v:{iv:m.v.iv,ct:b64(m.v.ct)}}:m),
-      clientes:o.clientes.map(c=>({id:c.id,u:c.u,iv:c.iv,ct:b64(c.ct)})),
+      clientes:o.clientes.filter(c=>!c.apagado).map(c=>({id:c.id,u:c.u,iv:c.iv,ct:b64(c.ct)})),
       arquivos:o.arquivos.map(a=>({id:a.id,cid:a.cid,u:a.u,h:{iv:a.h.iv,ct:b64(a.h.ct)},d:{iv:a.d.iv,ct:b64(a.d.ct)}})),
       historico:o.historico.map(h=>({id:h.id,cid:h.cid,t:h.t,iv:h.iv,ct:b64(h.ct)}))});
     return new Blob([j],{type:'application/json'})},
