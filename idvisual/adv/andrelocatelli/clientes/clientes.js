@@ -38,6 +38,7 @@ async function entra(){
   for(const c of clientes){if(!c.repr&&(c.fnome||c.fcpf)){   /* cadastros antigos: passa o cadastro para o nome do(a) representado(a) */
     const r={};['nome','cpf','rg','tel','nac','ec','prof','sexo','end','cep','cid'].forEach(k=>{if(c[k])r[k]=c[k];delete c[k]});
     Object.assign(c,{repr:true,rep:r,nome:c.fnome||'',cpf:c.fcpf||'',nasc:c.fnasc||'',sexo:c.fsexo||'',cond:c.fcond||'menor'});['fnome','fcpf','fnasc','fsexo','fcond'].forEach(k=>delete c[k]);await COFRE.salvar(c,{semHistorico:true})}}
+  for(const c of clientes){if(c.etapa!==undefined){if(c.etapa&&!(c.andamento||[]).length)c.andamento=[{e:c.etapa,t:c.atualizado||Date.now()}];delete c.etapa;delete c.fluxo;await COFRE.salvar(c,{semHistorico:true})}}
   clientes=await COFRE.listar();
   const q=new URLSearchParams(location.search).get('id');
   sel=q&&clientes.find(c=>c.id===q)?q:(visiveis()[0]&&visiveis()[0].id)||null;
@@ -51,7 +52,7 @@ function lista(){
   const t=$('#busca').value.trim().toLowerCase(),d=t.replace(/\D/g,'');
   const base=clientes.filter(c=>verExcl?!!c.excluido:!c.excluido),nExcl=clientes.filter(c=>c.excluido).length;
   const f=base.filter(c=>!t||(c.nome||'').toLowerCase().includes(t)||((c.rep&&c.rep.nome)||'').toLowerCase().includes(t)||(d&&(String(c.cpf||'')+String((c.rep&&c.rep.cpf)||'')).replace(/\D/g,'').includes(d)));
-  $('#lista').innerHTML=(f.length?f.map(c=>`<button class="item ${c.id===sel?'on':''}" data-id="${c.id}"><b>${esc(c.nome||'(sem nome)')}</b><span>${esc(fmtCpf(c.cpf)||'CPF não informado')}${c.repr?' · representado(a) por '+esc((c.rep&&c.rep.nome)||'—'):(c.cid?' · '+esc(c.cid):'')}</span></button>`).join(''):`<div class="vazio">${base.length?'Nenhum cliente encontrado.':'Nenhum cliente ainda.<br>Eles entram aqui quando você gerar um contrato e escolher “Salvar cliente”, ou pelo botão “+ Novo”.'}</div>`)+(nExcl||verExcl?`<div style="margin-top:8px;font-size:12px"><a href="#" id="lnkExcl" style="color:var(--ouro2)">${verExcl?'← Voltar à lista':'Ver excluídos ('+nExcl+')'}</a></div>`:'');
+  $('#lista').innerHTML=(f.length?f.map(c=>`<button class="item ${c.id===sel?'on':''}" data-id="${c.id}"><b>${esc(c.nome||'(sem nome)')}</b><span>${esc(fmtCpf(c.cpf)||'CPF não informado')}${c.repr?' · representado(a) por '+esc((c.rep&&c.rep.nome)||'—'):(c.cid?' · '+esc(c.cid):'')}${atualDe(c)?`<span style="display:block;color:var(--ouro2)">● ${esc(atualDe(c).e)}</span>`:''}</span></button>`).join(''):`<div class="vazio">${base.length?'Nenhum cliente encontrado.':'Nenhum cliente ainda.<br>Eles entram aqui quando você gerar um contrato e escolher “Salvar cliente”, ou pelo botão “+ Novo”.'}</div>`)+(nExcl||verExcl?`<div style="margin-top:8px;font-size:12px"><a href="#" id="lnkExcl" style="color:var(--ouro2)">${verExcl?'← Voltar à lista':'Ver excluídos ('+nExcl+')'}</a></div>`:'');
   if($('#lnkExcl'))$('#lnkExcl').onclick=e=>{e.preventDefault();verExcl=!verExcl;sel=null;lista();painel()};
   $('#lista').querySelectorAll('.item').forEach(b=>b.onclick=()=>{sel=b.dataset.id;mostraSenha=false;lista();painel()});
 }
@@ -59,8 +60,9 @@ $('#busca').oninput=lista;
 
 /* ---------- painel do cliente ---------- */
 const CAMPOS=[['nome','Nome completo'],['cpf','CPF (é o login do gov.br)'],['rg','RG nº (+ órgão)'],['tel','Telefone / WhatsApp'],['nac','Nacionalidade'],['ec','Estado civil'],['prof','Profissão'],['sexo','Sexo'],['end','Endereço'],['cep','CEP'],['cid','Cidade/UF']];
-/* fluxos de andamento (depois entram outros); a etapa atual é guardada pelo nome */
-const FLUXOS={previdenciario:{nome:'Benefício previdenciário',linhas:[['Assinar contrato','Contrato assinado','Aguardando documentos'],['Laudos do cliente','Aguardando agendamento médico','Aguardando laudo médico','Aguardando protocolar','Protocolado','Aguardando perícia','Entrar em contato com o cliente']]}};
+/* andamentos possíveis (nem sempre acontecem em ordem: você adiciona conforme vão ocorrendo; dá para repetir e digitar outros) */
+const ANDAMENTOS=['Assinar contrato','Contrato assinado','Refazer senha','Atualizar dados cadastrais','Aguardando atualização cadastral','Aguardando docs do cliente','Aguardando agendamento médico','Aguardando laudo médico','Aguardando protocolar','Protocolado','Aguardando perícia','Entrar em contato com o cliente'];
+const atualDe=c=>{const a=c.andamento||[];return a.length?a[a.length-1]:null};
 const BENEFICIOS=['Aposentadoria por idade urbana','Regras de transição (antiga aposentadoria por tempo de contribuição)','Aposentadoria por idade rural','Aposentadoria por idade híbrida','Aposentadoria por idade da pessoa com deficiência','Aposentadoria por tempo de contribuição da pessoa com deficiência','Aposentadoria especial','Aposentadoria do professor','Auxílio-doença (incapacidade temporária)','Aposentadoria por invalidez (incapacidade permanente)','Auxílio-acidente','BPC/LOAS da pessoa com deficiência','BPC/LOAS do idoso','Salário-maternidade urbano','Salário-maternidade rural (segurada especial)','Pensão por morte urbana','Pensão por morte rural','Auxílio-reclusão'];
 const REP=CAMPOS.map(([k,r])=>[k,k==='nome'?'Nome completo do(a) representante':k==='cpf'?'CPF do(a) representante':r]);
 const BEN=[['fnome','Nome do(a) beneficiário(a)'],['fcpf','CPF do(a) beneficiário(a)'],['fnasc','Data de nascimento'],['fsexo','Sexo'],['fcond','Condição']];
@@ -96,9 +98,11 @@ async function painel(){
   </div>
   </div>
 
-  <div class="card"><h2>Andamento <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--mut)">· ${esc(FLUXOS[c.fluxo||'previdenciario'].nome)}</span><span class="esp"></span>${c.etapa?'<button class="sec mini" id="bEtapaLimpa">Limpar</button>':''}</h2>
-    ${(()=>{const F=FLUXOS[c.fluxo||'previdenciario'],todas=F.linhas.flat(),at=todas.indexOf(c.etapa);let i=-1;return F.linhas.map(l=>'<div class="fluxo">'+l.map(n=>{i++;const k=i<at?'feita':i===at?'atual':'';return `<button class="etp ${k}" data-etapa="${esc(n)}">${k==='feita'?'✓ ':''}${esc(n)}</button>`}).join('')+'</div>').join('')})()}
-    <div style="font-size:12px;color:var(--mut);margin-top:6px">Clique na etapa em que o cliente está agora.</div>
+  <div class="card"><h2>Andamento <span class="esp"></span></h2>
+    ${(()=>{const A=c.andamento||[];return A.length?`<div class="tlh">${A.map((x,i)=>`<div class="tl ${i===A.length-1?'atual':''}"><b>${esc(x.e)}</b><small>${i===A.length-1?'atual · ':''}${new Date(x.t).toLocaleDateString('pt-BR')}</small><button class="x" data-andx="${i}" title="Remover este andamento">×</button></div>`).join('')}</div>`:'<div class="vazio" style="padding:8px">Nenhum andamento registrado.</div>'})()}
+    <div style="font-size:12px;color:var(--mut);margin:12px 0 6px">Adicionar andamento (na ordem em que acontecer):</div>
+    <div class="cats">${ANDAMENTOS.map(n=>`<button class="cat" data-andadd="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>
+    <div class="linha" style="margin-top:8px"><input type="text" id="outroAnd" placeholder="Outro andamento (digitar)…" style="flex:1;min-width:200px"><button class="mini" id="bOutroAnd">+</button></div>
   </div>
 
   <div class="card"><h2>Dados do cliente <button class="mini" id="bZap" title="Abrir conversa no WhatsApp" style="text-transform:none;letter-spacing:0;background:#25D366;color:#fff;border:1px solid #1ebe5b"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:5px"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z"/></svg>Falar com este cliente${c.repr?' (representante)':''}</button><span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
@@ -127,8 +131,10 @@ async function painel(){
   $('#selBen').onchange=e=>{$('#outroBen').hidden=e.target.value!=='__outro';if(!$('#outroBen').hidden)$('#outroBen').focus()};
   $('#bMais').onclick=async()=>{let v=$('#selBen').value;if(v==='__outro')v=$('#outroBen').value.trim();if(!v)return toast('Escolha o benefício');dados();c.beneficios=c.beneficios||[];if(c.beneficios.includes(v))return toast('Já está na lista');c.beneficios.push(v);await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
   P.querySelectorAll('[data-menos]').forEach(b=>b.onclick=async()=>{dados();c.beneficios.splice(+b.dataset.menos,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
-  P.querySelectorAll('[data-etapa]').forEach(b=>b.onclick=async()=>{dados();c.fluxo=c.fluxo||'previdenciario';c.etapa=c.etapa===b.dataset.etapa?'':b.dataset.etapa;await COFRE.salvar(c);clientes=await COFRE.listar();painel();toast(c.etapa?'Etapa: '+c.etapa:'Etapa limpa')});
-  if($('#bEtapaLimpa'))$('#bEtapaLimpa').onclick=async()=>{dados();c.etapa='';await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
+  const addAnd=async n=>{n=String(n||'').trim();if(!n)return;dados();(c.andamento=c.andamento||[]).push({e:n,t:Date.now()});await COFRE.salvar(c);clientes=await COFRE.listar();painel();toast('Andamento: '+n)};
+  P.querySelectorAll('[data-andadd]').forEach(b=>b.onclick=()=>addAnd(b.dataset.andadd));
+  $('#bOutroAnd').onclick=()=>addAnd($('#outroAnd').value);$('#outroAnd').onkeydown=e=>{if(e.key==='Enter')addAnd(e.target.value)};
+  P.querySelectorAll('[data-andx]').forEach(b=>b.onclick=async()=>{dados();c.andamento.splice(+b.dataset.andx,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
   $('#bZap').onclick=()=>{let d=((P.querySelector('[data-k="rep.tel"]')||P.querySelector('[data-k=tel]')||{}).value||'').replace(/\D/g,'');if(d.length<10)return toast('Informe o telefone do cliente (com DDD)');if(!d.startsWith('55')||d.length<12)d='55'+d;window.open('https://wa.me/'+d,'_blank','noopener')};
   $('#bCopLogin').onclick=()=>copia(String(c.cpf).replace(/\D/g,''),'Login');
   if($('#bVer'))$('#bVer').onclick=()=>{mostraSenha=!mostraSenha;painel()};

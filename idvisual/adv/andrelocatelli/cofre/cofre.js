@@ -26,15 +26,16 @@ const decifraJSON=async r=>JSON.parse(dec.decode(await decifra(r)));
 async function lembra(){const raw=await crypto.subtle.exportKey('raw',chave);try{sessionStorage.setItem(SK,b64(raw))}catch(e){}}
 
 /* ----- histórico de alterações: resumo legível do que mudou ----- */
-const ROT={nome:'Nome',cpf:'CPF',rg:'RG',tel:'Telefone',nac:'Nacionalidade',ec:'Estado civil',prof:'Profissão',sexo:'Sexo',end:'Endereço',cep:'CEP',cid:'Cidade/UF',nasc:'Nascimento',cond:'Condição',notas:'Observações',etapa:'Etapa'};
+const ROT={nome:'Nome',cpf:'CPF',rg:'RG',tel:'Telefone',nac:'Nacionalidade',ec:'Estado civil',prof:'Profissão',sexo:'Sexo',end:'Endereço',cep:'CEP',cid:'Cidade/UF',nasc:'Nascimento',cond:'Condição',notas:'Observações'};
 const vz=v=>{v=v==null?'':String(v);return v.length>70?v.slice(0,70)+'…':(v||'—')};
 function diff(a,b){
   const r=[],g=(o,k)=>{const v=o&&o[k];return v==null?'':String(v)};
   for(const k in ROT){if(g(a,k)!==g(b,k))r.push(ROT[k]+': '+vz(g(a,k))+' → '+vz(g(b,k)))}
-  for(const k in ROT){if(k==='etapa'||k==='notas'||k==='nasc'||k==='cond')continue;if(g(a.rep,k)!==g(b.rep,k)&&(g(a.rep,k)||g(b.rep,k)))r.push('Representante · '+ROT[k]+': '+vz(g(a.rep,k))+' → '+vz(g(b.rep,k)))}
+  for(const k in ROT){if(k==='notas'||k==='nasc'||k==='cond')continue;if(g(a.rep,k)!==g(b.rep,k)&&(g(a.rep,k)||g(b.rep,k)))r.push('Representante · '+ROT[k]+': '+vz(g(a.rep,k))+' → '+vz(g(b.rep,k)))}
   if(!!a.repr!==!!b.repr)r.push(b.repr?'Cadastro passou a ser de representado(a)':'Cadastro deixou de ser de representado(a)');
   if(g(a,'govSenha')!==g(b,'govSenha'))r.push(!g(a,'govSenha')?'Senha do gov.br cadastrada':!g(b,'govSenha')?'Senha do gov.br apagada':'Senha do gov.br alterada');
   const A=a.beneficios||[],B=b.beneficios||[];B.filter(x=>!A.includes(x)).forEach(x=>r.push('Benefício adicionado: '+x));A.filter(x=>!B.includes(x)).forEach(x=>r.push('Benefício removido: '+x));
+  {const ch=x=>(x.andamento||[]).map(y=>y.e+'|'+y.t),A2=ch(a),B2=ch(b);(b.andamento||[]).filter(y=>!A2.includes(y.e+'|'+y.t)).forEach(y=>r.push('Andamento adicionado: '+y.e));(a.andamento||[]).filter(y=>!B2.includes(y.e+'|'+y.t)).forEach(y=>r.push('Andamento removido: '+y.e))}
   if(!a.excluido!==!b.excluido)r.push(b.excluido?'Cliente excluído':'Cliente restaurado');
   return r}
 
