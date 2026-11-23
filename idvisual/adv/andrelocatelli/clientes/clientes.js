@@ -12,7 +12,8 @@ const fmtTam=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)};
 const copia=async(txt,rot)=>{try{await navigator.clipboard.writeText(txt);toast(rot+' copiado')}catch(e){toast('Não consegui copiar — selecione e copie manualmente')}};
 
-let clientes=[],sel=null,mostraSenha=false;
+let clientes=[],sel=null,mostraSenha=false,verExcl=false,histAberto=false;
+const visiveis=()=>clientes.filter(c=>!c.excluido);
 
 /* ---------- senha mestra ---------- */
 async function inicia(){
@@ -36,10 +37,10 @@ async function entra(){
   clientes=await COFRE.listar();
   for(const c of clientes){if(!c.repr&&(c.fnome||c.fcpf)){   /* cadastros antigos: passa o cadastro para o nome do(a) representado(a) */
     const r={};['nome','cpf','rg','tel','nac','ec','prof','sexo','end','cep','cid'].forEach(k=>{if(c[k])r[k]=c[k];delete c[k]});
-    Object.assign(c,{repr:true,rep:r,nome:c.fnome||'',cpf:c.fcpf||'',nasc:c.fnasc||'',sexo:c.fsexo||'',cond:c.fcond||'menor'});['fnome','fcpf','fnasc','fsexo','fcond'].forEach(k=>delete c[k]);await COFRE.salvar(c)}}
+    Object.assign(c,{repr:true,rep:r,nome:c.fnome||'',cpf:c.fcpf||'',nasc:c.fnasc||'',sexo:c.fsexo||'',cond:c.fcond||'menor'});['fnome','fcpf','fnasc','fsexo','fcond'].forEach(k=>delete c[k]);await COFRE.salvar(c,{semHistorico:true})}}
   clientes=await COFRE.listar();
   const q=new URLSearchParams(location.search).get('id');
-  sel=q&&clientes.find(c=>c.id===q)?q:(clientes[0]&&clientes[0].id)||null;
+  sel=q&&clientes.find(c=>c.id===q)?q:(visiveis()[0]&&visiveis()[0].id)||null;
   lista();painel();
 }
 
@@ -48,14 +49,18 @@ async function entra(){
 function paraGerador(c){if(!c.repr)return c;return Object.assign({id:c.id},c.rep||{},{fnome:c.nome,fcpf:c.cpf,fnasc:c.nasc,fsexo:c.sexo,fcond:c.cond})}
 function lista(){
   const t=$('#busca').value.trim().toLowerCase(),d=t.replace(/\D/g,'');
-  const f=clientes.filter(c=>!t||(c.nome||'').toLowerCase().includes(t)||((c.rep&&c.rep.nome)||'').toLowerCase().includes(t)||(d&&(String(c.cpf||'')+String((c.rep&&c.rep.cpf)||'')).replace(/\D/g,'').includes(d)));
-  $('#lista').innerHTML=f.length?f.map(c=>`<button class="item ${c.id===sel?'on':''}" data-id="${c.id}"><b>${esc(c.nome||'(sem nome)')}</b><span>${esc(fmtCpf(c.cpf)||'CPF não informado')}${c.repr?' · representado(a) por '+esc((c.rep&&c.rep.nome)||'—'):(c.cid?' · '+esc(c.cid):'')}</span></button>`).join(''):`<div class="vazio">${clientes.length?'Nenhum cliente encontrado.':'Nenhum cliente ainda.<br>Eles entram aqui quando você gerar um contrato e escolher “Salvar cliente”, ou pelo botão “+ Novo”.'}</div>`;
+  const base=clientes.filter(c=>verExcl?!!c.excluido:!c.excluido),nExcl=clientes.filter(c=>c.excluido).length;
+  const f=base.filter(c=>!t||(c.nome||'').toLowerCase().includes(t)||((c.rep&&c.rep.nome)||'').toLowerCase().includes(t)||(d&&(String(c.cpf||'')+String((c.rep&&c.rep.cpf)||'')).replace(/\D/g,'').includes(d)));
+  $('#lista').innerHTML=(f.length?f.map(c=>`<button class="item ${c.id===sel?'on':''}" data-id="${c.id}"><b>${esc(c.nome||'(sem nome)')}</b><span>${esc(fmtCpf(c.cpf)||'CPF não informado')}${c.repr?' · representado(a) por '+esc((c.rep&&c.rep.nome)||'—'):(c.cid?' · '+esc(c.cid):'')}</span></button>`).join(''):`<div class="vazio">${base.length?'Nenhum cliente encontrado.':'Nenhum cliente ainda.<br>Eles entram aqui quando você gerar um contrato e escolher “Salvar cliente”, ou pelo botão “+ Novo”.'}</div>`)+(nExcl||verExcl?`<div style="margin-top:8px;font-size:12px"><a href="#" id="lnkExcl" style="color:var(--ouro2)">${verExcl?'← Voltar à lista':'Ver excluídos ('+nExcl+')'}</a></div>`:'');
+  if($('#lnkExcl'))$('#lnkExcl').onclick=e=>{e.preventDefault();verExcl=!verExcl;sel=null;lista();painel()};
   $('#lista').querySelectorAll('.item').forEach(b=>b.onclick=()=>{sel=b.dataset.id;mostraSenha=false;lista();painel()});
 }
 $('#busca').oninput=lista;
 
 /* ---------- painel do cliente ---------- */
 const CAMPOS=[['nome','Nome completo'],['cpf','CPF (é o login do gov.br)'],['rg','RG nº (+ órgão)'],['tel','Telefone / WhatsApp'],['nac','Nacionalidade'],['ec','Estado civil'],['prof','Profissão'],['sexo','Sexo'],['end','Endereço'],['cep','CEP'],['cid','Cidade/UF']];
+/* fluxos de andamento (depois entram outros); a etapa atual é guardada pelo nome */
+const FLUXOS={previdenciario:{nome:'Benefício previdenciário',linhas:[['Assinar contrato','Contrato assinado','Aguardando documentos'],['Laudos do cliente','Aguardando agendamento médico','Aguardando laudo médico','Aguardando protocolar','Protocolado','Aguardando perícia','Entrar em contato com o cliente']]}};
 const BENEFICIOS=['Aposentadoria por idade urbana','Regras de transição (antiga aposentadoria por tempo de contribuição)','Aposentadoria por idade rural','Aposentadoria por idade híbrida','Aposentadoria por idade da pessoa com deficiência','Aposentadoria por tempo de contribuição da pessoa com deficiência','Aposentadoria especial','Aposentadoria do professor','Auxílio-doença (incapacidade temporária)','Aposentadoria por invalidez (incapacidade permanente)','Auxílio-acidente','BPC/LOAS da pessoa com deficiência','BPC/LOAS do idoso','Salário-maternidade urbano','Salário-maternidade rural (segurada especial)','Pensão por morte urbana','Pensão por morte rural','Auxílio-reclusão'];
 const REP=CAMPOS.map(([k,r])=>[k,k==='nome'?'Nome completo do(a) representante':k==='cpf'?'CPF do(a) representante':r]);
 const BEN=[['fnome','Nome do(a) beneficiário(a)'],['fcpf','CPF do(a) beneficiário(a)'],['fnasc','Data de nascimento'],['fsexo','Sexo'],['fcond','Condição']];
@@ -70,9 +75,10 @@ async function painel(){
   const P=$('#painel');
   if(!sel){P.innerHTML=`<div class="card"><div class="vazio">Escolha um cliente na lista ou clique em <b>+ Novo</b>.</div></div>`;return}
   const c=clientes.find(x=>x.id===sel);if(!c){P.innerHTML='';return}
-  const arqs=await COFRE.arquivos(c.id);
+  const arqs=await COFRE.arquivos(c.id),hist=await COFRE.historico(c.id);
   const docs=c.repr?DOCS.filter(d=>d[0]==='previdenciario-incapaz'):DOCS;
   P.innerHTML=`
+  ${c.excluido?`<div class="aviso" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="flex:1"><b>Cliente excluído</b> em ${new Date(c.excluido).toLocaleString('pt-BR')}. Os dados continuam guardados.</span><button id="bRestCli">Restaurar cliente</button></div>`:''}
   <div class="duo">
   <div class="card"><h2>Benefícios <span class="esp"></span></h2>
     <div id="bens">${(c.beneficios||[]).length?(c.beneficios||[]).map((b,i)=>`<div class="arq"><div class="t"><b>${esc(b)}</b></div><button class="perigo mini" data-menos="${i}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum benefício vinculado.</div>'}</div>
@@ -90,8 +96,12 @@ async function painel(){
   </div>
   </div>
 
-  <div class="card"><h2>Dados do cliente <button class="mini" id="bZap" title="Abrir conversa no WhatsApp" style="text-transform:none;letter-spacing:0;background:#25D366;color:#fff;border:1px solid #1ebe5b"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:5px"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z"/></svg>Falar com este cliente</button><span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
-    <label style="display:flex;gap:8px;align-items:flex-start;color:var(--tx);font-size:13px;margin:0 0 10px;cursor:pointer"><input type="checkbox" id="chRepr" ${c.repr?'checked':''} style="margin-top:3px"><span><b>Cliente representado(a)</b> (menor ou incapaz) — o cadastro fica no nome do(a) beneficiário(a) e o(a) responsável entra como representante.</span></label>
+  <div class="card"><h2>Andamento <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--mut)">· ${esc(FLUXOS[c.fluxo||'previdenciario'].nome)}</span><span class="esp"></span>${c.etapa?'<button class="sec mini" id="bEtapaLimpa">Limpar</button>':''}</h2>
+    ${(()=>{const F=FLUXOS[c.fluxo||'previdenciario'],todas=F.linhas.flat(),at=todas.indexOf(c.etapa);let i=-1;return F.linhas.map(l=>'<div class="fluxo">'+l.map(n=>{i++;const k=i<at?'feita':i===at?'atual':'';return `<button class="etp ${k}" data-etapa="${esc(n)}">${k==='feita'?'✓ ':''}${esc(n)}</button>`}).join('')+'</div>').join('')})()}
+    <div style="font-size:12px;color:var(--mut);margin-top:6px">Clique na etapa em que o cliente está agora.</div>
+  </div>
+
+  <div class="card"><h2>Dados do cliente <button class="mini" id="bZap" title="Abrir conversa no WhatsApp" style="text-transform:none;letter-spacing:0;background:#25D366;color:#fff;border:1px solid #1ebe5b"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:5px"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z"/></svg>Falar com este cliente${c.repr?' (representante)':''}</button><span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
     ${c.repr?`<div class="g2">${[['nome','Nome do(a) beneficiário(a) (representado(a))'],['cpf','CPF do(a) beneficiário(a) (é o login do gov.br)'],['nasc','Data de nascimento'],['sexo','Sexo'],['cond','Condição']].map(([k,r])=>campo(k,r,c)).join('')}</div>
     <h2 style="margin:16px 0 0">Representante legal</h2><div class="g2">${REP.map(([k,r])=>campo(k,r,c.rep||{},'rep.')).join('')}</div>`
     :`<div class="g2">${CAMPOS.map(([k,r])=>campo(k,r,c)).join('')}</div>`}
@@ -102,6 +112,10 @@ async function painel(){
     ${arqs.length?arqs.map(a=>`<div class="arq">${icone(a.nome)}<div class="t"><b>${esc(a.nome)}</b><span>${a.origem?`<span class="tag">${esc(a.origem)}</span>`:''}${fmtData(a.data)} · ${fmtTam(a.tamanho)}</span></div>${/\.(pdf|jpe?g|png|webp|gif)$/i.test(a.nome)?`<button class="sec mini" data-ver="${a.id}">Ver</button>`:''}<button class="sec mini" data-baixar="${a.id}">Baixar</button><button class="perigo mini" data-del="${a.id}">Excluir</button></div>`).join(''):'<div class="vazio">Nenhum arquivo guardado.</div>'}
   </div>
 
+  <div class="card"><details id="detHist" ${histAberto?'open':''}><summary style="cursor:pointer;color:var(--ouro2);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:13px">Histórico de alterações (${hist.length})</summary>
+    <div style="margin-top:8px">${hist.length?hist.slice(0,80).map(h=>{const r=h.resumo||[];return `<div class="hist"><div class="quando">${new Date(h.t).toLocaleString('pt-BR')}</div><div>${r.slice(0,6).map(esc).join('<br>')}${r.length>6?`<br><i>+ ${r.length-6} alteração(ões)</i>`:''}</div>${h.antes||(h.arq&&!arqs.some(a=>a.id===h.arq))?`<button class="sec mini" data-rest="${h.id}" style="margin-top:5px">${h.arq?'Restaurar arquivo':'Voltar a antes desta alteração'}</button>`:''}</div>`}).join(''):'<div class="vazio">Nenhuma alteração registrada ainda.</div>'}${hist.length>80?'<div class="vazio">Mostrando as 80 mais recentes.</div>':''}</div>
+  </details><div style="font-size:12px;color:var(--mut);margin-top:6px">Toda alteração fica registrada. Quem tem a senha mestra pode restaurar a versão anterior; a restauração também fica no histórico.</div></div>
+
   <div class="card"><h2>Gerar documento para este cliente</h2>
     <div class="linha"><select id="selDoc" style="flex:1;min-width:220px">${docs.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select><button id="bGerar">Abrir no gerador →</button></div>
     <div class="rod" style="margin:8px 0 0">Os dados acima entram preenchidos; você só escolhe a data.</div>
@@ -109,11 +123,12 @@ async function painel(){
   <div class="linha" style="justify-content:flex-end"><button class="perigo" id="bExcluir">Excluir cliente</button></div>`;
 
   const dados=()=>{P.querySelectorAll('[data-k]').forEach(e=>{const k=e.dataset.k;if(k.startsWith('rep.')){(c.rep=c.rep||{})[k.slice(4)]=e.value}else c[k]=e.value});c.cpf=fmtCpf(c.cpf);if(c.rep&&c.rep.cpf)c.rep.cpf=fmtCpf(c.rep.cpf)};
-  $('#chRepr').onchange=async e=>{dados();if(e.target.checked){if(!c.rep||!Object.values(c.rep).some(Boolean)){c.rep={};['nome','cpf','rg','tel','nac','ec','prof','sexo','end','cep','cid'].forEach(k=>{if(c[k]){c.rep[k]=c[k]}delete c[k]})}c.repr=true;c.cond=c.cond||'menor'}else c.repr=false;await COFRE.salvar(c);clientes=await COFRE.listar();lista();painel()};
   $('#bSalvar').onclick=async()=>{dados();await COFRE.salvar(c);clientes=await COFRE.listar();lista();painel();toast('Cliente salvo')};
   $('#selBen').onchange=e=>{$('#outroBen').hidden=e.target.value!=='__outro';if(!$('#outroBen').hidden)$('#outroBen').focus()};
   $('#bMais').onclick=async()=>{let v=$('#selBen').value;if(v==='__outro')v=$('#outroBen').value.trim();if(!v)return toast('Escolha o benefício');dados();c.beneficios=c.beneficios||[];if(c.beneficios.includes(v))return toast('Já está na lista');c.beneficios.push(v);await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
   P.querySelectorAll('[data-menos]').forEach(b=>b.onclick=async()=>{dados();c.beneficios.splice(+b.dataset.menos,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
+  P.querySelectorAll('[data-etapa]').forEach(b=>b.onclick=async()=>{dados();c.fluxo=c.fluxo||'previdenciario';c.etapa=c.etapa===b.dataset.etapa?'':b.dataset.etapa;await COFRE.salvar(c);clientes=await COFRE.listar();painel();toast(c.etapa?'Etapa: '+c.etapa:'Etapa limpa')});
+  if($('#bEtapaLimpa'))$('#bEtapaLimpa').onclick=async()=>{dados();c.etapa='';await COFRE.salvar(c);clientes=await COFRE.listar();painel()};
   $('#bZap').onclick=()=>{let d=((P.querySelector('[data-k="rep.tel"]')||P.querySelector('[data-k=tel]')||{}).value||'').replace(/\D/g,'');if(d.length<10)return toast('Informe o telefone do cliente (com DDD)');if(!d.startsWith('55')||d.length<12)d='55'+d;window.open('https://wa.me/'+d,'_blank','noopener')};
   $('#bCopLogin').onclick=()=>copia(String(c.cpf).replace(/\D/g,''),'Login');
   if($('#bVer'))$('#bVer').onclick=()=>{mostraSenha=!mostraSenha;painel()};
@@ -123,9 +138,12 @@ async function painel(){
   $('#fAdd').onchange=async e=>{for(const f of e.target.files)await COFRE.addArquivo(c.id,{nome:f.name,tipo:f.type,origem:'Adicionado',blob:f});painel();toast('Arquivo(s) guardado(s)')};
   P.querySelectorAll('[data-baixar]').forEach(b=>b.onclick=async()=>{const a=arqs.find(x=>x.id===b.dataset.baixar),bl=await COFRE.lerArquivo(a.id),u=document.createElement('a');u.href=URL.createObjectURL(bl);u.download=a.nome;document.body.appendChild(u);u.click();setTimeout(()=>{URL.revokeObjectURL(u.href);u.remove()},4000)});
   P.querySelectorAll('[data-ver]').forEach(b=>b.onclick=async()=>{const a=arqs.find(x=>x.id===b.dataset.ver);let bl=await COFRE.lerArquivo(a.id);const pdf=/\.pdf$/i.test(a.nome);bl=new Blob([bl],{type:pdf?'application/pdf':(bl.type&&bl.type.startsWith('image/')?bl.type:'image/'+(a.nome.split('.').pop().toLowerCase().replace('jpg','jpeg')))});const url=URL.createObjectURL(bl),m=document.createElement('div');m.style.cssText='position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.75);display:flex;flex-direction:column;padding:12px;gap:8px';m.innerHTML=`<div style="display:flex;gap:10px;align-items:center;color:#fff"><b style="flex:1;overflow-wrap:anywhere">${esc(a.nome)}</b><button id="mFecha">Fechar ✕</button></div>`+(pdf?`<iframe src="${url}" style="flex:1;border:0;background:#fff;border-radius:6px"></iframe>`:`<div style="flex:1;overflow:auto;text-align:center"><img src="${url}" style="max-width:100%;border-radius:6px"></div>`);document.body.appendChild(m);const f=()=>{m.remove();URL.revokeObjectURL(url)};m.querySelector('#mFecha').onclick=f;m.onclick=e=>{if(e.target===m)f()}});
-  P.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Excluir este arquivo?'))return;await COFRE.excluirArquivo(b.dataset.del);painel()});
+  P.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Excluir este arquivo? Ele fica registrado no histórico e pode ser restaurado.'))return;await COFRE.arquivoParaLixeira(b.dataset.del);histAberto=true;painel()});
+  $('#detHist').ontoggle=e=>{histAberto=e.target.open};
+  P.querySelectorAll('[data-rest]').forEach(b=>b.onclick=async()=>{if(!confirm('Restaurar? O cadastro volta ao estado de antes dessa alteração, desfazendo também o que foi alterado depois dela. A restauração fica registrada no histórico, então dá para desfazer.'))return;try{const r=await COFRE.restaurar(b.dataset.rest);clientes=await COFRE.listar();histAberto=true;lista();painel();toast(r==='arquivo'?'Arquivo restaurado':'Versão restaurada')}catch(e){alert(e.message)}});
+  if($('#bRestCli'))$('#bRestCli').onclick=async()=>{delete c.excluido;await COFRE.salvar(c);clientes=await COFRE.listar();verExcl=false;lista();painel();toast('Cliente restaurado')};
   $('#bGerar').onclick=()=>{dados();try{sessionStorage.setItem('prefill',JSON.stringify(paraGerador(c)))}catch(e){}location.href='gerador.html?doc='+$('#selDoc').value+'&cliente='+c.id};
-  $('#bExcluir').onclick=async()=>{if(!confirm('Excluir '+(c.nome||'este cliente')+' e todos os arquivos dele? Isso não pode ser desfeito.'))return;await COFRE.excluir(c.id);clientes=await COFRE.listar();sel=clientes[0]?clientes[0].id:null;lista();painel();toast('Cliente excluído')};
+  $('#bExcluir').onclick=async()=>{if(!confirm('Excluir '+(c.nome||'este cliente')+'? Ele vai para “Excluídos” e pode ser restaurado.'))return;dados();c.excluido=Date.now();await COFRE.salvar(c);clientes=await COFRE.listar();sel=visiveis()[0]?visiveis()[0].id:null;lista();painel();toast('Cliente excluído (pode ser restaurado em “Ver excluídos”)')};
 }
 /* ---------- novo cliente: documentos (lidos por OCR) ou digitação manual ---------- */
 let fila=Promise.resolve(),ocupado=0;
@@ -133,17 +151,17 @@ function novoFluxo(){
   sel=null;lista();
   const nd={o:{},arq:[]};  /* arq: {f,rot,origem} */
   const P=$('#painel');
-  const slot=(id,tit,sub,mult)=>`<label class="up" style="display:block;border:2px dashed var(--ouro);background:var(--up);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer"><b>${tit}</b><div style="font-size:12px;color:var(--mut)">${sub}</div><input type="file" id="${id}" accept="image/*,application/pdf" ${mult?'multiple':''} hidden><div class="st" id="st_${id}" style="font-size:12px;margin-top:6px"></div></label>`;
+  const slot=(id,tit,sub,mult)=>`<label class="up" style="display:block;border:2px dashed var(--ouro);background:var(--up);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer"><b id="t_${id}">${tit}</b><div style="font-size:12px;color:var(--mut)">${sub}</div><input type="file" id="${id}" accept="image/*,application/pdf" ${mult?'multiple':''} hidden><div class="st" id="st_${id}" style="font-size:12px;margin-top:6px"></div></label>`;
   P.innerHTML=`<div class="card"><h2>Novo cliente <span class="esp"></span><button class="sec mini" id="nCancela">Cancelar</button></h2>
     <p style="margin:0 0 10px;color:var(--mut)">Envie os documentos e eu leio os dados. Pode enviar só o que tiver.</p>
     ${slot('nIdent','Identidade / CNH / documento com foto','foto, PDF ou imagem — frente (e verso, se precisar)',true)}
     ${slot('nEnd','Comprovante de endereço','conta de luz/água/telefone etc.')}
-    ${slot('nCert','Certidão de nascimento do(a) beneficiário(a)','da filha/do filho representado(a). Se não enviar, entende-se que o beneficiário é o próprio cliente.')}
+    ${slot('nCert','Certidão de nascimento do(a) beneficiário(a)','da filha/do filho representado(a). Ao enviar, o cadastro fica no nome do(a) representado(a), e a identidade e o comprovante acima passam a ser do(a) representante. Sem certidão, o cliente é o próprio beneficiário.')}
     <label class="up" style="display:block;border:2px dashed var(--bd);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer"><b>Outros documentos</b><div style="font-size:12px;color:var(--mut)">um por vez — só vai para os arquivos do cliente (não é lido)</div><input type="file" id="nOut" hidden><div id="nOutLista" style="margin-top:6px"></div></label>
-    <div class="linha" style="margin-top:6px"><button id="nVai" disabled>Continuar →</button><button class="sec" id="nManual">Digitar manualmente</button></div>
+    <div class="linha" style="margin-top:6px"><button id="nVai" disabled>Continuar →</button><button class="sec" id="nManual">Digitar manualmente</button><button class="sec" id="nManualRep">Digitar manualmente — cliente representado(a)</button></div>
   </div>`;
   const status=(id,t)=>{$('#st_'+id).innerHTML=t};
-  const atualiza=()=>{$('#nVai').disabled=ocupado>0||!nd.arq.length;$('#nOutLista').innerHTML=nd.arq.filter(a=>a.rot==='Outro').map(a=>`<div style="font-size:13px">${esc(a.f.name)} <a href="#" data-x="${nd.arq.indexOf(a)}" style="color:var(--red)">remover</a></div>`).join('');
+  const atualiza=()=>{const rp=nd.arq.some(a=>a.rot==='Certidão de nascimento');$('#t_nIdent').textContent=rp?'Identidade / CNH do representante':'Identidade / CNH / documento com foto';$('#t_nEnd').textContent=rp?'Comprovante de endereço do representante':'Comprovante de endereço';$('#nVai').disabled=ocupado>0||!nd.arq.length;$('#nOutLista').innerHTML=nd.arq.filter(a=>a.rot==='Outro').map(a=>`<div style="font-size:13px">${esc(a.f.name)} <a href="#" data-x="${nd.arq.indexOf(a)}" style="color:var(--red)">remover</a></div>`).join('');
     P.querySelectorAll('[data-x]').forEach(x=>x.onclick=e=>{e.preventDefault();nd.arq.splice(+x.dataset.x,1);atualiza()})};
   const ocr=(id,rot,ext,keys,NOMES)=>{$('#'+id).onchange=e=>{
     const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
@@ -160,8 +178,9 @@ function novoFluxo(){
   ocr('nEnd','Comprovante de endereço','end',['end','cep','cid'],{end:'endereço',cep:'CEP',cid:'cidade/UF'});
   ocr('nCert','Certidão de nascimento','cert',['fnome','fcpf','fnasc','fsexo'],{fnome:'nome do(a) beneficiário(a)',fcpf:'CPF do(a) beneficiário(a)',fnasc:'data de nascimento',fsexo:'sexo'});
   $('#nOut').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;nd.arq.push({f,rot:'Outro',origem:'Adicionado'});atualiza()};
-  $('#nCancela').onclick=()=>{sel=clientes[0]?clientes[0].id:null;lista();painel()};
+  $('#nCancela').onclick=()=>{sel=visiveis()[0]?visiveis()[0].id:null;lista();painel()};
   $('#nManual').onclick=async()=>{const c=await COFRE.salvar({nome:'Novo cliente'});clientes=await COFRE.listar();sel=c.id;$('#busca').value='';lista();painel();setTimeout(()=>{const i=document.querySelector('[data-k=nome]');if(i){i.focus();i.select()}},50)};
+  $('#nManualRep').onclick=async()=>{const c=await COFRE.salvar({nome:'Novo cliente',repr:true,rep:{},cond:'menor'});clientes=await COFRE.listar();sel=c.id;$('#busca').value='';lista();painel();setTimeout(()=>{const i=document.querySelector('[data-k=nome]');if(i){i.focus();i.select()}},50)};
   $('#nVai').onclick=async()=>{
     $('#nVai').disabled=true;const o=nd.o,pes={};
     ['nome','cpf','rg','end','cep','cid'].forEach(k=>{if(o[k])pes[k]=o[k]});
