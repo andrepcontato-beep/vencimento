@@ -75,11 +75,13 @@ async function entra(){
 /* ---------- lista ---------- */
 /* o gerador espera: dados de quem assina (representante) + dados do(a) beneficiário(a) em f* */
 function paraGerador(c){if(!c.repr)return c;return Object.assign({id:c.id},c.rep||{},{fnome:c.nome,fcpf:c.cpf,fnasc:c.nasc,fsexo:c.sexo,fcond:c.cond})}
+const zapDe=c=>{let d=String((c.repr&&c.rep?c.rep.tel:c.tel)||'').replace(/\D/g,'');if(d.length<10)return '';if(!d.startsWith('55')||d.length<12)d='55'+d;return d};
+const ZAP_SVG='<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z"/></svg>';
 function lista(){
   const t=$('#busca').value.trim().toLowerCase(),d=t.replace(/\D/g,'');
   const base=clientes.filter(c=>verExcl?!!c.excluido:!c.excluido),nExcl=clientes.filter(c=>c.excluido).length;
   const f=base.filter(c=>!t||(c.nome||'').toLowerCase().includes(t)||((c.rep&&c.rep.nome)||'').toLowerCase().includes(t)||(d&&(String(c.cpf||'')+String((c.rep&&c.rep.cpf)||'')).replace(/\D/g,'').includes(d)));
-  $('#lista').innerHTML=(f.length?f.map(c=>`<button class="item ${c.id===sel?'on':''}" data-id="${c.id}"><b>${esc(c.nome||'(sem nome)')}</b><span>${esc(fmtCpf(c.cpf)||'CPF não informado')}${c.repr?' · representado(a) por '+esc((c.rep&&c.rep.nome)||'—'):(c.cid?' · '+esc(c.cid):'')}${atualDe(c)?`<span style="display:block;color:var(--ouro2)">● ${esc(atualDe(c).e)}</span>`:''}</span></button>`).join(''):`<div class="vazio">${base.length?'Nenhum cliente encontrado.':'Nenhum cliente ainda.<br>Eles entram aqui quando você gerar um contrato e escolher “Salvar cliente”, ou pelo botão “+ Novo”.'}</div>`)+(nExcl||verExcl?`<div style="margin-top:8px;font-size:12px"><a href="#" id="lnkExcl" style="color:var(--ouro2)">${verExcl?'← Voltar à lista':'Ver excluídos ('+nExcl+')'}</a></div>`:'');
+  $('#lista').innerHTML=(f.length?f.map(c=>`<div class="itemw"><button class="item ${c.id===sel?'on':''}${zapDe(c)?' cz':''}" data-id="${c.id}"><b>${esc(c.nome||'(sem nome)')}</b><span>${esc(fmtCpf(c.cpf)||'CPF não informado')}${c.repr?' · representado(a) por '+esc((c.rep&&c.rep.nome)||'—'):(c.cid?' · '+esc(c.cid):'')}${atualDe(c)?`<span style="display:block;color:var(--ouro2)">● ${esc(atualDe(c).e)}</span>`:''}</span></button>${zapDe(c)?`<a class="zap" href="https://wa.me/${zapDe(c)}" target="_blank" rel="noopener" title="Falar com ${c.repr?'o(a) representante':'este cliente'} no WhatsApp" aria-label="WhatsApp">${ZAP_SVG}</a>`:''}</div>`).join(''):`<div class="vazio">${base.length?'Nenhum cliente encontrado.':'Nenhum cliente ainda.<br>Eles entram aqui quando você gerar um contrato e escolher “Salvar cliente”, ou pelo botão “+ Novo”.'}</div>`)+(nExcl||verExcl?`<div style="margin-top:8px;font-size:12px"><a href="#" id="lnkExcl" style="color:var(--ouro2)">${verExcl?'← Voltar à lista':'Ver excluídos ('+nExcl+')'}</a></div>`:'');
   if($('#lnkExcl'))$('#lnkExcl').onclick=e=>{e.preventDefault();verExcl=!verExcl;sel=null;lista();painel()};
   $('#lista').querySelectorAll('.item').forEach(b=>b.onclick=()=>{sel=b.dataset.id;mostraSenha=false;lista();painel()});
 }
@@ -145,7 +147,7 @@ async function painel(){
     </details>
   </div>
 
-  <div class="card"><h2>Dados do cliente <button class="mini" id="bZap" title="Abrir conversa no WhatsApp" style="text-transform:none;letter-spacing:0;background:#25D366;color:#fff;border:1px solid #1ebe5b"><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:5px"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.4z"/></svg>Falar com este cliente${c.repr?' (representante)':''}</button><span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
+  <div class="card"><h2>Dados do cliente<span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
     ${c.repr?`<div class="g2">${[['nome','Nome do(a) beneficiário(a) (representado(a))'],['cpf','CPF do(a) beneficiário(a) (é o login do gov.br)'],['nasc','Data de nascimento'],['sexo','Sexo'],['cond','Condição']].map(([k,r])=>campo(k,r,c)).join('')}</div>
     <h2 style="margin:16px 0 0">Representante legal</h2><div class="g2">${REP.map(([k,r])=>campo(k,r,c.rep||{},'rep.')).join('')}</div>`
     :`<div class="g2">${CAMPOS.map(([k,r])=>campo(k,r,c)).join('')}</div>`}
@@ -180,7 +182,6 @@ async function painel(){
   P.querySelectorAll('[data-andadd]').forEach(b=>b.onclick=()=>addAnd(b.dataset.andadd));
   $('#bOutroAnd').onclick=()=>addAnd($('#outroAnd').value);$('#outroAnd').onkeydown=e=>{if(e.key==='Enter')addAnd(e.target.value)};
   P.querySelectorAll('[data-andx]').forEach(b=>b.onclick=async()=>{dados();c.andamento.splice(+b.dataset.andx,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
-  $('#bZap').onclick=()=>{let d=((P.querySelector('[data-k="rep.tel"]')||P.querySelector('[data-k=tel]')||{}).value||'').replace(/\D/g,'');if(d.length<10)return toast('Informe o telefone do cliente (com DDD)');if(!d.startsWith('55')||d.length<12)d='55'+d;window.open('https://wa.me/'+d,'_blank','noopener')};
   $('#bCopLogin').onclick=()=>copia(String(c.cpf).replace(/\D/g,''),'Login');
   if($('#bVer'))$('#bVer').onclick=()=>{mostraSenha=!mostraSenha;painel()};
   if($('#bCopSenha'))$('#bCopSenha').onclick=()=>copia(c.govSenha,'Senha');
