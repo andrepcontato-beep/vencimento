@@ -118,6 +118,27 @@ const PADROES=[
    if(cl){const m=cl.match(/CEP\s*:?\s*(\d{5})\D?(\d{3})\s+(.+?)\s+([A-Z]{2})(?:\s+BRASIL)?\s*$/i);
      if(m){o.cep=m[1]+'-'+m[2];o.cid=titulo(m[3])+'/'+m[4].toUpperCase()}else{const c=cl.match(/(\d{5})\D?(\d{3})/);if(c)o.cep=c[1]+'-'+c[2]}}
    return o}},
+ {nome:'Saneago',detecta:t=>/SANEAGO|SANEAMENTO\s+DE\s+GOI[ÁA]S/i.test(t),
+  /* O cabeçalho traz o endereço da própria Saneago (também com "CEP:"). O do cliente é o bloco logo abaixo: NOME / RUA… / SETOR… CIDADE CEP: 00000-000 */
+  extrai(t){
+   const L=t.split('\n').map(s=>s.trim()).filter(Boolean),o={};
+   const fim=L.findIndex(l=>/TOTAL\s+A\s+PAGAR|VENCIMENTO|MATR[ÍI]CULA/i.test(l)),lim=fim<0?L.length:fim;
+   const STREET=/^(RUA|R\.|AV\.?|AVENIDA|ALAMEDA|AL\.|TRAVESSA|TV\.|PRA[ÇC]A|RODOVIA|ROD\.|ESTRADA|FAZENDA|S[ÍI]TIO|CH[ÁA]CARA|QUADRA|QD\.?)\s/i;
+   const cab=L.findIndex(l=>/CNPJ/i.test(l)),ini=Math.max(0,cab);
+   let a=-1;for(let i=ini+1;i<lim;i++)if(STREET.test(L[i])&&!/^(RUA|R\.)\s+(RUA|DR)\b/i.test(L[i])&&!/\bNR?\.?\s*0\s+(QD|LT)/i.test(L[i])){a=i;break}
+   if(a<0)return null;
+   let k=a;for(let i=a;i<Math.min(lim,a+4);i++){k=i;if(/CEP/i.test(L[i]))break}
+   const ad=L.slice(a,k+1).map(l=>l.split(/\s{3,}/)[0].replace(/CEP\s*:?.*$/i,'').replace(/\b[O0]\s+(\d+)\s+L\s*(\d+)\b/,'Q $1 L $2').replace(/\bNr,/g,'Nr.').trim()).filter(Boolean);
+   const ult=ad[ad.length-1]||'';
+   /* cidade = palavras logo antes do "CEP:", depois do último trecho com número (quadra/lote) */
+   const tk=ult.split(/\s+/);let j=tk.length;while(j>0&&/^[A-ZÀ-Ú]{2,}$/i.test(tk[j-1])&&!/^(Q|L|QD|LT)$/i.test(tk[j-1]))j--;
+   let cid=tk.slice(j).join(' ');if(cid&&/^(ALTO|BAIRRO|SETOR|CENTRO|VILA|JARDIM)$/i.test(tk[j])&&tk.length-j>1&&false)cid=cid;
+   if(cid){ad[ad.length-1]=tk.slice(0,j).join(' ');}
+   o.end=titulo(ad.filter(Boolean).join(', ').replace(/\s*,\s*,/g,',')).replace(/\bNr\b\.?|\bNR\./g,'Nr.').replace(/\bAV\./g,'Av.').replace(/\bESQ\./g,'Esq.');
+   const mc=(L.slice(k,k+2).join(' ').match(/(\d{5})\D?(\d{3})/));if(mc)o.cep=mc[1]+'-'+mc[2];
+   else{const g=t.match(/\b(\d{5})[-.\s]?(\d{3})\b/);if(g)o.cep=g[1]+'-'+g[2]}
+   if(cid){const n=o.cep?+o.cep.slice(0,5):0,uf=(n>=72800&&n<=76799)?'GO':'';o.cid=titulo(cid)+(uf?'/'+uf:'')}
+   return o}},
 ];
 function extrairEnd(t){
   t=limpa(t);
@@ -132,7 +153,7 @@ function extrairEndGenerico(t){
   for(let i=0;i<L.length;i++){const m=L[i].match(re);if(m){let e=m[1].replace(/\s{2,}/g,' ').replace(/[;|]/g,',');
       const nx=L[i+1]||'';if(/^(SETOR|BAIRRO|JD|JARDIM|VILA|CENTRO|ST\.?|RES)/i.test(nx))e+=', '+nx;o.end=e;break}}
   const cu=t.match(/([A-ZÀ-Ú][A-Za-zÀ-ú' ]{2,30})\s*[-\/,]\s*([A-Z]{2})\b/g);
-  if(cu){const x=cu.map(s=>s.match(/^(.*?)\s*[-\/,]\s*([A-Z]{2})$/)).filter(Boolean).find(m=>/^[A-ZÀ-Ú]/.test(m[1])&&m[1].trim().split(' ').length<=3&&!/CEP|RUA|AV/i.test(m[1]));if(x)o.cid=x[1].trim()+'/'+x[2]}
+  if(cu){const x=cu.map(s=>s.match(/^(.*?)\s*[-\/,]\s*([A-Z]{2})$/)).filter(Boolean).find(m=>/^[A-ZÀ-Ú]/.test(m[1])&&m[1].trim().split(' ').length<=3&&!/CEP|RUA|AV|INSC|EST\.?$|CNPJ|CPF|NR\.?$/i.test(m[1]));if(x)o.cid=x[1].trim()+'/'+x[2]}
   return o;
 }
 /* Certidão de nascimento (modelo padrão do Registro Civil): nome, CPF, data de nascimento, sexo */
@@ -168,7 +189,8 @@ extrairCert.maxLado=3000;
 
 /* Documento do(a) beneficiário(a) representado(a): certidão de nascimento OU identidade/CNH (modelos conhecidos).
    Detecta o tipo pelo texto e devolve sempre os campos fnome/fcpf/fnasc/fsexo (+ _tipo: 'cert' | 'id') */
-const ehCertTxt=t=>/CERTID[ÃA]O/i.test(t)&&/NASCIMENTO/i.test(t)||/REGISTRO\s+CIVIL/i.test(t)&&/MATR[ÍI]CULA/i.test(t);
+/* o verso do RG antigo cita "Registro Civil / Certidão de nascimento" (número do registro): não é certidão */
+const ehCertTxt=t=>(/CERTID[ÃA]O/i.test(t)&&/NASCIMENTO/i.test(t)||/REGISTRO\s+CIVIL/i.test(t)&&/MATR[ÍI]CULA/i.test(t))&&!/7\.?116|LEI\s*N|CARTEIRA\s+(NACIONAL|DE\s+IDENTIDADE)|HABILITA|\bDNI\b|POLEGAR|IDENTIFICA[ÇC][ÃA]O/i.test(t);
 function nascDoc(t){
   t=limpa(t);const D=/(?<!\d)(0[1-9]|[12]\d|3[01])[\/.\-\s](0[1-9]|1[0-2])[\/.\-\s]((?:19|20)\d{2})(?!\d)/;
   for(const re of [/(?:DATA\s*(?:DE|,)?[^\n]{0,25}NASC[A-Z]*|NASC(?:IMENTO)?)[^\d\n]{0,40}([^\n]{0,40})/i]){const m=t.match(re);if(m){const d=m[1].match(D);if(d)return `${d[3]}-${d[2]}-${d[1]}`}}
