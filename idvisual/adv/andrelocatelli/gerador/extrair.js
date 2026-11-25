@@ -64,7 +64,7 @@ extrairId.refina=async function(w,cv,last,o){
   for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2){if(d[(y*W+x)*4]<215){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
   let r=null,t='',c2=null,achou=false;
   for(const [m,psm] of [[4,'6'],[4,'4'],[14,'6'],[0,'6']]){   /* a segmentação do OCR varia com o recorte: tenta algumas variantes */
-    const ax=Math.max(0,x0-m),ay=Math.max(0,y0-m),bx=Math.min(W,x1+m),by=Math.min(H,y1+m),cw=bx-ax,ch=by-ay;if(cw<200||ch<200||cw*ch>.8*W*H)return;
+    const ax=Math.max(0,x0-m),ay=Math.max(0,y0-m),bx=Math.min(W,x1+m),by=Math.min(H,y1+m),cw=bx-ax,ch=by-ay;if(cw<200||ch<200)return;
     const k=Math.min(3,2600/Math.max(cw,ch)),c=document.createElement('canvas');c.width=Math.round(cw*k);c.height=Math.round(ch*k);
     c.getContext('2d').drawImage(cv,ax,ay,cw,ch,0,0,c.width,c.height);
     await w.setParameters({tessedit_pageseg_mode:psm});
@@ -73,14 +73,14 @@ extrairId.refina=async function(w,cv,last,o){
     if(o.nome&&o.cpf){achou=true;break}
   }
   if(!r)return;
-  if(!o.rg&&/HABILITA/i.test(t)){   /* CNH: o RG é a caixa fixa "DOC. IDENTIDADE / ÓRG. EMISSOR / UF" */
+  if((!o.rg||!o.cpf)&&/HABILITA/i.test(t)){   /* CNH: o RG é a caixa fixa "DOC. IDENTIDADE / ÓRG. EMISSOR / UF" */
     const UFS=new Set('AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' '));
     const RGRE=/(?<!\d)(\d{5,10}[\dXx]?)\s?(DGPC|SSP|SDS|SESP|PCGO|PC|IFP|DETRAN|SJS|SJTC|PM)\s?([A-Z]{2})(?![A-Z])/,votos={};
     const voto=txt=>{for(const ln of String(txt).split('\n')){const mm=ln.replace(/\s+/g,' ').trim().match(RGRE);if(mm&&UFS.has(mm[3])){const v=`${mm[1]} ${mm[2]}/${mm[3]}`;votos[v]=(votos[v]||0)+1}}};
     voto(t);
     /* a leitura de um campo pequeno oscila com o recorte: lê várias faixas em torno do rótulo e só aceita o que pelo menos 2 leituras idênticas confirmarem */
     const Wd=r.words||[],lw=q=>(q.text||'').replace(/[^A-Za-zÀ-ú]/g,''),lab=Wd.find(q=>/^IDENTIDADE$/i.test(lw(q)));
-    if(lab){
+    if(lab&&!o.rg){
       const mh=lab.bbox.y1-lab.bbox.y0,lin=Wd.filter(q=>Math.abs(q.bbox.y0-lab.bbox.y0)<mh*1.3);
       const doc=lin.find(q=>/^DOC$/i.test(lw(q))),emi=lin.find(q=>/^EMISSOR$/i.test(lw(q)));
       if(doc&&emi){
@@ -91,7 +91,7 @@ extrairId.refina=async function(w,cv,last,o){
         }
       }
     }
-    const top=Object.entries(votos).sort((x,y)=>y[1]-x[1])[0];if(top&&top[1]>=2)o.rg=top[0];
+    const top=Object.entries(votos).sort((x,y)=>y[1]-x[1])[0];if(!o.rg&&top&&top[1]>=2)o.rg=top[0];
     if(!o.cpf&&lab){const mh=lab.bbox.y1-lab.bbox.y0,lin=(r.words||[]).filter(q=>Math.abs(q.bbox.y0-lab.bbox.y0)<mh*1.3),doc=lin.find(q=>/^DOC$/i.test(lw(q))),emi=lin.find(q=>/^EMISSOR$/i.test(lw(q)));
       if(doc&&emi){const u=Math.max(.5,Math.min(2,(emi.bbox.x1-doc.bbox.x0)/440)),ys=lin.map(q=>q.bbox.y0).sort((p,q)=>p-q),y0=ys[Math.floor(ys.length/2)];
         for(const k of [3.5,5,4]){for(const [da,db] of [[105,215],[115,205],[95,225]]){
