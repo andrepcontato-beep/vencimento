@@ -164,7 +164,30 @@ async function recorta(w,cv,x0,y0,x1,y1,whitelist,psm,th){
   await w.setParameters({tessedit_pageseg_mode:psm,tessedit_char_whitelist:whitelist});
   const r=await w.recognize(c);await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'6'});return r.data.text||'';
 }
-extrairCert.maxLado=3000;   /* certidão em PDF costuma ser página enorme: limita a resolução só para ela */
+extrairCert.maxLado=3000;
+
+/* Documento do(a) beneficiário(a) representado(a): certidão de nascimento OU identidade/CNH (modelos conhecidos).
+   Detecta o tipo pelo texto e devolve sempre os campos fnome/fcpf/fnasc/fsexo (+ _tipo: 'cert' | 'id') */
+const ehCertTxt=t=>/CERTID[ÃA]O/i.test(t)&&/NASCIMENTO/i.test(t)||/REGISTRO\s+CIVIL/i.test(t)&&/MATR[ÍI]CULA/i.test(t);
+function nascDoc(t){
+  t=limpa(t);const D=/(?<!\d)(0[1-9]|[12]\d|3[01])[\/.\-\s](0[1-9]|1[0-2])[\/.\-\s]((?:19|20)\d{2})(?!\d)/;
+  for(const re of [/(?:DATA\s*(?:DE|,)?[^\n]{0,25}NASC[A-Z]*|NASC(?:IMENTO)?)[^\d\n]{0,40}([^\n]{0,40})/i]){const m=t.match(re);if(m){const d=m[1].match(D);if(d)return `${d[3]}-${d[2]}-${d[1]}`}}
+  const L=t.split('\n');for(let i=0;i<L.length;i++)if(/NASC/i.test(L[i])){const d=(L[i]+' '+(L[i+1]||'')).match(D);if(d)return `${d[3]}-${d[2]}-${d[1]}`}
+  return ''}
+function extrairBenef(t){
+  if(ehCertTxt(t)){const o=extrairCert(t);o._tipo='cert';return o}
+  const x=extrairId(t),o={_tipo:'id'};
+  if(x.nome)o.fnome=x.nome;if(x.cpf)o.fcpf=x.cpf;
+  const n=nascDoc(t);if(n)o.fnasc=n;
+  const L=limpa(t);const s=L.match(/\bSEXO\b\W{0,6}([FM])\b/i);if(s)o.fsexo=s[1].toUpperCase();
+  return o}
+extrairBenef.maxLado=3000;
+extrairBenef.refina=async function(w,cv,last,o){
+  if(ehCertTxt(last.text))return extrairCert.refina(w,cv,last,o);
+  const tmp={nome:o.fnome,cpf:o.fcpf};await extrairId.refina(w,cv,last,tmp);
+  if(tmp.nome&&!o.fnome)o.fnome=tmp.nome;if(tmp.cpf&&!o.fcpf)o.fcpf=tmp.cpf};
+
+   /* certidão em PDF costuma ser página enorme: limita a resolução só para ela */
 extrairCert.refina=async function(w,cv,data,o){
   const W=(data&&data.words)||[],ach=re=>W.find(x=>re.test((x.text||'').replace(/[^A-Za-zÀ-ú]/g,'')));
   const cx=b=>(b.x0+b.x1)/2;
@@ -251,6 +274,7 @@ async function lerUm(files,st,extrator,mapa,box){
       }
     }
     window.__ocr=(window.__ocr||'')+txt;
+    if(o._tipo==='id')(window.__uploads||[]).forEach(u=>{if(files.includes(u.f)&&u.rot==='Certidão de nascimento')u.rot='Documento do(a) beneficiário(a)'});
     aplica(o,mapa);window.__o=o;
     const achou=esperados.filter(k=>o[k]),falta=esperados.filter(k=>!o[k]);
     S.innerHTML=(achou.length?`✔ Li: ${achou.map(k=>NOMES[k]).join(', ')}`+(o._padrao?' (padrão '+o._padrao+')':''):'')+(falta.length?`${achou.length?'<br>':''}⚠ <b>Não consegui ler:</b> ${falta.map(k=>NOMES[k]).join(', ')} — preencha na etapa 2`:'')+(achou.length?'<br><small>confira os campos em amarelo</small>':'');
@@ -274,9 +298,9 @@ async function ocrLer(files,extrator,keys,status){
   }
   return o;
 }
-window.OCR_LER=ocrLer;window.OCR_EXTRATORES={ident:extrairId,end:extrairEnd,cert:extrairCert};
+window.OCR_LER=ocrLer;window.OCR_EXTRATORES={ident:extrairId,end:extrairEnd,cert:extrairBenef};
 if($('#f1')){
 $('#f1').onchange=e=>ler([...e.target.files],'#s1',extrairId,{nome:'nome',cpf:'cpf',rg:'rg'},'#u1');
-$('#f3').onchange=e=>ler([...e.target.files],'#s3',extrairCert,{fnome:'fnome',fcpf:'fcpf',fnasc:'fnasc',fsexo:'fsexo'},'#u3').then(()=>{const n=$('#fnasc');if(n)n.dispatchEvent(new Event('change'))});
+$('#f3').onchange=e=>ler([...e.target.files],'#s3',extrairBenef,{fnome:'fnome',fcpf:'fcpf',fnasc:'fnasc',fsexo:'fsexo'},'#u3').then(()=>{const n=$('#fnasc');if(n)n.dispatchEvent(new Event('change'))});
 $('#f2').onchange=e=>ler([...e.target.files],'#s2',extrairEnd,{end:'end',cep:'cep',cid:'cid'},'#u2');
 }

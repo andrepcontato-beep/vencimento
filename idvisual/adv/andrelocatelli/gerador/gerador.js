@@ -242,7 +242,7 @@ async function sincroniza(){
   const ja=await COFRE.arquivos(sal.id);
   for(const g of GERADOS)if(!g.salvo&&!ja.some(a=>a.nome===g.nome&&a.tamanho===g.blob.size)){await COFRE.addArquivo(sal.id,{nome:g.nome,origem:'Gerado',blob:g.blob})}
   GERADOS.forEach(g=>g.salvo=true);
-  for(const u of (window.__uploads||[]))if(!u.salvo){{const nmU=u.rot+(c.repr&&u.rot!=='Certidão de nascimento'?' do representante':'')+' - '+u.f.name;if(!ja.some(a=>a.nome===nmU&&a.tamanho===u.f.size))await COFRE.addArquivo(sal.id,{nome:nmU,tipo:u.f.type,origem:'Enviado',blob:u.f})};u.salvo=true}
+  for(const u of (window.__uploads||[]))if(!u.salvo){{const nmU=u.rot+(c.repr&&u.rot!=='Certidão de nascimento'&&u.rot!=='Documento do(a) beneficiário(a)'?' do representante':'')+' - '+u.f.name;if(!ja.some(a=>a.nome===nmU&&a.tamanho===u.f.size))await COFRE.addArquivo(sal.id,{nome:nmU,tipo:u.f.type,origem:'Enviado',blob:u.f})};u.salvo=true}
   return sal}
 function faixa(html){let f=document.getElementById('faixaCli');if(!f){f=document.createElement('div');f.id='faixaCli';f.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:2px solid var(--ouro);padding:12px max(16px,env(safe-area-inset-left,0px));box-shadow:0 -4px 18px rgba(0,0,0,.12);display:flex;gap:12px;align-items:center;flex-wrap:wrap';document.body.appendChild(f)}f.innerHTML=html;f.hidden=false;return f}
 const fecha=()=>{const f=document.getElementById('faixaCli');if(f)f.hidden=true};

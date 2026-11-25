@@ -46,6 +46,7 @@ const EYE_ON='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke
 let embaca=true;try{embaca=sessionStorage.getItem('cofre.olho')!=='0'}catch(e){}
 function aplicaOlho(){document.body.classList.toggle('blur',embaca);const b=$('#bOlho');if(b){b.innerHTML=embaca?EYE_OFF:EYE_ON;b.title=embaca?'Dados ocultos — clique para mostrar':'Dados visíveis — clique para ocultar'}}
 function ligaOlho(){aplicaOlho();$('#bOlho').onclick=()=>{embaca=!embaca;try{sessionStorage.setItem('cofre.olho',embaca?'1':'0')}catch(e){}aplicaOlho()}}
+const ehBenef=r=>r==='Certidão de nascimento'||r==='Documento do(a) beneficiário(a)';
 function ligaNuvem(){ligaOlho();
   if(ligaNuvem.ok)return;ligaNuvem.ok=true;
   COFRE.aoMudar=()=>SYNC.agendar();
@@ -214,12 +215,12 @@ function novoFluxo(){
     <p style="margin:0 0 10px;color:var(--mut)">Envie os documentos e eu leio os dados. Pode enviar só o que tiver.</p>
     ${slot('nIdent','Identidade / CNH / documento com foto','foto, PDF ou imagem — frente (e verso, se precisar)',true)}
     ${slot('nEnd','Comprovante de endereço','conta de luz/água/telefone etc.')}
-    ${slot('nCert','Certidão de nascimento do(a) beneficiário(a)','da filha/do filho representado(a). Ao enviar, o cadastro fica no nome do(a) representado(a), e a identidade e o comprovante acima passam a ser do(a) representante. Sem certidão, o cliente é o próprio beneficiário.')}
+    ${slot('nCert','Certidão de nascimento, identidade ou CNH do(a) beneficiário(a)','da filha/do filho/incapaz representado(a). Ao enviar, o cadastro fica no nome do(a) representado(a), e a identidade e o comprovante acima passam a ser do(a) representante. Sem esse documento, o cliente é o próprio beneficiário.')}
     <label class="up" style="display:block;border:2px dashed var(--bd);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer"><b>Outros documentos</b><div style="font-size:12px;color:var(--mut)">um por vez — só vai para os arquivos do cliente (não é lido)</div><input type="file" id="nOut" hidden><div id="nOutLista" style="margin-top:6px"></div></label>
     <div class="linha" style="margin-top:6px"><button id="nVai" disabled>Continuar →</button><button class="sec" id="nManual">Digitar manualmente</button><button class="sec" id="nManualRep">Digitar manualmente — cliente representado(a)</button></div>
   </div>`;
   const status=(id,t)=>{$('#st_'+id).innerHTML=t};
-  const atualiza=()=>{const rp=nd.arq.some(a=>a.rot==='Certidão de nascimento');$('#t_nIdent').textContent=rp?'Identidade / CNH do representante':'Identidade / CNH / documento com foto';$('#t_nEnd').textContent=rp?'Comprovante de endereço do representante':'Comprovante de endereço';$('#nVai').disabled=ocupado>0||!nd.arq.length;$('#nOutLista').innerHTML=nd.arq.filter(a=>a.rot==='Outro').map(a=>`<div style="font-size:13px">${esc(a.f.name)} <a href="#" data-x="${nd.arq.indexOf(a)}" style="color:var(--red)">remover</a></div>`).join('');
+  const atualiza=()=>{const rp=nd.arq.some(a=>ehBenef(a.rot));$('#t_nIdent').textContent=rp?'Identidade / CNH do representante':'Identidade / CNH / documento com foto';$('#t_nEnd').textContent=rp?'Comprovante de endereço do representante':'Comprovante de endereço';$('#nVai').disabled=ocupado>0||!nd.arq.length;$('#nOutLista').innerHTML=nd.arq.filter(a=>a.rot==='Outro').map(a=>`<div style="font-size:13px">${esc(a.f.name)} <a href="#" data-x="${nd.arq.indexOf(a)}" style="color:var(--red)">remover</a></div>`).join('');
     P.querySelectorAll('[data-x]').forEach(x=>x.onclick=e=>{e.preventDefault();nd.arq.splice(+x.dataset.x,1);atualiza()})};
   const ocr=(id,rot,ext,keys,NOMES)=>{$('#'+id).onchange=e=>{
     const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
@@ -228,6 +229,7 @@ function novoFluxo(){
       try{if(!window.Tesseract||!window.OCR_LER)throw new Error('motor de leitura não carregou — recarregue a página');
         const o=await OCR_LER(fs,OCR_EXTRATORES[ext],keys,t=>status(id,t));
         keys.forEach(k=>{if(o[k]&&!nd.o[k])nd.o[k]=o[k]});
+        if(o._tipo==='id')nd.arq.forEach(a=>{if(fs.includes(a.f)&&a.rot==='Certidão de nascimento')a.rot='Documento do(a) beneficiário(a)'});
         const achou=keys.filter(k=>o[k]),falta=keys.filter(k=>!o[k]);
         status(id,(achou.length?'✔ Li: '+achou.map(k=>NOMES[k]).join(', '):'')+(falta.length?(achou.length?'<br>':'')+'⚠ Não consegui ler: '+falta.map(k=>NOMES[k]).join(', ')+' — complete na ficha':''));
       }catch(err){status(id,'⚠ '+esc(err.message));console.error(err)}
@@ -244,7 +246,7 @@ function novoFluxo(){
     ['nome','cpf','rg','end','cep','cid'].forEach(k=>{if(o[k])pes[k]=o[k]});
     if(pes.cpf)pes.cpf=fmtCpf(pes.cpf);
     if(pes.nome&&window.SEXO){const r=SEXO.por(pes.nome);if(r&&r.sexo)pes.sexo=r.sexo}
-    const repr=nd.arq.some(a=>a.rot==='Certidão de nascimento');   /* com certidão: o cadastro é do(a) representado(a) */
+    const repr=nd.arq.some(a=>ehBenef(a.rot));   /* com certidão: o cadastro é do(a) representado(a) */
     let novo=pes;
     if(repr){novo={repr:true,rep:pes,cond:'menor'};if(o.fnome)novo.nome=o.fnome;if(o.fcpf)novo.cpf=fmtCpf(o.fcpf);if(o.fnasc)novo.nasc=o.fnasc;if(o.fsexo)novo.sexo=o.fsexo}
     const todos=await COFRE.listar(),nm=x=>String(x||'').trim().toLowerCase();
@@ -253,7 +255,7 @@ function novoFluxo(){
     if(ex){for(const k in novo){if(k==='rep'){ex.rep=Object.assign({},novo.rep,ex.rep)}else if(!ex[k])ex[k]=novo[k]}}
     if(!c.nome)c.nome='Novo cliente';
     const sv=await COFRE.salvar(c),ja=await COFRE.arquivos(sv.id);
-    for(const a of nd.arq){const nmA=a.rot==='Outro'?a.f.name:a.rot+(repr&&a.rot!=='Certidão de nascimento'?' do representante':'')+' - '+a.f.name;if(!ja.some(x=>x.nome===nmA&&x.tamanho===a.f.size))await COFRE.addArquivo(sv.id,{nome:nmA,tipo:a.f.type,origem:a.origem,blob:a.f})}
+    for(const a of nd.arq){const nmA=a.rot==='Outro'?a.f.name:a.rot+(repr&&!ehBenef(a.rot)?' do representante':'')+' - '+a.f.name;if(!ja.some(x=>x.nome===nmA&&x.tamanho===a.f.size))await COFRE.addArquivo(sv.id,{nome:nmA,tipo:a.f.type,origem:a.origem,blob:a.f})}
     clientes=await COFRE.listar();sel=sv.id;$('#busca').value='';lista();painel();
     toast(ex?'Cliente já existia — dados e arquivos acrescentados':'Cliente criado — confira os dados');
   };
