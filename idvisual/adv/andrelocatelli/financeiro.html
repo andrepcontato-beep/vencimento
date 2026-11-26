@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Financeiro · André Locatelli</title>
+<style>
+:root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc;--up:#fffdf7;--okbg:#f4faf0;--sel:#fffbef;--warn:#fff3cd;--warnbd:#e6c55a;--red:#b3261e}
+@media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b;--up:#27241a;--okbg:#1d2a1b;--sel:#2c2717;--warn:#3a3217;--warnbd:#8a7424;--red:#ff8a80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif}
+header{padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:2px solid var(--ouro);background:var(--card);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header img{height:38px}header h1{font-size:17px;margin:0}header small{display:block;color:var(--mut);font-size:12px}
+header .esp{flex:1}header a.vt{color:var(--ouro2);text-decoration:none;font-weight:600}
+main{padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1300px;margin:auto}
+.cols{display:grid;grid-template-columns:minmax(300px,460px) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:860px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ouro2);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.card h2 .esp{flex:1}
+.srvc:not(.aberto) .ed,.srvc:not(.aberto) .mkx{display:none!important}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 2px}
+input[type=text],input[type=password],input[type=date],input[type=search],select,textarea{width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:var(--card);color:var(--tx)}
+textarea{min-height:64px;resize:vertical}
+button,.btn{background:var(--ouro);color:#fff;border:0;border-radius:7px;padding:8px 13px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+button.sec,.btn.sec{background:var(--card);color:var(--ouro2);border:1px solid var(--ouro)}
+button.mini{padding:4px 9px;font-size:12px}button.perigo{background:var(--card);color:var(--red);border:1px solid var(--red)}
+button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
+.linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}@media(max-width:560px){.g2{grid-template-columns:1fr}}
+/* lista */
+.item{display:block;width:100%;text-align:left;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:7px;font-weight:400;cursor:pointer}
+.item b{display:block;font-size:14px}.item span{font-size:12px;color:var(--mut)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}.cal .dw{font-size:11px;color:var(--mut);padding:2px 0}
+.cal button{all:unset;cursor:pointer;padding:6px 0;border-radius:6px;position:relative}.cal button:hover{background:rgba(0,0,0,.06)}
+.cal .hj{outline:1px solid var(--ouro2)}.cal .tem{background:var(--ouro2);color:#fff;font-weight:700}.cal .sel{box-shadow:0 0 0 2px #222 inset}.cal sup{font-size:9px;margin-left:1px}
+.calh{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:700}.calh span{flex:1;text-align:center;text-transform:capitalize}
+.avs{font-size:13px;margin:0 0 10px;padding:8px 10px;border-radius:8px;background:rgba(184,134,11,.12)}.avs div{padding:2px 0}.avs a{color:inherit;cursor:pointer;text-decoration:underline}
+body.blur #cal .dppn{filter:blur(7px);user-select:none;-webkit-user-select:none}
+.itemw{position:relative}body.blur #lista .item span,body.blur #painel .card>*:not(h2):not(.mkw){filter:blur(7px);user-select:none;-webkit-user-select:none}
+.itemw{position:relative}.itemw .item{margin-bottom:7px}.mk{position:absolute;left:11px;top:9px;display:flex;gap:5px;align-items:center}.mk svg{display:block;width:20px;height:20px}.item.on+.mk{left:14px}body.blur .mk .mki{filter:blur(4px)}.mkop{padding:3px;border:1px solid transparent;border-radius:50%;background:none;cursor:pointer;display:inline-flex}.mkop:hover{border-color:var(--ouro2)}.mkop svg{width:34px;height:34px;display:block}#mkMenu{margin-top:4px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;}#mkMenu[hidden]{display:none}.mkc{position:relative;display:inline-flex}.mkc svg{width:30px;height:30px;display:block}.mkx{position:absolute;top:-6px;right:-6px;width:16px;height:16px;padding:0;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--red);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}body.blur .mkc svg{filter:blur(4px)}
+.zap{position:static;flex:none;width:20px;height:20px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}.item.cz b{padding-left:var(--pl)}.zap:hover{background:#1ebe5b}
+.item.on{border-color:var(--ouro);background:var(--sel);border-left:4px solid var(--ouro)}
+.marca{position:relative;min-height:420px}.marca::before{content:'';position:absolute;inset:0;background:url(perfis/andrelocatelli/logo.png) center/auto 70% no-repeat;opacity:.10;pointer-events:none}
+.vazio{color:var(--mut);text-align:center;padding:26px 10px;font-size:13px}
+/* tela de senha */
+.trava{max-width:440px;margin:60px auto}
+.aviso{background:var(--warn);border:1px solid var(--warnbd);border-radius:8px;padding:9px 11px;font-size:13px;margin:10px 0}
+.erro{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
+/* gov */
+.gov{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center}
+.gov .k{font-size:12px;color:var(--mut)}.gov .v{font-family:ui-monospace,Consolas,monospace;font-size:15px;word-break:break-all}
+/* arquivos */
+.arq{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bd)}.arq:first-of-type{border-top:0}
+.arq .ic{width:28px;height:28px;flex:none}.arq .t{flex:1;min-width:0}.arq .t b{display:block;overflow-wrap:anywhere;font-weight:600}.arq .t span{font-size:12px;color:var(--mut)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:var(--sel);border:1px solid var(--ouro);color:var(--ouro2);margin-right:5px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:9}.toast.on{opacity:1}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 14px;align-items:start}.duo .card{min-width:0}@media(max-width:1000px){.duo{grid-template-columns:1fr}}
+.tlh{display:flex;flex-wrap:wrap;gap:10px 18px}
+.tl{position:relative;background:var(--sel);border:1px solid var(--ouro);border-radius:10px;padding:7px 26px 7px 11px;font-size:13px;line-height:1.25}.tl b{display:block;font-weight:600;color:var(--ouro2)}.tl small{color:var(--mut);font-size:11px}
+.tl:not(:last-child)::after{content:'›';position:absolute;right:-14px;top:50%;transform:translateY(-52%);color:var(--mut);font-size:18px}
+.tl.atual{background:var(--ouro);border-color:var(--ouro)}.tl.atual b,.tl.atual small{color:#fff}
+.tl .x{position:absolute;top:2px;right:2px;background:none;border:0;color:var(--mut);padding:0 6px;font-size:16px;line-height:1.2;font-weight:400}.tl.atual .x{color:#fff}
+.cats{display:flex;flex-wrap:wrap;gap:6px}.cat{background:var(--card);color:var(--ouro2);border:1px solid var(--bd);border-radius:16px;padding:5px 11px;font-size:12.5px;font-weight:500}.cat:hover{border-color:var(--ouro);background:var(--sel)}
+.hist{border-top:1px solid var(--bd);padding:8px 0;font-size:13px}.hist:first-of-type{border-top:0}.hist .quando{color:var(--mut);font-size:12px}
+.rod{margin:6px 0 30px;font-size:12px;color:var(--mut)}
+.tot{font-size:30px;font-weight:700;color:var(--ouro2);margin:4px 0}.nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:700}.nav span{flex:1;text-align:center;font-size:15px}
+table.ent{width:100%;border-collapse:collapse;font-size:13px}table.ent td,table.ent th{padding:6px 8px;border-top:1px solid var(--bd);text-align:left}table.ent th{color:var(--mut);font-size:12px;border-top:0}table.ent td.v,table.ent th.v{text-align:right;white-space:nowrap}
+.bar{height:10px;background:var(--ouro);border-radius:5px;min-width:2px}.mes6{display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:center;padding:3px 0;font-size:13px;cursor:pointer}.mes6.on{font-weight:700}
+body.blur .sens{filter:blur(7px);user-select:none;-webkit-user-select:none}
+</style></head><body>
+<header>
+ <img src="perfis/andrelocatelli/logo.png" alt="">
+ <div><h1>Financeiro</h1><small>André Locatelli — Advocacia</small></div>
+ <span class="esp"></span>
+ <span id="barraCofre" class="linha" hidden>
+  <button class="sec mini" id="bOlho" title="Mostrar / ocultar valores" aria-label="Mostrar ou ocultar valores" style="padding:5px 9px"></button>
+  <button class="sec mini" id="bLock">🔒 Bloquear</button>
+ </span>
+ <a class="vt" href="index.html">← Início</a>
+</header>
+<main>
+<section id="trava" class="card trava" hidden>
+ <h2>Desbloquear financeiro</h2>
+ <div id="semCofre" hidden><div class="aviso">Ainda não há cofre neste navegador. Abra <a href="clientes.html">Clientes</a>, crie a senha mestra (ou baixe da nuvem) e volte aqui.</div></div>
+ <div id="travaAbrir"><label>Senha mestra</label><input type="password" id="s0" autocomplete="current-password"></div>
+ <div class="erro" id="erroTrava"></div>
+ <div class="linha" style="margin-top:12px"><button id="bTrava">Desbloquear</button></div>
+</section>
+<div id="app" hidden>
+ <div class="card"><h2>Entradas do mês</h2><div class="nav"><button class="sec mini" id="mAnt" aria-label="Mês anterior">‹</button><span id="mNome"></span><button class="sec mini" id="mPro" aria-label="Próximo mês">›</button></div>
+  <div class="tot sens" id="mTot"></div><div id="mSub" style="color:var(--mut);margin-bottom:10px"></div>
+  <div id="mLista"></div></div>
+ <div class="card" style="margin-top:14px"><h2>Últimos 6 meses</h2><div id="m6"></div></div>
+ <p class="rod">Somente os pagamentos registrados em cada cliente (card “Honorários” → “Pagamentos recebidos”). Valores lidos do cofre deste navegador.</p>
+</div>
+</main>
+<script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
+<script src="cofre/cofre.js?v=202611261300"></script>
+<script>
+const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const EYE_ON='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>',EYE_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+let embaca=true;try{embaca=sessionStorage.getItem('cofre.olho')!=='0'}catch(e){}
+function aplicaOlho(){document.body.classList.toggle('blur',embaca);$('#bOlho').innerHTML=embaca?EYE_OFF:EYE_ON;$('#bOlho').title=embaca?'Valores ocultos — clique para mostrar':'Valores visíveis — clique para ocultar'}
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+let ents=[],mes=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
+const chv=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+async function carrega(){
+  ents=[];
+  for(const c of await COFRE.listar()){
+    const P=(c.honorarios&&c.honorarios.pagamentos)||[];
+    for(const x of P){const d=/^\d{4}-\d{2}-\d{2}$/.test(x.d||'')?x.d:null,v=Number(x.v)||0;if(!d||!v)continue;
+      ents.push({d,v,o:x.o||'',n:(c.nome||'(sem nome)'),ex:!!c.excluido,id:c.id})}}
+  ents.sort((a,b)=>a.d<b.d?-1:1);
+}
+function desenha(){
+  const k=chv(mes),L=ents.filter(e=>e.d.startsWith(k)),tot=L.reduce((a,e)=>a+e.v,0);
+  $('#mNome').textContent=cap(mes.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}));
+  $('#mTot').textContent=brl(tot);
+  $('#mSub').textContent=L.length?L.length+(L.length===1?' entrada cadastrada':' entradas cadastradas')+' neste mês':'Nenhuma entrada cadastrada neste mês.';
+  $('#mLista').innerHTML=L.length?`<table class="ent"><tr><th>Data</th><th>Cliente</th><th>Obs.</th><th class="v">Valor</th></tr>${L.map(e=>`<tr><td>${e.d.split('-').reverse().join('/')}</td><td class="sens"><a href="clientes.html?id=${encodeURIComponent(e.id)}" style="color:inherit">${esc(e.n)}</a>${e.ex?' <i style="color:var(--mut)">(excluído)</i>':''}</td><td class="sens">${esc(e.o)}</td><td class="v sens">${brl(e.v)}</td></tr>`).join('')}</table>`:'';
+  const ms=[];for(let i=5;i>=0;i--)ms.push(new Date(mes.getFullYear(),mes.getMonth()-i,1));
+  const vs=ms.map(d=>ents.filter(e=>e.d.startsWith(chv(d))).reduce((a,e)=>a+e.v,0)),mx=Math.max(...vs,1);
+  $('#m6').innerHTML=ms.map((d,i)=>`<div class="mes6 ${chv(d)===k?'on':''}" data-m="${chv(d)}"><span>${cap(d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''))}/${String(d.getFullYear()).slice(2)}</span><div class="sens"><div class="bar" style="width:${Math.round(vs[i]/mx*100)}%"></div></div><span class="sens">${brl(vs[i])}</span></div>`).join('');
+  document.querySelectorAll('.mes6').forEach(r=>r.onclick=()=>{const[a,m]=r.dataset.m.split('-').map(Number);mes=new Date(a,m-1,1);desenha()});
+}
+async function entra(){
+  $('#trava').hidden=true;$('#barraCofre').hidden=false;$('#app').hidden=false;aplicaOlho();
+  $('#bOlho').onclick=()=>{embaca=!embaca;try{sessionStorage.setItem('cofre.olho',embaca?'1':'0')}catch(e){}aplicaOlho()};
+  $('#bLock').onclick=()=>{COFRE.bloquear();location.reload()};
+  $('#mAnt').onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()-1,1);desenha()};$('#mPro').onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()+1,1);desenha()};
+  await carrega();desenha();
+}
+(async()=>{
+  if(await COFRE.retomar())return entra();
+  $('#trava').hidden=false;
+  if(!(await COFRE.configurado())){$('#semCofre').hidden=false;$('#travaAbrir').hidden=true;$('#bTrava').hidden=true;return}
+  setTimeout(()=>$('#s0').focus(),50);
+  $('#bTrava').onclick=async()=>{const er=$('#erroTrava');er.textContent='';try{await COFRE.abrir($('#s0').value);entra()}catch(e){er.textContent=e.message}};
+  $('#s0').onkeydown=e=>{if(e.key==='Enter')$('#bTrava').click()};
+})();
+</script>
+</body></html>

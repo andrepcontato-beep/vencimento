@@ -111,7 +111,7 @@ function calendario(){
   const l30=lembretes30();
   const txt=n=>n===0?'<b>é HOJE</b>':n>0?'em '+n+(n===1?' dia':' dias'):'há '+(-n)+(n===-1?' dia':' dias');
   let h=`<h2>Calendário · partos</h2>`;
-  h+=`<div class="calh"><button class="sec mini" id="calAnt" aria-label="Mês anterior">‹</button><span>${calMes.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</span><button class="sec mini" id="calPro" aria-label="Próximo mês">›</button></div><div class="cal">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="dw">${x}</div>`).join('')}${'<div></div>'.repeat(prim)}`;
+  h+=`<div class="calh"><button class="sec mini" id="calAnt" aria-label="Mês anterior">‹</button><span>${(t=>t.charAt(0).toUpperCase()+t.slice(1))(calMes.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}</span><button class="sec mini" id="calPro" aria-label="Próximo mês">›</button></div><div class="cal">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="dw">${x}</div>`).join('')}${'<div></div>'.repeat(prim)}`;
   for(let d=1;d<=nd;d++){const iso=isoD(new Date(y,m,d)),q=(por[iso]||[]).length;
     h+=`<button data-dia="${iso}" class="${q?'tem ':''}${iso===hj?'hj ':''}${iso===calDia?'sel':''}" title="${q?q+' parto(s) previsto(s)':''}">${d}${q?`<sup>${q}</sup>`:''}</button>`}
   h+='</div>';
