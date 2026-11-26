@@ -75,7 +75,7 @@ async function entra(){
   clientes=await COFRE.listar();
   const q=new URLSearchParams(location.search).get('id');
   sel=q&&clientes.find(c=>c.id===q)?q:null;
-  lista();painel();notificaDpp();
+  lista();painel();notificaDpp();popupDpp();
 }
 
 /* ---------- lista ---------- */
@@ -100,32 +100,55 @@ const isoD=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+Str
 const dppLista=()=>clientes.filter(c=>!c.excluido&&/^\d{4}-\d{2}-\d{2}$/.test(c.dpp||''));
 const diasAte=iso=>{const[a,m,d]=iso.split('-').map(Number),t=new Date();return Math.round((new Date(a,m-1,d)-new Date(t.getFullYear(),t.getMonth(),t.getDate()))/864e5)};
 const brDia=iso=>iso.split('-').reverse().join('/');
+const somaDias=(iso,k)=>{const[a,m,d]=iso.split('-').map(Number);return isoD(new Date(a,m-1,d+k))};
+/* lembrete: 30 dias antes do parto, conferir a qualidade de segurada e decidir se pede o salário-maternidade (permitido a partir de 28 dias antes) */
+function lembretes30(){return dppLista().map(c=>({c,n:diasAte(c.dpp)})).filter(x=>x.n>=0&&x.n<=30).sort((a,b)=>a.n-b.n)}
 function avisosDpp(){return dppLista().map(c=>({c,n:diasAte(c.dpp)})).filter(x=>x.n<=14&&x.n>=-30).sort((a,b)=>a.n-b.n)}
 function calendario(){
   const E=$('#cal');if(!E)return;
   const L=dppLista(),por={};L.forEach(c=>(por[c.dpp]=por[c.dpp]||[]).push(c));
   const av=avisosDpp(),y=calMes.getFullYear(),m=calMes.getMonth(),prim=new Date(y,m,1).getDay(),nd=new Date(y,m+1,0).getDate(),hj=isoD(new Date());
+  const l30=lembretes30();
   const txt=n=>n===0?'<b>é HOJE</b>':n>0?'em '+n+(n===1?' dia':' dias'):'há '+(-n)+(n===-1?' dia':' dias');
   let h=`<h2>Calendário · partos</h2>`;
-  if(av.length)h+=`<div class="avs">🔔 <b>Partos previstos</b>${av.map(x=>`<div><a data-calc="${x.c.id}" class="dppn">${esc(x.c.nome||'(sem nome)')}</a> — ${brDia(x.c.dpp)} (${txt(x.n)})</div>`).join('')}</div>`;
   h+=`<div class="calh"><button class="sec mini" id="calAnt" aria-label="Mês anterior">‹</button><span>${calMes.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</span><button class="sec mini" id="calPro" aria-label="Próximo mês">›</button></div><div class="cal">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="dw">${x}</div>`).join('')}${'<div></div>'.repeat(prim)}`;
   for(let d=1;d<=nd;d++){const iso=isoD(new Date(y,m,d)),q=(por[iso]||[]).length;
     h+=`<button data-dia="${iso}" class="${q?'tem ':''}${iso===hj?'hj ':''}${iso===calDia?'sel':''}" title="${q?q+' parto(s) previsto(s)':''}">${d}${q?`<sup>${q}</sup>`:''}</button>`}
   h+='</div>';
   if(calDia&&por[calDia])h+=`<div style="margin-top:10px;font-size:13px"><b>${brDia(calDia)}</b>${por[calDia].map(c=>`<div><a data-calc="${c.id}" class="dppn" style="cursor:pointer;text-decoration:underline">${esc(c.nome||'(sem nome)')}</a></div>`).join('')}</div>`;
-  h+=`<div class="linha" style="margin-top:10px;gap:8px;flex-wrap:wrap">${L.length?'<button class="sec mini" id="calIcs" title="Baixa um arquivo para a agenda do celular, com alarme 7 dias antes, 1 dia antes e no dia">📅 Levar para a agenda</button>':''}${('Notification' in window&&Notification.permission==='default')?'<button class="sec mini" id="calNot">🔔 Ativar avisos</button>':''}</div>`;
+  h+=`<div class="linha" style="margin-top:10px;gap:8px;flex-wrap:wrap">${L.length?'<button class="sec mini" id="calIcs" title="Baixa um arquivo para a agenda do celular, com lembrete 30 dias antes (qualidade de segurada) e alarme do parto 7 dias antes, 1 dia antes e no dia">📅 Levar para a agenda</button>':''}${(av.length||l30.length)?'<button class="sec mini" id="calAvs">🔔 Ver avisos</button>':''}${('Notification' in window&&Notification.permission==='default')?'<button class="sec mini" id="calNot">🔔 Ativar avisos</button>':''}</div>`;
   E.innerHTML=h;
   $('#calAnt').onclick=()=>{calMes=new Date(y,m-1,1);calendario()};$('#calPro').onclick=()=>{calMes=new Date(y,m+1,1);calendario()};
   E.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{calDia=calDia===b.dataset.dia?null:b.dataset.dia;calendario()});
   E.querySelectorAll('[data-calc]').forEach(a=>a.onclick=()=>{sel=a.dataset.calc;mostraSenha=false;srvAberto=false;lista();painel()});
+  if($('#calAvs'))$('#calAvs').onclick=()=>popupDpp(true);
   if($('#calNot'))$('#calNot').onclick=async()=>{try{await Notification.requestPermission()}catch(e){}calendario();notificaDpp()};
   if($('#calIcs'))$('#calIcs').onclick=()=>{
     const z=n=>String(n).padStart(2,'0'),ts=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
     const ev=L.map(c=>{const d=c.dpp.replace(/-/g,''),n=new Date(+c.dpp.slice(0,4),+c.dpp.slice(5,7)-1,+c.dpp.slice(8,10)+1),f=n.getFullYear()+z(n.getMonth()+1)+z(n.getDate());
       const al=t=>`BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Parto previsto\r\nTRIGGER:${t}\r\nEND:VALARM`;
       return `BEGIN:VEVENT\r\nUID:dpp-${c.id}@locatelli\r\nDTSTAMP:${ts}\r\nDTSTART;VALUE=DATE:${d}\r\nDTEND;VALUE=DATE:${f}\r\nSUMMARY:Parto previsto - ${String(c.nome||'cliente').replace(/[,;\\\n]/g,' ')}\r\n${al('-P7D')}\r\n${al('-P1D')}\r\n${al('PT9H')}\r\nEND:VEVENT`}).join('\r\n');
-    const b=new Blob(['BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Locatelli//DPP//PT\r\nCALSCALE:GREGORIAN\r\n'+ev+'\r\nEND:VCALENDAR\r\n'],{type:'text/calendar'});
+    const ev30=L.map(c=>{const i=somaDias(c.dpp,-30),d=i.replace(/-/g,''),f=somaDias(c.dpp,-29).replace(/-/g,''),pd=brDia(somaDias(c.dpp,-28));
+      return `BEGIN:VEVENT\r\nUID:dpp30-${c.id}@locatelli\r\nDTSTAMP:${ts}\r\nDTSTART;VALUE=DATE:${d}\r\nDTEND;VALUE=DATE:${f}\r\nSUMMARY:Conferir qualidade de segurada e decidir pedido - ${String(c.nome||'cliente').replace(/[,;\\\n]/g,' ')}\r\nDESCRIPTION:Parto previsto em ${brDia(c.dpp)}. Pedido do salario-maternidade permitido a partir de ${pd} (28 dias antes).\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Conferir qualidade de segurada\r\nTRIGGER:PT9H\r\nEND:VALARM\r\nEND:VEVENT`}).join('\r\n');
+    const b=new Blob(['BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Locatelli//DPP//PT\r\nCALSCALE:GREGORIAN\r\n'+ev+'\r\n'+ev30+'\r\nEND:VCALENDAR\r\n'],{type:'text/calendar'});
     const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='partos-previstos.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Arquivo baixado: abra-o no celular para entrar na agenda')}
+}
+
+/* popup de avisos: abre uma vez por dia ao entrar (ou pelo botão "Ver avisos") */
+function popupDpp(forca){
+  const av=avisosDpp(),l30=lembretes30();if(!av.length&&!l30.length){if(forca)toast('Nenhum aviso de parto agora');return}
+  const hj=isoD(new Date()),sig=hj+'|'+av.map(x=>x.c.id).join(',')+'|'+l30.map(x=>x.c.id).join(',');
+  if(!forca){try{if(localStorage.getItem('dpp.popup')===sig)return;localStorage.setItem('dpp.popup',sig)}catch(e){}}
+  const t=n=>n===0?'<b>é HOJE</b>':n>0?'em '+n+(n===1?' dia':' dias'):'há '+(-n)+(n===-1?' dia':' dias');
+  const nm=c=>`<a data-pc="${c.id}" style="cursor:pointer;text-decoration:underline;font-weight:700">${esc(c.nome||'(sem nome)')}</a>`;
+  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px';
+  d.innerHTML=`<div style="background:var(--card,#fff);color:var(--tx,#222);border-radius:10px;padding:20px;width:100%;max-width:420px;max-height:85vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px">
+    <b style="font-size:16px">🔔 Avisos de parto</b>
+    ${av.length?`<div style="margin-top:12px"><b>Partos previstos</b>${av.map(x=>`<div style="padding:3px 0">${nm(x.c)} — ${brDia(x.c.dpp)} (${t(x.n)})</div>`).join('')}</div>`:''}
+    ${l30.length?`<div style="margin-top:12px"><b>Conferir a qualidade de segurada e decidir o pedido</b>${l30.map(x=>{const pd=somaDias(x.c.dpp,-28),ja=diasAte(pd)<=0;return `<div style="padding:3px 0">${nm(x.c)} — parto ${brDia(x.c.dpp)} (${t(x.n)}); ${ja?'já pode pedir desde ':'pode pedir a partir de '}${brDia(pd)}</div>`}).join('')}</div>`:''}
+    <div style="text-align:right;margin-top:14px"><button id="pdOk">Ok</button></div></div>`;
+  document.body.appendChild(d);d.querySelector('#pdOk').onclick=()=>d.remove();
+  d.querySelectorAll('[data-pc]').forEach(a=>a.onclick=()=>{d.remove();sel=a.dataset.pc;mostraSenha=false;srvAberto=false;lista();painel()});
 }
 /* notificação do navegador (só funciona com o site aberto): no máximo uma vez por dia por cliente */
 function notificaDpp(){
@@ -133,6 +156,8 @@ function notificaDpp(){
     const hj=isoD(new Date()),ja=JSON.parse(localStorage.getItem('dpp.avisado')||'{}');
     avisosDpp().filter(x=>x.n<=3&&x.n>=-7).forEach(x=>{const k=x.c.id+'|'+hj;if(ja[k])return;ja[k]=1;
       new Notification('Parto previsto '+(x.n===0?'HOJE':x.n>0?'em '+x.n+' dia(s)':'há '+(-x.n)+' dia(s)'),{body:'Cliente do cofre — abra os clientes para ver ('+brDia(x.c.dpp)+')'})});
+    const l3=JSON.parse(localStorage.getItem('dpp.l30')||'{}');
+    lembretes30().forEach(x=>{const k=x.c.id+'|'+x.c.dpp;if(l3[k])return;l3[k]=1;new Notification('Conferir qualidade de segurada',{body:'Parto previsto em '+brDia(x.c.dpp)+' ('+x.n+' dias). Pedido permitido a partir de '+brDia(somaDias(x.c.dpp,-28))+'. Abra os clientes.'})});localStorage.setItem('dpp.l30',JSON.stringify(l3));
     const r={};Object.keys(ja).filter(k=>k.endsWith('|'+hj)).forEach(k=>r[k]=1);localStorage.setItem('dpp.avisado',JSON.stringify(r))}catch(e){}}
 $('#busca').oninput=lista;
 
