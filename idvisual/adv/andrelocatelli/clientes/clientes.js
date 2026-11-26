@@ -145,7 +145,7 @@ async function painel(){
       <span class="k">Senha</span><span class="v">${c.govSenha?(mostraSenha?esc(c.govSenha):'••••••••••'):'<i style="color:var(--mut)">não cadastrada</i>'}</span>
       <span class="linha">${c.govSenha?`<button class="sec mini" id="bVer">${mostraSenha?'Ocultar':'Mostrar'}</button><button class="sec mini" id="bCopSenha">Copiar</button>`:''}</span>
     </div>
-    <div class="linha" style="margin-top:10px;gap:8px"><button class="sec" id="bGovAbre" ${c.cpf?'':'disabled'} title="Copia o CPF e abre o Meu INSS / gov.br em outra aba">🔗 Abrir Meu INSS</button><button id="bGovExt" hidden ${c.cpf&&c.govSenha?'':'disabled'} title="Preenche CPF e senha no gov.br (extensão do Chrome)">🔑 Entrar sozinho</button></div>
+    <div class="linha" style="margin-top:10px;gap:8px"><button class="sec" id="bGovAbre" ${c.cpf?'':'disabled'} title="Abre o Meu INSS (com a extensão instalada, já entra com CPF e senha)">🔗 Abrir Meu INSS</button></div>
     <div class="linha" style="margin-top:10px"><input type="password" id="novaSenha" placeholder="${c.govSenha?'Nova senha (substitui a atual)':'Digite a senha do gov.br'}" style="flex:1;min-width:200px" autocomplete="off"><button class="sec" id="bSenha">${c.govSenha?'Alterar':'Guardar'}</button>${c.govSenha?'<button class="perigo mini" id="bApagaSenha">Apagar senha</button>':''}</div>
     <div class="aviso" style="margin-bottom:0">A senha fica criptografada junto com os demais dados (cofre protegido pela sua senha mestra).</div>
   </div>
@@ -198,8 +198,7 @@ async function painel(){
   P.querySelectorAll('[data-andadd]').forEach(b=>b.onclick=()=>addAnd(b.dataset.andadd));
   $('#bOutroAnd').onclick=()=>addAnd($('#outroAnd').value);$('#outroAnd').onkeydown=e=>{if(e.key==='Enter')addAnd(e.target.value)};
   P.querySelectorAll('[data-andx]').forEach(b=>b.onclick=async()=>{dados();c.andamento.splice(+b.dataset.andx,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
-  $('#bGovAbre').onclick=()=>{window.open('https://meu.inss.gov.br/','_blank','noopener');copia(String(c.cpf).replace(/\D/g,''),'CPF (cole no login; a senha está no botão Copiar)')};
-  if(document.documentElement.dataset.locGovbr==='1'){const g=$('#bGovExt');g.hidden=false;g.onclick=()=>{window.postMessage({loc:'govbr-entrar',cpf:String(c.cpf).replace(/\D/g,''),senha:c.govSenha,alvo:'inss'},location.origin);toast('Abrindo o gov.br e preenchendo…')}}
+  $('#bGovAbre').onclick=()=>{const cpf=String(c.cpf).replace(/\D/g,'');if(document.documentElement.dataset.locGovbr==='1'&&c.govSenha){window.postMessage({loc:'govbr-entrar',cpf,senha:c.govSenha,alvo:'inss'},location.origin);toast('Abrindo o Meu INSS e preenchendo…')}else{window.open('https://meu.inss.gov.br/','_blank','noopener');copia(cpf,'CPF (cole no login; a senha está no botão Copiar)')}};
   $('#bCopLogin').onclick=()=>copia(String(c.cpf).replace(/\D/g,''),'Login');
   if($('#bVer'))$('#bVer').onclick=()=>{mostraSenha=!mostraSenha;painel()};
   if($('#bCopSenha'))$('#bCopSenha').onclick=()=>copia(c.govSenha,'Senha');
