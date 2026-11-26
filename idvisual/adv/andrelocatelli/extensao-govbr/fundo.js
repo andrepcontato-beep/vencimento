@@ -9,6 +9,9 @@ chrome.runtime.onMessage.addListener((m,s,res)=>{
     }else if(m&&m.tipo==='pegar'&&s.url&&s.url.startsWith('https://sso.acesso.gov.br/')){
       const {pend}=await chrome.storage.session.get('pend');
       res(pend&&Date.now()-pend.t<VALE?{cpf:pend.cpf,senha:pend.senha}:null);
+    }else if(m&&m.tipo==='tem'&&s.url&&s.url.startsWith('https://meu.inss.gov.br/')){
+      const {pend}=await chrome.storage.session.get('pend');
+      res({ok:!!(pend&&Date.now()-pend.t<VALE)});
     }else if(m&&m.tipo==='limpar'){
       await chrome.storage.session.remove('pend');res({ok:true});
     }else res(null);

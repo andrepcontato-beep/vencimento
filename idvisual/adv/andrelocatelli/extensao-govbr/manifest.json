@@ -1,19 +1,42 @@
 {
   "manifest_version": 3,
   "name": "Locatelli – entrar no gov.br",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Preenche o CPF e a senha do cliente no gov.br quando você clica em “Entrar sozinho” na aba Clientes. Não guarda nada.",
-  "permissions": ["storage"],
-  "background": { "service_worker": "fundo.js" },
+  "permissions": [
+    "storage"
+  ],
+  "background": {
+    "service_worker": "fundo.js"
+  },
   "content_scripts": [
     {
-      "matches": ["https://onrfacil.com.br/*", "https://www.onrfacil.com.br/*", "http://localhost/*"],
-      "js": ["ponte.js"],
+      "matches": [
+        "https://onrfacil.com.br/*",
+        "https://www.onrfacil.com.br/*",
+        "http://localhost/*"
+      ],
+      "js": [
+        "ponte.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://sso.acesso.gov.br/*"],
-      "js": ["govbr.js"],
+      "matches": [
+        "https://sso.acesso.gov.br/*"
+      ],
+      "js": [
+        "govbr.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://meu.inss.gov.br/*"
+      ],
+      "js": [
+        "inss.js"
+      ],
       "run_at": "document_idle"
     }
   ]
