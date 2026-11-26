@@ -1,0 +1,14 @@
+Locatelli – entrar no gov.br (extensão do Chrome)
+
+Instalar (uma vez):
+1. No Chrome, abra  chrome://extensions
+2. Ligue o "Modo do desenvolvedor" (canto superior direito).
+3. Clique em "Carregar sem compactação" e escolha esta pasta (extensao-govbr).
+4. Recarregue a aba Clientes (Ctrl+F5). Aparece o botão "Entrar sozinho" no quadro Acesso gov.br / Meu INSS.
+
+Como funciona:
+- Ao clicar, a página passa o CPF e a senha do cliente à extensão; ela abre o Meu INSS, que leva ao login do gov.br, e preenche CPF > Continuar > senha > Entrar.
+- CPF e senha ficam só em memória, por até 3 minutos, e são apagados assim que a senha é preenchida.
+- Captcha e código de verificação em duas etapas (se o gov.br pedir) são com você.
+- Funciona só no Chrome do computador (não no celular).
+- Se o gov.br mudar o layout do login, a extensão pode deixar de achar os campos: é só avisar para ajustar.
