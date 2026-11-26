@@ -114,9 +114,10 @@ const PADROES=[
    const nm=(L[i-1]||'').replace(/[^A-ZÀ-Úa-zà-ú'\s]/g,' ').replace(/\s+/g,' ').trim();if(nm.split(' ').length>=2)o.nome=nm.toUpperCase();
    const ad=[];for(let j=i+1;j<Math.min(L.length,i+6);j++){if(/^CEP/i.test(L[j])||/^PERDAS/i.test(L[j]))break;const x=L[j].replace(/N[ÚU]MERO DA UC.*$/i,'').replace(/[>?|]+\s*$/,'').trim();if(x)ad.push(x)}
    if(ad.length)o.end=titulo(ad.join(', ').replace(/\s*,\s*,/g,','));
-   const cl=L.slice(i).find(l=>/^CEP/i.test(l));
+   const cl0=L.slice(i).find(l=>/^CEP/i.test(l)),cl=cl0&&cl0.split(/\s{3,}/)[0].replace(/\s+BRASIL\b.*$/i,' BRASIL');
    if(cl){const m=cl.match(/CEP\s*:?\s*(\d{5})\D?(\d{3})\s+(.+?)\s+([A-Z]{2})(?:\s+BRASIL)?\s*$/i);
-     if(m){o.cep=m[1]+'-'+m[2];o.cid=titulo(m[3])+'/'+m[4].toUpperCase()}else{const c=cl.match(/(\d{5})\D?(\d{3})/);if(c)o.cep=c[1]+'-'+c[2]}}
+     const m2=m||(cl0||'').match(/CEP\s*:?\s*(\d{5})\D?(\d{3})\s+([A-ZÀ-Ú' ]{3,40}?)\s+([A-Z]{2})\b/i);
+     if(m2){o.cep=m2[1]+'-'+m2[2];o.cid=titulo(m2[3])+'/'+m2[4].toUpperCase()}else{const c=cl.match(/(\d{5})\D?(\d{3})/);if(c)o.cep=c[1]+'-'+c[2]}}
    return o}},
  {nome:'Saneago',detecta:t=>/SANEAGO|SANEAMENTO\s+DE\s+GOI[ÁA]S/i.test(t),
   /* O cabeçalho traz o endereço da própria Saneago (também com "CEP:"). O do cliente é o bloco logo abaixo: NOME / RUA… / SETOR… CIDADE CEP: 00000-000 */
