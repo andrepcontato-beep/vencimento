@@ -27,6 +27,12 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
 /* lista */
 .item{display:block;width:100%;text-align:left;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:7px;font-weight:400;cursor:pointer}
 .item b{display:block;font-size:14px}.item span{font-size:12px;color:var(--mut)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}.cal .dw{font-size:11px;color:var(--mut);padding:2px 0}
+.cal button{all:unset;cursor:pointer;padding:6px 0;border-radius:6px;position:relative}.cal button:hover{background:rgba(0,0,0,.06)}
+.cal .hj{outline:1px solid var(--ouro2)}.cal .tem{background:var(--ouro2);color:#fff;font-weight:700}.cal .sel{box-shadow:0 0 0 2px #222 inset}.cal sup{font-size:9px;margin-left:1px}
+.calh{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:700}.calh span{flex:1;text-align:center;text-transform:capitalize}
+.avs{font-size:13px;margin:0 0 10px;padding:8px 10px;border-radius:8px;background:rgba(184,134,11,.12)}.avs div{padding:2px 0}.avs a{color:inherit;cursor:pointer;text-decoration:underline}
+body.blur #cal .dppn{filter:blur(7px);user-select:none;-webkit-user-select:none}
 .itemw{position:relative}body.blur #lista .item span,body.blur #painel .card>*:not(h2):not(.mkw){filter:blur(7px);user-select:none;-webkit-user-select:none}
 .itemw{position:relative}.itemw .item{margin-bottom:7px}.mk{position:absolute;left:11px;top:9px;display:flex;gap:5px;align-items:center}.mk svg{display:block;width:20px;height:20px}.item.on+.mk{left:14px}body.blur .mk .mki{filter:blur(4px)}.mkop{padding:3px;border:1px solid transparent;border-radius:50%;background:none;cursor:pointer;display:inline-flex}.mkop:hover{border-color:var(--ouro2)}.mkop svg{width:34px;height:34px;display:block}#mkMenu{margin-top:4px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;}#mkMenu[hidden]{display:none}.mkc{position:relative;display:inline-flex}.mkc svg{width:30px;height:30px;display:block}.mkx{position:absolute;top:-6px;right:-6px;width:16px;height:16px;padding:0;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--red);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}body.blur .mkc svg{filter:blur(4px)}
 .zap{position:static;flex:none;width:20px;height:20px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}.item.cz b{padding-left:var(--pl)}.zap:hover{background:#1ebe5b}
@@ -92,6 +98,7 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
    <input type="search" id="busca" placeholder="Buscar por nome ou CPF…">
    <div id="lista" style="margin-top:10px"></div>
   </div>
+  <div class="card" id="cal" style="margin-top:14px"></div>
  </aside>
  <section id="painel"></section>
 </div>
@@ -100,11 +107,11 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
 <script src="gerador/ocr/tesseract.min.js"></script>
 <script src="gerador/ocr/pdf.min.js"></script>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="gerador/sexo.js?v=202611260540"></script>
-<script src="gerador/extrair.js?v=202611260540"></script>
-<script src="cofre/cofre.js?v=202611260540"></script>
-<script src="cofre/supabase-config.js?v=202611260540"></script>
-<script src="cofre/sync.js?v=202611260540"></script>
-<script src="clientes/marcas.js?v=202611260540"></script>
-<script src="clientes/clientes.js?v=202611260540"></script>
+<script src="gerador/sexo.js?v=202611261000"></script>
+<script src="gerador/extrair.js?v=202611261000"></script>
+<script src="cofre/cofre.js?v=202611261000"></script>
+<script src="cofre/supabase-config.js?v=202611261000"></script>
+<script src="cofre/sync.js?v=202611261000"></script>
+<script src="clientes/marcas.js?v=202611261000"></script>
+<script src="clientes/clientes.js?v=202611261000"></script>
 </body></html>

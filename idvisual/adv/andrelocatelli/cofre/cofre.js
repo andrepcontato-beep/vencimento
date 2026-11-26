@@ -26,7 +26,7 @@ const decifraJSON=async r=>JSON.parse(dec.decode(await decifra(r)));
 async function lembra(){const raw=await crypto.subtle.exportKey('raw',chave);try{sessionStorage.setItem(SK,b64(raw))}catch(e){}}
 
 /* ----- histórico de alterações: resumo legível do que mudou ----- */
-const ROT={nome:'Nome',cpf:'CPF',rg:'RG',tel:'Telefone',nac:'Nacionalidade',ec:'Estado civil',prof:'Profissão',sexo:'Sexo',end:'Endereço',cep:'CEP',cid:'Cidade/UF',nasc:'Nascimento',cond:'Condição',notas:'Observações'};
+const ROT={dpp:'Data provável do parto',nome:'Nome',cpf:'CPF',rg:'RG',tel:'Telefone',nac:'Nacionalidade',ec:'Estado civil',prof:'Profissão',sexo:'Sexo',end:'Endereço',cep:'CEP',cid:'Cidade/UF',nasc:'Nascimento',cond:'Condição',notas:'Observações'};
 const vz=v=>{v=v==null?'':String(v);return v.length>70?v.slice(0,70)+'…':(v||'—')};
 function diff(a,b){
   const r=[],g=(o,k)=>{const v=o&&o[k];return v==null?'':String(v)};

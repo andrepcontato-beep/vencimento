@@ -230,7 +230,7 @@ const CH_REP=['nome','sexo','nac','ec','prof','rg','cpf','end','cid','cep','tel'
 function dadosCliente(){const v=valores(),g=k=>String(v[k]===undefined?'':v[k]).trim();
   if(g('fnome')){const rep={};CH_REP.forEach(k=>{if(g(k))rep[k]=g(k)});
     const o={repr:true,rep,nome:g('fnome'),cpf:g('fcpf'),nasc:g('fnasc'),sexo:g('fsexo'),cond:g('fcond')};Object.keys(o).forEach(k=>{if(o[k]==='')delete o[k]});return o}
-  const o={};CH_REP.forEach(k=>{if(g(k))o[k]=g(k)});return o}
+  const o={};CH_REP.forEach(k=>{if(g(k))o[k]=g(k)});if(g('dpp')&&v.obj==='smr-gest')o.dpp=g('dpp');return o}
 async function sincroniza(){
   const novo=dadosCliente(),nm=x=>String(x||'').trim().toLowerCase();
   let ex=cliId?await COFRE.obter(cliId):null;
