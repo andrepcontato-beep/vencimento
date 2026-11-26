@@ -119,7 +119,7 @@ const PADROES=[
      const m2=m||(cl0||'').match(/CEP\s*:?\s*(\d{5})\D?(\d{3})\s+([A-ZÀ-Ú' ]{3,40}?)\s+([A-Z]{2})\b/i);
      if(m2){o.cep=m2[1]+'-'+m2[2];o.cid=titulo(m2[3])+'/'+m2[4].toUpperCase()}else{const c=cl.match(/(\d{5})\D?(\d{3})/);if(c)o.cep=c[1]+'-'+c[2]}}
    return o}},
- {nome:'Saneago',detecta:t=>/SANEAGO|SANEAMENTO\s+DE\s+GOI[ÁA]S/i.test(t),
+ {nome:'Saneago',detecta:t=>/SANEAGO|SANEAMENTO\s+DE\s+GOI[ÁA]S|01\.?616\.?929/i.test(t),
   /* O cabeçalho traz o endereço da própria Saneago (também com "CEP:"). O do cliente é o bloco logo abaixo: NOME / RUA… / SETOR… CIDADE CEP: 00000-000 */
   extrai(t){
    const L=t.split('\n').map(s=>s.trim()).filter(Boolean),o={};
@@ -152,7 +152,14 @@ function extrairEndGenerico(t){
   const L=t.split('\n').map(s=>s.trim()).filter(s=>s.length>3);
   const re=/^(?:ENDERE[ÇC]O[:\s]*)?((?:RUA|R\.|AV\.?|AVENIDA|ALAMEDA|AL\.|TRAVESSA|PRA[ÇC]A|RODOVIA|ROD\.|ESTRADA|FAZENDA|S[ÍI]TIO|CH[ÁA]CARA|QUADRA|QD\.?)\s.+)/i;
   for(let i=0;i<L.length;i++){const m=L[i].match(re);if(m){let e=m[1].replace(/\s{2,}/g,' ').replace(/[;|]/g,',');
-      const nx=L[i+1]||'';if(/^(SETOR|BAIRRO|JD|JARDIM|VILA|CENTRO|ST\.?|RES)/i.test(nx))e+=', '+nx;o.end=e;break}}
+      const nx=L[i+1]||'';if(/^(SETOR|BAIRRO|JD|JARDIM|VILA|CENTRO|ST\.?|RES)/i.test(nx))e+=', '+nx;if(!o.end||L.slice(0,i).some(l=>/CNPJ/i.test(l)))o.end=e}}
+  if(o.end)o.end=o.end.replace(/\s*\bCEP\b.*$/i,'')
+  /* regra geral: a cidade vem logo ANTES de "CEP:" (…SETOR X Q 4 L 1 CIDADE CEP: 00000-000). Vale o último desses trechos (o 1º costuma ser o endereço da empresa). */
+  if(!o.cid){let ach='';
+    for(let i=0;i<L.length;i++){const m=L[i].split(/\s{3,}/)[0].match(/^(.*?)\bCEP\b/i);if(!m)continue;
+      const tk=m[1].trim().split(/\s+/);let j=tk.length;while(j>0&&/^[A-ZÀ-Ú]{3,}$/i.test(tk[j-1])&&!/^(CEP|CNPJ|CPF|INSC|EST|CENTRO|LT|QD)$/i.test(tk[j-1]))j--;
+      const c=tk.slice(j).join(' ');if(c&&c.split(' ').length<=3)ach=c}
+    if(ach){const n=o.cep?+o.cep.slice(0,5):0;o.cid=titulo(ach)+((n>=72800&&n<=76799)?'/GO':'')}}
   const cu=t.match(/([A-ZÀ-Ú][A-Za-zÀ-ú' ]{2,30})\s*[-\/,]\s*([A-Z]{2})\b/g);
   if(cu){const x=cu.map(s=>s.match(/^(.*?)\s*[-\/,]\s*([A-Z]{2})$/)).filter(Boolean).find(m=>/^[A-ZÀ-Ú]/.test(m[1])&&m[1].trim().split(' ').length<=3&&!/CEP|RUA|AV|INSC|EST\.?$|CNPJ|CPF|NR\.?$/i.test(m[1]));if(x)o.cid=x[1].trim()+'/'+x[2]}
   return o;
