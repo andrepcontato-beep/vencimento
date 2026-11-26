@@ -15,5 +15,9 @@ window.MARCAS={
  "autismo": {
   "nome": "Autismo (TEA)",
   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle cx=\"24\" cy=\"24\" r=\"23\" fill=\"#fff\" stroke=\"#0EA5E9\" stroke-width=\"2\"/><defs><linearGradient id=\"g\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#E53935\"/><stop offset=\".35\" stop-color=\"#FDD835\"/><stop offset=\".65\" stop-color=\"#43A047\"/><stop offset=\"1\" stop-color=\"#1E88E5\"/></linearGradient></defs><g fill=\"none\" stroke=\"url(#g)\" stroke-width=\"5.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M24 24C14 14 17 6 24 6s10 8 0 18l-7.5 14.5\"/><path d=\"M24 24C34 14 31 6 24 6\"/><path d=\"M24 24l7.5 14.5\"/></g></svg>"
+ },
+ "receita": {
+  "nome": "Receita / tributário",
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle cx=\"24\" cy=\"24\" r=\"24\" fill=\"#1E3A8A\"/><path fill=\"#fff\" d=\"M14 9.5h14l7 7V37a2.5 2.5 0 0 1-2.5 2.5h-18.5A2.5 2.5 0 0 1 11.5 37V12A2.5 2.5 0 0 1 14 9.5z\"/><path fill=\"#cfd8ee\" d=\"M28 9.5l7 7h-5a2 2 0 0 1-2-2z\"/><g fill=\"none\" stroke=\"#1E3A8A\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2.4\"><path d=\"M18 31.5l11-11\"/></g><circle cx=\"19\" cy=\"23\" r=\"2.6\" fill=\"none\" stroke=\"#1E3A8A\" stroke-width=\"2.2\"/><circle cx=\"28\" cy=\"30.5\" r=\"2.6\" fill=\"none\" stroke=\"#1E3A8A\" stroke-width=\"2.2\"/></svg>"
  }
 };
