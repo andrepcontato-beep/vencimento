@@ -274,6 +274,13 @@ async function paraImagens(file,maxLado){
   const im=await carregaImg(file);return [preprocessa(im,im.naturalWidth,im.naturalHeight)];
 }
 let _fila=Promise.resolve();
+/* Rede de segurança: tem CEP mas não achou a cidade no texto → pergunta a cidade/UF ao ViaCEP (só o CEP sai do navegador). */
+async function completaCidade(o,extrator){
+  if(extrator!==extrairEnd||!o.cep||o.cid)return;
+  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),6000);
+    const r=await fetch('https://viacep.com.br/ws/'+o.cep.replace(/\D/g,'')+'/json/',{signal:c.signal});clearTimeout(t);
+    const j=await r.json();if(j&&j.localidade&&j.uf)o.cid=j.localidade+'/'+j.uf;
+  }catch(e){console.warn('viacep',e)}}
 function ler(files,st,extrator,mapa,box){(window.__uploads=window.__uploads||[]).push(...[...files].map(f=>({f,rot:{'#s1':'Identidade','#s2':'Comprovante de endereço','#s3':'Certidão de nascimento'}[st]||'Documento',salvo:false})));$(st).textContent='Na fila…';_fila=_fila.then(()=>lerUm(files,st,extrator,mapa,box));return _fila}   /* um documento por vez */
 async function lerUm(files,st,extrator,mapa,box){
   const S=$(st);S.textContent='Preparando…';
@@ -298,6 +305,7 @@ async function lerUm(files,st,extrator,mapa,box){
     }
     window.__ocr=(window.__ocr||'')+txt;
     if(o._tipo==='id')(window.__uploads||[]).forEach(u=>{if(files.includes(u.f)&&u.rot==='Certidão de nascimento')u.rot='Documento do(a) beneficiário(a)'});
+    await completaCidade(o,extrator);
     aplica(o,mapa);window.__o=o;
     const achou=esperados.filter(k=>o[k]),falta=esperados.filter(k=>!o[k]);
     S.innerHTML=(achou.length?`✔ Li: ${achou.map(k=>NOMES[k]).join(', ')}`+(o._padrao?' (padrão '+o._padrao+')':''):'')+(falta.length?`${achou.length?'<br>':''}⚠ <b>Não consegui ler:</b> ${falta.map(k=>NOMES[k]).join(', ')} — preencha na etapa 2`:'')+(achou.length?'<br><small>confira os campos em amarelo</small>':'');
@@ -319,6 +327,7 @@ async function ocrLer(files,extrator,keys,status){
       if(extrator.refina&&last&&keys.some(k=>!o[k])){status&&status('Lendo as caixas de data e sexo…');try{await extrator.refina(w,cv,last,o)}catch(e){console.warn('refina',e)}}
     }
   }
+  await completaCidade(o,extrator);
   return o;
 }
 window.OCR_LER=ocrLer;window.OCR_EXTRATORES={ident:extrairId,end:extrairEnd,cert:extrairBenef};
