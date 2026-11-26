@@ -1,4 +1,4 @@
-/* Sincronização do cofre com a nuvem (Firebase), com criptografia de ponta a ponta:
+/* Sincronização do cofre com a nuvem (Supabase), com criptografia de ponta a ponta:
    só dados JÁ CRIPTOGRAFADOS (AES-256-GCM, senha mestra) saem do navegador. A nuvem nunca vê a senha mestra nem o conteúdo.
    Regra de conflito: vale o registro mais recente (carimbo "u"); o histórico de alterações é somado entre aparelhos. */
 (function(){
@@ -51,36 +51,50 @@ async function sincronizar(T,prog){
   return st;
 }
 
-/* ---------- transporte Firebase ---------- */
+/* ---------- transporte Supabase ---------- */
 const CARREGADOS={};
 function carrega(src){return CARREGADOS[src]||(CARREGADOS[src]=new Promise((ok,er)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>er(new Error('Não consegui carregar '+src));document.head.appendChild(s)}))}
-let fb=null;
-async function firebaseIniciar(){
-  if(fb)return fb;
-  if(!window.FIREBASE_CONFIG)throw new Error('SEM_CONFIG');
-  for(const f of ['app','auth','firestore','storage'])await carrega(`vendor/firebase-${f}-compat.js?v=1`);
-  const app=firebase.apps.length?firebase.app():firebase.initializeApp(window.FIREBASE_CONFIG);
-  fb={app,auth:firebase.auth(),db:firebase.firestore(),st:firebase.storage()};
-  return fb;
+let sb=null;
+async function supaIniciar(){
+  if(sb)return sb;
+  if(!window.SUPABASE_CONFIG)throw new Error('SEM_CONFIG');
+  if(!window.supabase)await carrega('cofre/vendor/supabase-js-2.45.4.js');
+  sb=window.supabase.createClient(window.SUPABASE_CONFIG.url,window.SUPABASE_CONFIG.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'locatelli.nuvem'}});
+  return sb;
 }
-async function usuario(f,entrar){
-  if(f.auth.currentUser)return f.auth.currentUser;
-  const u=await new Promise(ok=>{const off=f.auth.onAuthStateChanged(x=>{off();ok(x)})});
-  if(u||!entrar)return u;
-  const r=await f.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());return r.user;
+/* janelinha de login da nuvem (e-mail + senha da nuvem — NÃO é a senha mestra do cofre) */
+function pedeLogin(msg){return new Promise((ok,no)=>{
+  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  d.innerHTML='<form style="background:#fff;color:#222;border-radius:10px;padding:20px;width:100%;max-width:340px;font:14px system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.4)"><b style="font-size:16px">Entrar na nuvem</b><div style="color:#666;font-size:12px;margin:4px 0 10px">Conta da nuvem (não é a senha mestra do cofre).</div><input name="e" type="email" placeholder="e-mail" autocomplete="username" required style="width:100%;box-sizing:border-box;padding:9px;margin-bottom:8px;border:1px solid #bbb;border-radius:6px"><input name="p" type="password" placeholder="senha da nuvem" autocomplete="current-password" required style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #bbb;border-radius:6px"><div class="m" style="color:#b03a2e;font-size:12px;min-height:16px;margin-top:6px"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px"><button type="button" class="c" style="padding:8px 12px">Cancelar</button><button style="padding:8px 14px;background:#b8860b;color:#fff;border:0;border-radius:6px;font-weight:700">Entrar</button></div></form>';
+  document.body.appendChild(d);const f=d.querySelector('form');f.querySelector('.m').textContent=msg||'';f.e.focus();
+  d.querySelector('.c').onclick=()=>{d.remove();no(new Error('Login cancelado.'))};
+  f.onsubmit=e=>{e.preventDefault();const v={e:f.e.value.trim(),p:f.p.value};d.remove();ok(v)};
+})}
+async function usuario(c,entrar){
+  const g=await c.auth.getSession();if(g.data&&g.data.session)return g.data.session.user;
+  if(!entrar)return null;
+  let msg='';
+  for(let i=0;i<3;i++){
+    const v=await pedeLogin(msg);
+    const r=await c.auth.signInWithPassword({email:v.e,password:v.p});
+    if(!r.error)return r.data.user;
+    msg=/invalid/i.test(r.error.message)?'E-mail ou senha da nuvem incorretos.':r.error.message;
+  }
+  throw new Error(msg);
 }
-async function transporteFirebase(entrar){
-  const f=await firebaseIniciar(),u=await usuario(f,entrar);if(!u)return null;
-  const base=f.db.collection('users').doc(u.uid),col=n=>base.collection(n);
+const ok=(r)=>{if(r.error)throw new Error(r.error.message||String(r.error));return r.data};
+async function transporteSupabase(entrar){
+  const c=await supaIniciar(),u=await usuario(c,entrar);if(!u)return null;
+  const T0=()=>c.from('docs'),arq=()=>c.storage.from('arquivos');
   return{
     email:u.email,
-    async getMeta(){const d=await base.collection('meta').doc('cofre').get();return d.exists?d.data():null},
-    async setMeta(m){await base.collection('meta').doc('cofre').set(m)},
-    async listar(n){const q=await col(n).get();return q.docs.map(d=>d.data())},
-    async gravar(n,doc){await col(n).doc(doc.id).set(doc)},
-    async apagar(n,id,blob){await col(n).doc(id).delete();if(blob){try{await f.st.ref(`users/${u.uid}/arquivos/${id}`).delete()}catch(e){}}},
-    async blobPut(id,bytes){await f.st.ref(`users/${u.uid}/arquivos/${id}`).put(new Blob([bytes],{type:'application/octet-stream'}))},
-    async blobGet(id){return new Uint8Array(await f.st.ref(`users/${u.uid}/arquivos/${id}`).getBytes())}
+    async getMeta(){const r=ok(await T0().select('d').eq('col','meta').eq('id','cofre').maybeSingle());return r?r.d:null},
+    async setMeta(m){ok(await T0().upsert({uid:u.id,col:'meta',id:'cofre',d:m},{onConflict:'uid,col,id'}))},
+    async listar(n){const out=[];for(let i=0;;i+=500){const r=ok(await T0().select('d').eq('col',n).order('id').range(i,i+499));out.push(...r.map(x=>x.d));if(r.length<500)break}return out},
+    async gravar(n,doc){ok(await T0().upsert({uid:u.id,col:n,id:doc.id,d:doc},{onConflict:'uid,col,id'}))},
+    async apagar(n,id,blob){ok(await T0().delete().eq('col',n).eq('id',id));if(blob){try{await arq().remove([u.id+'/'+id])}catch(e){}}},
+    async blobPut(id,bytes){ok(await arq().upload(u.id+'/'+id,new Blob([bytes],{type:'application/octet-stream'}),{upsert:true,contentType:'application/octet-stream'}))},
+    async blobGet(id){return new Uint8Array(await ok(await arq().download(u.id+'/'+id)).arrayBuffer())}
   };
 }
 
@@ -89,21 +103,21 @@ let T=null,rodando=false,agenda=null,ultima=0;const ouvintes=[];
 const emite=(tipo,x)=>ouvintes.forEach(f=>{try{f(tipo,x)}catch(e){}});
 const SYNC={
   sincronizar,
-  configurado:()=>!!window.FIREBASE_CONFIG,
+  configurado:()=>!!window.SUPABASE_CONFIG,
   aoMudarEstado:f=>ouvintes.push(f),
   usarTransporte:t=>{T=t},
   ultima:()=>ultima,
-  /* entrar=true abre o login do Google (clique do usuário) */
+  /* entrar=true abre a janelinha de login (clique do usuário) */
   async executar(entrar){
     if(rodando)return null;rodando=true;emite('inicio');
     try{
-      if(!T||T.__fb){const t=await transporteFirebase(!!entrar);if(!t){emite('fim',{precisaEntrar:true});return null}t.__fb=true;T=t}
+      if(!T||T.__sb){const t=await transporteSupabase(!!entrar);if(!t){emite('fim',{precisaEntrar:true});return null}t.__sb=true;T=t}
       const st=await sincronizar(T,x=>emite('prog',x));ultima=Date.now();emite('fim',st);return st;
     }catch(e){emite('erro',e);throw e}finally{rodando=false}
   },
   /* chamado quando algo muda no cofre: sincroniza sozinho depois de alguns segundos, se já houver login */
   agendar(){clearTimeout(agenda);agenda=setTimeout(()=>{if(SYNC.configurado()||T)SYNC.executar(false).catch(()=>{})},4000)},
-  async sair(){const f=await firebaseIniciar();await f.auth.signOut();T=null}
+  async sair(){const c=await supaIniciar();await c.auth.signOut();T=null}
 };
 window.SYNC=SYNC;
 })();

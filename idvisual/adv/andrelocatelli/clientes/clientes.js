@@ -31,7 +31,7 @@ async function inicia(){
       $('#trava').hidden=true;entra();
     }catch(e){er.textContent=e.message}};
   $('#bNuvem0').onclick=async()=>{const er=$('#erroTrava');er.textContent='';
-    try{if(!SYNC.configurado())throw new Error('A nuvem ainda não está configurada neste site (falta o projeto Firebase).');
+    try{if(!SYNC.configurado())throw new Error('A nuvem ainda não está configurada neste site (falta o projeto Supabase).');
       er.textContent='Entrando e baixando…';const st=await SYNC.executar(true);
       if(st&&st.novoAparelho){er.textContent='';return inicia()}
       throw new Error(st&&st.vazio?'Não há cofre na nuvem para esta conta (envie primeiro a partir do aparelho que já tem os clientes).':'Não foi possível baixar.')}
@@ -60,7 +60,7 @@ function ligaNuvem(){ligaOlho();
       if(x&&x.baixou){clientes=await COFRE.listar();const a=document.activeElement;lista();if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName))painel()}
     }});
   $('#bNuvem').onclick=async()=>{
-    if(!SYNC.configurado()){toast('A nuvem ainda não está configurada neste site (falta o projeto Firebase)');return}
+    if(!SYNC.configurado()){toast('A nuvem ainda não está configurada neste site (falta o projeto Supabase)');return}
     try{await SYNC.executar(true)}catch(e){if(e&&e.message!=='SEM_CONFIG')toast('Erro: '+(e.message||e))}};
   if(SYNC.configurado())SYNC.executar(false).catch(()=>{});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SYNC.configurado()&&Date.now()-SYNC.ultima()>60000)SYNC.executar(false).catch(()=>{})});
