@@ -27,7 +27,8 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
 .item{display:block;width:100%;text-align:left;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:7px;font-weight:400;cursor:pointer}
 .item b{display:block;font-size:14px}.item span{font-size:12px;color:var(--mut)}
 .itemw{position:relative}body.blur #lista .item span,body.blur #painel .card>*:not(h2){filter:blur(7px);user-select:none;-webkit-user-select:none}
-.itemw{position:relative}.itemw .item{margin-bottom:7px}.zap{position:absolute;left:11px;top:9px;width:20px;height:20px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}.item.on+.zap{left:14px}.item.cz b{padding-left:26px}.zap:hover{background:#1ebe5b}
+.itemw{position:relative}.itemw .item{margin-bottom:7px}.mk{position:absolute;left:11px;top:9px;display:flex;gap:5px;align-items:center}.mk svg{display:block;width:20px;height:20px}.item.on+.mk{left:14px}body.blur .mk .mki{filter:blur(4px)}.mkb{color:var(--tx,#222);font-weight:500;display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 5px;border:1px solid var(--bd);border-radius:20px;background:var(--card,#fff);cursor:pointer;font-size:13px}.mkb svg{width:26px;height:26px}.mkb.on{border-color:var(--ouro2);box-shadow:0 0 0 2px var(--ouro2) inset;font-weight:700}
+.zap{position:static;flex:none;width:20px;height:20px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}.item.cz b{padding-left:var(--pl)}.zap:hover{background:#1ebe5b}
 .item.on{border-color:var(--ouro);background:var(--sel);border-left:4px solid var(--ouro)}
 .marca{position:relative;min-height:420px}.marca::before{content:'';position:absolute;inset:0;background:url(perfis/andrelocatelli/logo.png) center/auto 70% no-repeat;opacity:.10;pointer-events:none}
 .vazio{color:var(--mut);text-align:center;padding:26px 10px;font-size:13px}
@@ -98,10 +99,11 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
 <script src="gerador/ocr/tesseract.min.js"></script>
 <script src="gerador/ocr/pdf.min.js"></script>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="gerador/sexo.js?v=202611260130"></script>
-<script src="gerador/extrair.js?v=202611260130"></script>
-<script src="cofre/cofre.js?v=202611260130"></script>
-<script src="cofre/firebase-config.js?v=202611260130"></script>
-<script src="cofre/sync.js?v=202611260130"></script>
-<script src="clientes/clientes.js?v=202611260130"></script>
+<script src="gerador/sexo.js?v=202611260200"></script>
+<script src="gerador/extrair.js?v=202611260200"></script>
+<script src="cofre/cofre.js?v=202611260200"></script>
+<script src="cofre/firebase-config.js?v=202611260200"></script>
+<script src="cofre/sync.js?v=202611260200"></script>
+<script src="clientes/marcas.js?v=202611260200"></script>
+<script src="clientes/clientes.js?v=202611260200"></script>
 </body></html>
