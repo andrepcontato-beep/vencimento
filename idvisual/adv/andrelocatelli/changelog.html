@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Changelog · André Locatelli</title>
+<style>
+:root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc;--up:#fffdf7;--okbg:#f4faf0;--sel:#fffbef;--warn:#fff3cd;--warnbd:#e6c55a;--red:#b3261e}
+@media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b;--up:#27241a;--okbg:#1d2a1b;--sel:#2c2717;--warn:#3a3217;--warnbd:#8a7424;--red:#ff8a80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif}
+header{padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:2px solid var(--ouro);background:var(--card);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header img{height:38px}header h1{font-size:17px;margin:0}header small{display:block;color:var(--mut);font-size:12px}
+header .esp{flex:1}header a.vt{color:var(--ouro2);text-decoration:none;font-weight:600}
+main{padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1300px;margin:auto}
+.cols{display:grid;grid-template-columns:minmax(300px,460px) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:860px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ouro2);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.card h2 .esp{flex:1}
+.srvc:not(.aberto) .ed,.srvc:not(.aberto) .mkx{display:none!important}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 2px}
+input[type=text],input[type=password],input[type=date],input[type=search],select,textarea{width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:var(--card);color:var(--tx)}
+textarea{min-height:64px;resize:vertical}
+button,.btn{background:var(--ouro);color:#fff;border:0;border-radius:7px;padding:8px 13px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+button.sec,.btn.sec{background:var(--card);color:var(--ouro2);border:1px solid var(--ouro)}
+button.mini{padding:4px 9px;font-size:12px}button.perigo{background:var(--card);color:var(--red);border:1px solid var(--red)}
+button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
+.linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}@media(max-width:560px){.g2{grid-template-columns:1fr}}
+/* lista */
+.item{display:block;width:100%;text-align:left;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:7px;font-weight:400;cursor:pointer}
+.item b{display:block;font-size:14px}.item span{font-size:12px;color:var(--mut)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}.cal .dw{font-size:11px;color:var(--mut);padding:2px 0}
+.cal button{all:unset;cursor:pointer;padding:6px 0;border-radius:6px;position:relative}.cal button:hover{background:rgba(0,0,0,.06)}
+.cal .hj{outline:1px solid var(--ouro2)}.cal .tem{background:var(--ouro2);color:#fff;font-weight:700}.cal .sel{box-shadow:0 0 0 2px #222 inset}.cal sup{font-size:9px;margin-left:1px}
+.calh{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:700}.calh span{flex:1;text-align:center;text-transform:capitalize}
+.avs{font-size:13px;margin:0 0 10px;padding:8px 10px;border-radius:8px;background:rgba(184,134,11,.12)}.avs div{padding:2px 0}.avs a{color:inherit;cursor:pointer;text-decoration:underline}
+body.blur #cal .dppn{filter:blur(7px);user-select:none;-webkit-user-select:none}
+.itemw{position:relative}body.blur #lista .item span,body.blur #painel .card>*:not(h2):not(.mkw){filter:blur(7px);user-select:none;-webkit-user-select:none}
+.itemw{position:relative}.itemw .item{margin-bottom:7px}.mk{position:absolute;left:11px;top:9px;display:flex;gap:5px;align-items:center}.mk svg{display:block;width:20px;height:20px}.item.on+.mk{left:14px}body.blur .mk .mki{filter:blur(4px)}.mkop{padding:3px;border:1px solid transparent;border-radius:50%;background:none;cursor:pointer;display:inline-flex}.mkop:hover{border-color:var(--ouro2)}.mkop svg{width:34px;height:34px;display:block}#mkMenu{margin-top:4px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;}#mkMenu[hidden]{display:none}.mkc{position:relative;display:inline-flex}.mkc svg{width:30px;height:30px;display:block}.mkx{position:absolute;top:-6px;right:-6px;width:16px;height:16px;padding:0;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--red);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}body.blur .mkc svg{filter:blur(4px)}
+.zap{position:static;flex:none;width:20px;height:20px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}.item.cz b{padding-left:var(--pl)}.zap:hover{background:#1ebe5b}
+.item.on{border-color:var(--ouro);background:var(--sel);border-left:4px solid var(--ouro)}
+.marca{position:relative;min-height:420px}.marca::before{content:'';position:absolute;inset:0;background:url(perfis/andrelocatelli/logo.png) center/auto 70% no-repeat;opacity:.10;pointer-events:none}
+.vazio{color:var(--mut);text-align:center;padding:26px 10px;font-size:13px}
+/* tela de senha */
+.trava{max-width:440px;margin:60px auto}
+.aviso{background:var(--warn);border:1px solid var(--warnbd);border-radius:8px;padding:9px 11px;font-size:13px;margin:10px 0}
+.erro{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
+/* gov */
+.gov{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center}
+.gov .k{font-size:12px;color:var(--mut)}.gov .v{font-family:ui-monospace,Consolas,monospace;font-size:15px;word-break:break-all}
+/* arquivos */
+.arq{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bd)}.arq:first-of-type{border-top:0}
+.arq .ic{width:28px;height:28px;flex:none}.arq .t{flex:1;min-width:0}.arq .t b{display:block;overflow-wrap:anywhere;font-weight:600}.arq .t span{font-size:12px;color:var(--mut)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:var(--sel);border:1px solid var(--ouro);color:var(--ouro2);margin-right:5px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:9}.toast.on{opacity:1}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 14px;align-items:start}.duo .card{min-width:0}@media(max-width:1000px){.duo{grid-template-columns:1fr}}
+.tlh{display:flex;flex-wrap:wrap;gap:10px 18px}
+.tl{position:relative;background:var(--sel);border:1px solid var(--ouro);border-radius:10px;padding:7px 26px 7px 11px;font-size:13px;line-height:1.25}.tl b{display:block;font-weight:600;color:var(--ouro2)}.tl small{color:var(--mut);font-size:11px}
+.tl:not(:last-child)::after{content:'›';position:absolute;right:-14px;top:50%;transform:translateY(-52%);color:var(--mut);font-size:18px}
+.tl.atual{background:var(--ouro);border-color:var(--ouro)}.tl.atual b,.tl.atual small{color:#fff}
+.tl .x{position:absolute;top:2px;right:2px;background:none;border:0;color:var(--mut);padding:0 6px;font-size:16px;line-height:1.2;font-weight:400}.tl.atual .x{color:#fff}
+.cats{display:flex;flex-wrap:wrap;gap:6px}.cat{background:var(--card);color:var(--ouro2);border:1px solid var(--bd);border-radius:16px;padding:5px 11px;font-size:12.5px;font-weight:500}.cat:hover{border-color:var(--ouro);background:var(--sel)}
+.hist{border-top:1px solid var(--bd);padding:8px 0;font-size:13px}.hist:first-of-type{border-top:0}.hist .quando{color:var(--mut);font-size:12px}
+.rod{margin:6px 0 30px;font-size:12px;color:var(--mut)}
+.tot{font-size:30px;font-weight:700;color:var(--ouro2);margin:4px 0}.nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:700}.nav span{flex:1;text-align:center;font-size:15px}
+table.ent{width:100%;border-collapse:collapse;font-size:13px}table.ent td,table.ent th{padding:6px 8px;border-top:1px solid var(--bd);text-align:left}table.ent th{color:var(--mut);font-size:12px;border-top:0}table.ent td.v,table.ent th.v{text-align:right;white-space:nowrap}
+.bar{height:10px;background:var(--ouro);border-radius:5px;min-width:2px}.mes6{display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:center;padding:3px 0;font-size:13px;cursor:pointer}.mes6.on{font-weight:700}
+body.blur .sens{filter:blur(7px);user-select:none;-webkit-user-select:none}
+.dia{font-weight:700;color:var(--ouro2);margin:16px 0 6px;font-size:14px}.dia:first-child{margin-top:0}.cl{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--bd);align-items:flex-start}.dia+.cl{border-top:0}.tg{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--sel);border:1px solid var(--bd);color:var(--ouro2);white-space:nowrap;margin-top:1px}
+.fl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.fl button{all:unset;cursor:pointer;font-size:12.5px;padding:4px 11px;border:1px solid var(--bd);border-radius:16px;background:var(--card)}.fl button.on{border-color:var(--ouro2);background:var(--sel);font-weight:700}
+</style></head><body>
+<header>
+ <img src="perfis/andrelocatelli/logo.png" alt="">
+ <div><h1>Changelog</h1><small>André Locatelli — Advocacia · melhorias implementadas</small></div>
+ <span class="esp"></span>
+ <a class="vt" href="index.html">← Início</a>
+</header>
+<main>
+ <div class="card"><h2>Melhorias por data</h2>
+  <div class="fl" id="fl"></div>
+  <div id="lista"></div>
+ </div>
+ <p class="rod">Para conferir se o site já está atualizado: Ctrl+F5 e o selo de versão no rodapé do gerador.</p>
+</main>
+<script>
+const CL=[
+ {
+  "d": "2026-11-27",
+  "h": "09:00",
+  "t": "Clientes",
+  "x": "Filtro por marcador: ícones acima da lista filtram os clientes por categoria (gestante, idoso, PCD, autismo, Receita, Rural), além da busca por nome."
+ },
+ {
+  "d": "2026-11-27",
+  "h": "09:00",
+  "t": "Clientes",
+  "x": "Novo card “Agendar lembrete” (abaixo do acesso gov.br): texto + data para perícia, visita etc. Aparece marcado no calendário e no popup de avisos, com “feito”."
+ },
+ {
+  "d": "2026-11-27",
+  "h": "09:00",
+  "t": "Avisos",
+  "x": "Caixinha “não mostrar novamente” no popup quando o parto já ocorreu."
+ },
+ {
+  "d": "2026-11-27",
+  "h": "09:00",
+  "t": "Sistema",
+  "x": "Nova página Changelog na página inicial."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "13:00",
+  "t": "Financeiro",
+  "x": "Nova aba Financeiro: entradas cadastradas no mês, lista de pagamentos, navegação por mês e últimos 6 meses."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "12:10",
+  "t": "Avisos",
+  "x": "Lembrete 30 dias antes do parto: conferir qualidade de segurada e decidir o pedido (permitido 28 dias antes). Avisos em popup, fora do calendário."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "10:00",
+  "t": "Clientes",
+  "x": "Calendário abaixo da lista com a contagem de partos previstos por dia (DPP), notificação do navegador e arquivo .ics para a agenda do celular."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "05:40",
+  "t": "Nuvem",
+  "x": "Sincronização trocada do Firebase para o Supabase (projeto separado “locatelli-clientes”), com login e-mail + senha da nuvem, criptografia ponta a ponta."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "05:20",
+  "t": "Clientes",
+  "x": "Serviços contratados: edição recolhida (botão Editar); “−” só aparece aberto; honorários sempre visíveis."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "05:00",
+  "t": "Clientes",
+  "x": "Lista de clientes mais larga e só com nome + andamento."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "04:40",
+  "t": "Clientes",
+  "x": "Um botão “Abrir Meu INSS”: com a extensão do Chrome entra sozinho no gov.br; sem ela só abre e copia o CPF."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "04:00",
+  "t": "Clientes",
+  "x": "Extensão do Chrome “entrar no gov.br” (preenche CPF e senha; captcha/2FA continuam manuais)."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "03:00",
+  "t": "Clientes",
+  "x": "Marcadores com ícone só (gestante em rosa bebê, idoso, PCD, autismo, Receita Federal, Rural) ao lado do WhatsApp, escolhidos numa lista."
+ },
+ {
+  "d": "2026-11-26",
+  "h": "01:00",
+  "t": "Contratos",
+  "x": "Contrato PREV incapaz: sem quebra de página forçada; fecho, data e assinaturas só vão juntos se não couberem."
+ },
+ {
+  "d": "2026-11-25",
+  "h": "22:00",
+  "t": "OCR",
+  "x": "Comprovante de endereço: cidade antes do CEP, Saneago, Equatorial com ruído e completar cidade/UF pelo CEP (ViaCEP)."
+ },
+ {
+  "d": "2026-11-25",
+  "h": "17:50",
+  "t": "OCR",
+  "x": "CNH: lê o CPF mesmo com RG já lido e em foto com fundo escuro; verso do RG não é confundido com certidão."
+ },
+ {
+  "d": "2026-11-25",
+  "h": "17:40",
+  "t": "Gerador",
+  "x": "Contrato de incapaz: o campo do beneficiário aceita certidão de nascimento, identidade ou CNH."
+ },
+ {
+  "d": "2026-11-24",
+  "h": "21:00",
+  "t": "Clientes",
+  "x": "Olho para embaçar/mostrar dados sensíveis; o nome na lista não é embaçado."
+ },
+ {
+  "d": "2026-11-23",
+  "h": "21:30",
+  "t": "Clientes",
+  "x": "Ícone verde do WhatsApp na lista, antes do nome."
+ },
+ {
+  "d": "2026-11-23",
+  "h": "16:50",
+  "t": "Clientes",
+  "x": "Tela inicial só com a logo apagada; apagar definitivamente clientes excluídos (arquivos, histórico e nuvem)."
+ },
+ {
+  "d": "2026-11-23",
+  "h": "01:00",
+  "t": "Clientes",
+  "x": "Honorários com pagamentos e saldo; OCR de CNH mais robusto."
+ },
+ {
+  "d": "2026-11-23",
+  "h": "00:30",
+  "t": "Clientes",
+  "x": "Andamento como linha do tempo adicionável; histórico de alterações com restauração; exclusão restaurável; Benefícios vira Serviços contratados."
+ },
+ {
+  "d": "2026-11-23",
+  "h": "00:18",
+  "t": "Clientes",
+  "x": "Cadastro em nome do(a) representado(a), com representante legal."
+ },
+ {
+  "d": "2026-11-22",
+  "h": "23:42",
+  "t": "Clientes",
+  "x": "Aba Clientes: cofre local criptografado, senha gov.br, arquivos salvos e oferta de salvar o cliente ao gerar contrato."
+ },
+ {
+  "d": "2026-11-21",
+  "h": "14:43",
+  "t": "Contratos",
+  "x": "Novo contrato “PREV incapaz | 50% - 5k” (mãe representa o filho) e leitura da certidão de nascimento."
+ },
+ {
+  "d": "2026-11-20",
+  "h": "23:00",
+  "t": "Contratos",
+  "x": "Contrato genérico previdenciário (30%) e opção Salário-Maternidade Rural (DPP / já nascida), com WhatsApp."
+ },
+ {
+  "d": "2026-11-16",
+  "h": "01:17",
+  "t": "Documentos",
+  "x": "Baixar PDF direto (com logo) em todos os documentos; layout da procuração/declaração igual ao modelo; concordância de gênero automática pelo nome."
+ },
+ {
+  "d": "2026-11-16",
+  "h": "00:30",
+  "t": "Contratos",
+  "x": "Contrato previdenciário com um único contratado, assinatura do cliente simplificada e títulos padronizados."
+ },
+ {
+  "d": "2026-11-16",
+  "h": "10:55",
+  "t": "OCR",
+  "x": "Lê a nova Carteira de Identidade Nacional (RG = CPF)."
+ }
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let f='';
+function desenha(){
+  const tags=[...new Set(CL.map(x=>x.t))];
+  document.getElementById('fl').innerHTML=['Todos',...tags].map(t=>`<button class="${(t==='Todos'&&!f)||t===f?'on':''}" data-t="${t==='Todos'?'':esc(t)}">${esc(t)}</button>`).join('');
+  document.querySelectorAll('#fl button').forEach(b=>b.onclick=()=>{f=b.dataset.t;desenha()});
+  const L=CL.filter(x=>!f||x.t===f).sort((a,b)=>(b.d+b.h)<(a.d+a.h)?-1:1);let ult='',h='';
+  for(const x of L){if(x.d!==ult){ult=x.d;h+=`<div class="dia">${x.d.split('-').reverse().join('/')}</div>`}
+    h+=`<div class="cl"><span class="tg">${esc(x.t)}</span><span>${esc(x.x)}</span></div>`}
+  document.getElementById('lista').innerHTML=h||'<div class="vazio">Nada aqui.</div>';
+}
+desenha();
+</script>
+</body></html>

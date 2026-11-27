@@ -12,7 +12,7 @@ const fmtTam=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)};
 const copia=async(txt,rot)=>{try{await navigator.clipboard.writeText(txt);toast(rot+' copiado')}catch(e){toast('Não consegui copiar — selecione e copie manualmente')}};
 
-let clientes=[],sel=null,mostraSenha=false,verExcl=false,histAberto=false,andAberto=false,srvAberto=false;
+let fMk=new Set(),clientes=[],sel=null,mostraSenha=false,verExcl=false,histAberto=false,andAberto=false,srvAberto=false;
 const visiveis=()=>clientes.filter(c=>!c.excluido);
 
 /* ---------- senha mestra ---------- */
@@ -87,7 +87,10 @@ const ZAP_SVG='<svg viewBox="0 0 24 24" width="14" height="14"><path fill="curre
 function lista(){
   const t=$('#busca').value.trim().toLowerCase(),d=t.replace(/\D/g,'');
   const base=clientes.filter(c=>verExcl?!!c.excluido:!c.excluido),nExcl=clientes.filter(c=>c.excluido).length;
-  const f=base.filter(c=>!t||(c.nome||'').toLowerCase().includes(t)||((c.rep&&c.rep.nome)||'').toLowerCase().includes(t)||(d&&(String(c.cpf||'')+String((c.rep&&c.rep.cpf)||'')).replace(/\D/g,'').includes(d)));
+  const disp=[...new Set(base.flatMap(c=>mkDe(c)))].filter(k=>MARCAS[k]);fMk.forEach(k=>{if(!disp.includes(k))fMk.delete(k)});
+  if($('#fMks')){$('#fMks').innerHTML=disp.length?disp.map(k=>`<button type="button" class="mkf${fMk.has(k)?' on':''}" data-fmk="${k}" title="Filtrar: ${esc(MARCAS[k].nome)}" aria-label="${esc(MARCAS[k].nome)}" aria-pressed="${fMk.has(k)}">${MARCAS[k].svg}</button>`).join('')+(fMk.size?'<button type="button" class="mkf lim" id="fMkLimpa" title="Limpar filtro">×</button>':''):'';
+    $('#fMks').querySelectorAll('[data-fmk]').forEach(b=>b.onclick=()=>{fMk.has(b.dataset.fmk)?fMk.delete(b.dataset.fmk):fMk.add(b.dataset.fmk);sel=null;lista();painel()});if($('#fMkLimpa'))$('#fMkLimpa').onclick=()=>{fMk.clear();sel=null;lista();painel()}}
+  const f=base.filter(c=>[...fMk].every(k=>mkDe(c).includes(k))).filter(c=>!t||(c.nome||'').toLowerCase().includes(t)||((c.rep&&c.rep.nome)||'').toLowerCase().includes(t)||(d&&(String(c.cpf||'')+String((c.rep&&c.rep.cpf)||'')).replace(/\D/g,'').includes(d)));
   $('#lista').innerHTML=(f.length?f.map(c=>`<div class="itemw"><button class="item ${c.id===sel?'on':''}${zapDe(c)||mkDe(c).length?' cz':''}" style="--pl:${(zapDe(c)?25:0)+mkDe(c).length*25+(zapDe(c)||mkDe(c).length?1:0)}px" data-id="${c.id}"><b>${esc(c.nome||'(sem nome)')}</b>${atualDe(c)?`<span style="display:block;color:var(--ouro2)">● ${esc(atualDe(c).e)}</span>`:''}</button>${zapDe(c)||mkDe(c).length?`<div class="mk">${zapDe(c)?`<a class="zap" href="https://wa.me/${zapDe(c)}" target="_blank" rel="noopener" title="Falar com ${c.repr?'o(a) representante':'este cliente'} no WhatsApp" aria-label="WhatsApp">${ZAP_SVG}</a>`:''}${mkDe(c).map(k=>`<span class="mki" title="${esc(MARCAS[k].nome)}">${MARCAS[k].svg}</span>`).join('')}</div>`:''}</div>`).join(''):`<div class="vazio">${base.length?'Nenhum cliente encontrado.':'Nenhum cliente ainda.<br>Eles entram aqui quando você gerar um contrato e escolher “Salvar cliente”, ou pelo botão “+ Novo”.'}</div>`)+(nExcl||verExcl?`<div style="margin-top:8px;font-size:12px"><a href="#" id="lnkExcl" style="color:var(--ouro2)">${verExcl?'← Voltar à lista':'Ver excluídos ('+nExcl+')'}</a></div>`:'');
   if($('#lnkExcl'))$('#lnkExcl').onclick=e=>{e.preventDefault();verExcl=!verExcl;sel=null;lista();painel()};
   $('#lista').querySelectorAll('.item').forEach(b=>b.onclick=()=>{sel=b.dataset.id;mostraSenha=false;srvAberto=false;lista();painel()});
@@ -103,20 +106,23 @@ const brDia=iso=>iso.split('-').reverse().join('/');
 const somaDias=(iso,k)=>{const[a,m,d]=iso.split('-').map(Number);return isoD(new Date(a,m-1,d+k))};
 /* lembrete: 30 dias antes do parto, conferir a qualidade de segurada e decidir se pede o salário-maternidade (permitido a partir de 28 dias antes) */
 function lembretes30(){return dppLista().map(c=>({c,n:diasAte(c.dpp)})).filter(x=>x.n>=0&&x.n<=30).sort((a,b)=>a.n-b.n)}
-function avisosDpp(){return dppLista().map(c=>({c,n:diasAte(c.dpp)})).filter(x=>x.n<=14&&x.n>=-30).sort((a,b)=>a.n-b.n)}
+function avisosDpp(){return dppLista().map(c=>({c,n:diasAte(c.dpp)})).filter(x=>x.n<=14&&x.n>=-30&&!(x.n<0&&x.c.dppVisto===x.c.dpp)).sort((a,b)=>a.n-b.n)}
+/* lembretes agendados por cliente (perícia, visita…): c.lembretes=[{id,t,d,ok}] */
+const lembAtivos=()=>{const o=[];clientes.filter(c=>!c.excluido).forEach(c=>(c.lembretes||[]).forEach(l=>{if(/^\d{4}-\d{2}-\d{2}$/.test(l.d||''))o.push({c,l})}));return o};
+const lembAvisos=()=>lembAtivos().filter(x=>!x.l.ok).map(x=>({...x,n:diasAte(x.l.d)})).filter(x=>x.n<=3&&x.n>=-7).sort((a,b)=>a.n-b.n);
 function calendario(){
   const E=$('#cal');if(!E)return;
-  const L=dppLista(),por={};L.forEach(c=>(por[c.dpp]=por[c.dpp]||[]).push(c));
+  const L=dppLista(),LM=lembAtivos().filter(x=>!x.l.ok),agd={};L.forEach(c=>(agd[c.dpp]=agd[c.dpp]||[]).push({c}));LM.forEach(x=>(agd[x.l.d]=agd[x.l.d]||[]).push(x));
   const av=avisosDpp(),y=calMes.getFullYear(),m=calMes.getMonth(),prim=new Date(y,m,1).getDay(),nd=new Date(y,m+1,0).getDate(),hj=isoD(new Date());
   const l30=lembretes30();
   const txt=n=>n===0?'<b>é HOJE</b>':n>0?'em '+n+(n===1?' dia':' dias'):'há '+(-n)+(n===-1?' dia':' dias');
-  let h=`<h2>Calendário · partos</h2>`;
+  let h=`<h2>Calendário</h2>`;
   h+=`<div class="calh"><button class="sec mini" id="calAnt" aria-label="Mês anterior">‹</button><span>${(t=>t.charAt(0).toUpperCase()+t.slice(1))(calMes.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}</span><button class="sec mini" id="calPro" aria-label="Próximo mês">›</button></div><div class="cal">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="dw">${x}</div>`).join('')}${'<div></div>'.repeat(prim)}`;
-  for(let d=1;d<=nd;d++){const iso=isoD(new Date(y,m,d)),q=(por[iso]||[]).length;
-    h+=`<button data-dia="${iso}" class="${q?'tem ':''}${iso===hj?'hj ':''}${iso===calDia?'sel':''}" title="${q?q+' parto(s) previsto(s)':''}">${d}${q?`<sup>${q}</sup>`:''}</button>`}
+  for(let d=1;d<=nd;d++){const iso=isoD(new Date(y,m,d)),q=(agd[iso]||[]).length;
+    h+=`<button data-dia="${iso}" class="${q?'tem ':''}${iso===hj?'hj ':''}${iso===calDia?'sel':''}" title="${q?q+' compromisso(s): parto previsto / lembretes':''}">${d}${q?`<sup>${q}</sup>`:''}</button>`}
   h+='</div>';
-  if(calDia&&por[calDia])h+=`<div style="margin-top:10px;font-size:13px"><b>${brDia(calDia)}</b>${por[calDia].map(c=>`<div><a data-calc="${c.id}" class="dppn" style="cursor:pointer;text-decoration:underline">${esc(c.nome||'(sem nome)')}</a></div>`).join('')}</div>`;
-  h+=`<div class="linha" style="margin-top:10px;gap:8px;flex-wrap:wrap">${L.length?'<button class="sec mini" id="calIcs" title="Baixa um arquivo para a agenda do celular, com lembrete 30 dias antes (qualidade de segurada) e alarme do parto 7 dias antes, 1 dia antes e no dia">📅 Levar para a agenda</button>':''}${(av.length||l30.length)?'<button class="sec mini" id="calAvs">🔔 Ver avisos</button>':''}${('Notification' in window&&Notification.permission==='default')?'<button class="sec mini" id="calNot">🔔 Ativar avisos</button>':''}</div>`;
+  if(calDia&&agd[calDia])h+=`<div style="margin-top:10px;font-size:13px"><b>${brDia(calDia)}</b>${agd[calDia].map(x=>`<div class="dppn">${x.l?esc(x.l.t)+' — ':'Parto previsto — '}<a data-calc="${x.c.id}" style="cursor:pointer;text-decoration:underline">${esc(x.c.nome||'(sem nome)')}</a></div>`).join('')}</div>`;
+  h+=`<div class="linha" style="margin-top:10px;gap:8px;flex-wrap:wrap">${(L.length||LM.length)?'<button class="sec mini" id="calIcs" title="Baixa um arquivo para a agenda do celular, com lembrete 30 dias antes (qualidade de segurada) e alarme do parto 7 dias antes, 1 dia antes e no dia">📅 Levar para a agenda</button>':''}${(av.length||l30.length||lembAvisos().length)?'<button class="sec mini" id="calAvs">🔔 Ver avisos</button>':''}${('Notification' in window&&Notification.permission==='default')?'<button class="sec mini" id="calNot">🔔 Ativar avisos</button>':''}</div>`;
   E.innerHTML=h;
   $('#calAnt').onclick=()=>{calMes=new Date(y,m-1,1);calendario()};$('#calPro').onclick=()=>{calMes=new Date(y,m+1,1);calendario()};
   E.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{calDia=calDia===b.dataset.dia?null:b.dataset.dia;calendario()});
@@ -130,25 +136,30 @@ function calendario(){
       return `BEGIN:VEVENT\r\nUID:dpp-${c.id}@locatelli\r\nDTSTAMP:${ts}\r\nDTSTART;VALUE=DATE:${d}\r\nDTEND;VALUE=DATE:${f}\r\nSUMMARY:Parto previsto - ${String(c.nome||'cliente').replace(/[,;\\\n]/g,' ')}\r\n${al('-P7D')}\r\n${al('-P1D')}\r\n${al('PT9H')}\r\nEND:VEVENT`}).join('\r\n');
     const ev30=L.map(c=>{const i=somaDias(c.dpp,-30),d=i.replace(/-/g,''),f=somaDias(c.dpp,-29).replace(/-/g,''),pd=brDia(somaDias(c.dpp,-28));
       return `BEGIN:VEVENT\r\nUID:dpp30-${c.id}@locatelli\r\nDTSTAMP:${ts}\r\nDTSTART;VALUE=DATE:${d}\r\nDTEND;VALUE=DATE:${f}\r\nSUMMARY:Conferir qualidade de segurada e decidir pedido - ${String(c.nome||'cliente').replace(/[,;\\\n]/g,' ')}\r\nDESCRIPTION:Parto previsto em ${brDia(c.dpp)}. Pedido do salario-maternidade permitido a partir de ${pd} (28 dias antes).\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Conferir qualidade de segurada\r\nTRIGGER:PT9H\r\nEND:VALARM\r\nEND:VEVENT`}).join('\r\n');
-    const b=new Blob(['BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Locatelli//DPP//PT\r\nCALSCALE:GREGORIAN\r\n'+ev+'\r\n'+ev30+'\r\nEND:VCALENDAR\r\n'],{type:'text/calendar'});
-    const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='partos-previstos.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Arquivo baixado: abra-o no celular para entrar na agenda')}
+    const evL=LM.map(x=>{const d=x.l.d.replace(/-/g,''),f=somaDias(x.l.d,1).replace(/-/g,''),cl=s=>String(s||'').replace(/[,;\\\n]/g,' ');
+      return `BEGIN:VEVENT\r\nUID:lem-${x.l.id}@locatelli\r\nDTSTAMP:${ts}\r\nDTSTART;VALUE=DATE:${d}\r\nDTEND;VALUE=DATE:${f}\r\nSUMMARY:${cl(x.l.t)} - ${cl(x.c.nome||'cliente')}\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Lembrete\r\nTRIGGER:-P1D\r\nEND:VALARM\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Lembrete\r\nTRIGGER:PT8H\r\nEND:VALARM\r\nEND:VEVENT`}).join('\r\n');
+    const b=new Blob(['BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Locatelli//DPP//PT\r\nCALSCALE:GREGORIAN\r\n'+[ev,ev30,evL].filter(Boolean).join('\r\n')+'\r\nEND:VCALENDAR\r\n'],{type:'text/calendar'});
+    const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='agenda-clientes.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Arquivo baixado: abra-o no celular para entrar na agenda')}
 }
 
 /* popup de avisos: abre uma vez por dia ao entrar (ou pelo botão "Ver avisos") */
 function popupDpp(forca){
-  const av=avisosDpp(),l30=lembretes30();if(!av.length&&!l30.length){if(forca)toast('Nenhum aviso de parto agora');return}
-  const hj=isoD(new Date()),sig=hj+'|'+av.map(x=>x.c.id).join(',')+'|'+l30.map(x=>x.c.id).join(',');
+  const av=avisosDpp(),l30=lembretes30(),la=lembAvisos();if(!av.length&&!l30.length&&!la.length){if(forca)toast('Nenhum aviso agora');return}
+  const hj=isoD(new Date()),sig=hj+'|'+av.map(x=>x.c.id).join(',')+'|'+l30.map(x=>x.c.id).join(',')+'|'+la.map(x=>x.l.id).join(',');
   if(!forca){try{if(localStorage.getItem('dpp.popup')===sig)return;localStorage.setItem('dpp.popup',sig)}catch(e){}}
   const t=n=>n===0?'<b>é HOJE</b>':n>0?'em '+n+(n===1?' dia':' dias'):'há '+(-n)+(n===-1?' dia':' dias');
   const nm=c=>`<a data-pc="${c.id}" style="cursor:pointer;text-decoration:underline;font-weight:700">${esc(c.nome||'(sem nome)')}</a>`;
   const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:flex;align-items:center;justify-content:center;padding:16px';
-  d.innerHTML=`<div style="background:var(--card,#fff);color:var(--tx,#222);border-radius:10px;padding:20px;width:100%;max-width:420px;max-height:85vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px">
-    <b style="font-size:16px">🔔 Avisos de parto</b>
-    ${av.length?`<div style="margin-top:12px"><b>Partos previstos</b>${av.map(x=>`<div style="padding:3px 0">${nm(x.c)} — ${brDia(x.c.dpp)} (${t(x.n)})</div>`).join('')}</div>`:''}
+  d.innerHTML=`<div style="background:var(--card,#fff);color:var(--tx,#222);border-radius:10px;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px">
+    <b style="font-size:16px">🔔 Avisos</b>
+    ${av.length?`<div style="margin-top:12px"><b>Partos previstos</b>${av.map(x=>`<div style="padding:3px 0">${nm(x.c)} — ${brDia(x.c.dpp)} (${t(x.n)})${x.n<0?`<label style="display:block;font-size:12px;color:var(--mut);cursor:pointer"><input type="checkbox" data-vis="${x.c.id}"> não mostrar novamente (o parto já ocorreu)</label>`:''}</div>`).join('')}</div>`:''}
     ${l30.length?`<div style="margin-top:12px"><b>Conferir a qualidade de segurada e decidir o pedido</b>${l30.map(x=>{const pd=somaDias(x.c.dpp,-28),ja=diasAte(pd)<=0;return `<div style="padding:3px 0">${nm(x.c)} — parto ${brDia(x.c.dpp)} (${t(x.n)}); ${ja?'já pode pedir desde ':'pode pedir a partir de '}${brDia(pd)}</div>`}).join('')}</div>`:''}
+    ${la.length?`<div style="margin-top:12px"><b>Agenda</b>${la.map(x=>`<div style="padding:3px 0">${esc(x.l.t)} — ${nm(x.c)} — ${brDia(x.l.d)} (${t(x.n)})<label style="display:block;font-size:12px;color:var(--mut);cursor:pointer"><input type="checkbox" data-feito="${x.l.id}"> feito (não avisar mais)</label></div>`).join('')}</div>`:''}
     <div style="text-align:right;margin-top:14px"><button id="pdOk">Ok</button></div></div>`;
   document.body.appendChild(d);d.querySelector('#pdOk').onclick=()=>d.remove();
   d.querySelectorAll('[data-pc]').forEach(a=>a.onclick=()=>{d.remove();sel=a.dataset.pc;mostraSenha=false;srvAberto=false;lista();painel()});
+  d.querySelectorAll('[data-vis]').forEach(k=>k.onchange=async()=>{const c=clientes.find(x=>x.id===k.dataset.vis);if(!c)return;if(k.checked)c.dppVisto=c.dpp;else delete c.dppVisto;await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();calendario()});
+  d.querySelectorAll('[data-feito]').forEach(k=>k.onchange=async()=>{const x=lembAtivos().find(y=>y.l.id===k.dataset.feito);if(!x)return;const c=clientes.find(z=>z.id===x.c.id),l=(c.lembretes||[]).find(z=>z.id===k.dataset.feito);if(!l)return;l.ok=k.checked;await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();calendario();if(sel===c.id)painel()});
 }
 /* notificação do navegador (só funciona com o site aberto): no máximo uma vez por dia por cliente */
 function notificaDpp(){
@@ -156,6 +167,7 @@ function notificaDpp(){
     const hj=isoD(new Date()),ja=JSON.parse(localStorage.getItem('dpp.avisado')||'{}');
     avisosDpp().filter(x=>x.n<=3&&x.n>=-7).forEach(x=>{const k=x.c.id+'|'+hj;if(ja[k])return;ja[k]=1;
       new Notification('Parto previsto '+(x.n===0?'HOJE':x.n>0?'em '+x.n+' dia(s)':'há '+(-x.n)+' dia(s)'),{body:'Cliente do cofre — abra os clientes para ver ('+brDia(x.c.dpp)+')'})});
+    lembAvisos().filter(x=>x.n<=1).forEach(x=>{const k='L'+x.l.id+'|'+hj;if(ja[k])return;ja[k]=1;new Notification(x.n<=0?'Lembrete de hoje':'Lembrete para amanhã',{body:x.l.t+' — abra os clientes ('+brDia(x.l.d)+')'})});
     const l3=JSON.parse(localStorage.getItem('dpp.l30')||'{}');
     lembretes30().forEach(x=>{const k=x.c.id+'|'+x.c.dpp;if(l3[k])return;l3[k]=1;new Notification('Conferir qualidade de segurada',{body:'Parto previsto em '+brDia(x.c.dpp)+' ('+x.n+' dias). Pedido permitido a partir de '+brDia(somaDias(x.c.dpp,-28))+'. Abra os clientes.'})});localStorage.setItem('dpp.l30',JSON.stringify(l3));
     const r={};Object.keys(ja).filter(k=>k.endsWith('|'+hj)).forEach(k=>r[k]=1);localStorage.setItem('dpp.avisado',JSON.stringify(r))}catch(e){}}
@@ -206,7 +218,7 @@ async function painel(){
     </div>`})()}
   </div>
 
-  <div class="card"><h2>Acesso gov.br / Meu INSS</h2>
+  <div><div class="card"><h2>Acesso gov.br / Meu INSS</h2>
     <div class="gov">
       <span class="k">Login</span><span class="v">${esc(fmtCpf(c.cpf))||'<i>informe o CPF acima</i>'}</span><button class="sec mini" id="bCopLogin" ${c.cpf?'':'disabled'}>Copiar</button>
       <span class="k">Senha</span><span class="v">${c.govSenha?(mostraSenha?esc(c.govSenha):'••••••••••'):'<i style="color:var(--mut)">não cadastrada</i>'}</span>
@@ -216,6 +228,11 @@ async function painel(){
     <div class="linha" style="margin-top:10px"><input type="password" id="novaSenha" placeholder="${c.govSenha?'Nova senha (substitui a atual)':'Digite a senha do gov.br'}" style="flex:1;min-width:200px" autocomplete="off"><button class="sec" id="bSenha">${c.govSenha?'Alterar':'Guardar'}</button>${c.govSenha?'<button class="perigo mini" id="bApagaSenha">Apagar senha</button>':''}</div>
     <div class="aviso" style="margin-bottom:0">A senha fica criptografada junto com os demais dados (cofre protegido pela sua senha mestra).</div>
   </div>
+  <div class="card" style="margin-top:14px"><h2>Agendar lembrete</h2>
+    ${(()=>{const Ls=[...(c.lembretes||[])].sort((a,b)=>(a.d||'')<(b.d||'')?-1:1);return Ls.length?Ls.map(l=>{const n=/^\d{4}-\d{2}-\d{2}$/.test(l.d||'')?diasAte(l.d):null,atras=!l.ok&&n!==null&&n<0;return `<div class="arq"><div class="t"><b style="${l.ok?'text-decoration:line-through;color:var(--mut)':''}">${esc(l.t)}</b><span style="${atras?'color:var(--red)':''}">${l.d?brDia(l.d):''}${n===0&&!l.ok?' · hoje':atras?' · atrasado':''}</span></div><label style="font-size:12px;white-space:nowrap;cursor:pointer"><input type="checkbox" data-lemok="${l.id}" ${l.ok?'checked':''}> feito</label><button class="perigo mini" data-lemx="${l.id}" title="Remover">−</button></div>`}).join(''):'<div class="vazio" style="padding:8px">Nenhum lembrete.</div>'})()}
+    <div class="linha" style="margin-top:8px"><input type="text" id="lemTxt" placeholder="O que lembrar (ex.: perícia médica, visita…)" style="flex:2 1 180px;min-width:0"><input type="date" id="lemData" style="flex:1 1 130px;min-width:0"><button class="mini" id="bLemAdd" title="Agendar">+</button></div>
+    <div style="font-size:12px;color:var(--mut);margin-top:6px">Aparece marcado no calendário (junto com os partos) e no popup de avisos.</div>
+  </div></div>
   </div>
 
   <div class="card"><h2>Andamento <span class="esp"></span></h2>
@@ -267,6 +284,10 @@ async function painel(){
   $('#bOutroAnd').onclick=()=>addAnd($('#outroAnd').value);$('#outroAnd').onkeydown=e=>{if(e.key==='Enter')addAnd(e.target.value)};
   P.querySelectorAll('[data-andx]').forEach(b=>b.onclick=async()=>{dados();c.andamento.splice(+b.dataset.andx,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
   $('#bGovAbre').onclick=()=>{const cpf=String(c.cpf).replace(/\D/g,'');if(document.documentElement.dataset.locGovbr==='1'&&c.govSenha){window.postMessage({loc:'govbr-entrar',cpf,senha:c.govSenha,alvo:'inss'},location.origin);toast('Abrindo o Meu INSS e preenchendo…')}else{window.open('https://meu.inss.gov.br/','_blank','noopener');copia(cpf,'CPF (cole no login; a senha está no botão Copiar)')}};
+  $('#bLemAdd').onclick=async()=>{const t=$('#lemTxt').value.trim(),d=$('#lemData').value;if(!t)return toast('Escreva o lembrete');if(!d)return toast('Escolha a data');dados();(c.lembretes=c.lembretes||[]).push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),t,d});await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();lista();painel();toast('Lembrete agendado')};
+  $('#lemTxt').onkeydown=e=>{if(e.key==='Enter')$('#bLemAdd').click()};
+  P.querySelectorAll('[data-lemok]').forEach(k=>k.onchange=async()=>{dados();const l=(c.lembretes||[]).find(z=>z.id===k.dataset.lemok);if(l){l.ok=k.checked;await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();lista();painel()}});
+  P.querySelectorAll('[data-lemx]').forEach(b=>b.onclick=async()=>{if(!confirm('Remover este lembrete?'))return;dados();c.lembretes=(c.lembretes||[]).filter(z=>z.id!==b.dataset.lemx);await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();lista();painel()});
   $('#bCopLogin').onclick=()=>copia(String(c.cpf).replace(/\D/g,''),'Login');
   if($('#bVer'))$('#bVer').onclick=()=>{mostraSenha=!mostraSenha;painel()};
   if($('#bCopSenha'))$('#bCopSenha').onclick=()=>copia(c.govSenha,'Senha');
