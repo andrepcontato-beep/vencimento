@@ -24,18 +24,20 @@ footer{margin-top:34px;font-size:12px;color:var(--mut)}
 <img class="logo" src="perfis/andrelocatelli/logo.png" alt="André Locatelli">
 <div class="assin"><div class="n">ANDRÉ LOCATELLI</div><div class="a">ADVOGADO</div></div>
 <nav>
+ <button class="b" id="bc" aria-expanded="false">Modelos<small>procuração · hipossuficiência · contratos ▾</small></button>
  <a class="b" href="pecas.html">Identidade visual<small>peças / petições</small></a>
- <a class="b" href="gerador.html?doc=procuracao">Procurações<small>leitura de RG/CNH e comprovante</small></a>
- <a class="b" href="gerador.html?doc=hipossuficiencia">Hipossuficiência<small>declaração</small></a>
- <button class="b" id="bc" aria-expanded="false">Contratos<small>escolher modelo ▾</small></button>
  <div id="sub">
+  <a class="b" href="gerador.html?doc=procuracao">Procuração<small>leitura de RG/CNH e comprovante</small></a>
+  <a class="b" href="gerador.html?doc=hipossuficiencia">Declaração de hipossuficiência</a>
   <a class="b" href="gerador.html?doc=salario-maternidade">Contrato salário-maternidade</a>
   <a class="b" href="gerador.html?doc=previdenciario">Contrato serviços previdenciários<small>50% / mínimo R$ 5 mil</small></a>
   <a class="b" href="gerador.html?doc=previdenciario-generico">Contrato genérico previdenciário<small>30% / sem mínimo</small></a>
   <a class="b" href="gerador.html?doc=previdenciario-incapaz">Contrato PREV incapaz<small>50% / mínimo R$ 5 mil · mãe representa o(a) filho(a)</small></a>
  </div>
+ <a class="b" href="clientes.html">Clientes<small>lista · senha gov.br · arquivos salvos</small></a>
+ <a class="b" href="financeiro.html">Financeiro<small>entradas cadastradas no mês</small></a>
+ <a class="b" href="changelog.html" style="grid-column:1/-1">Changelog<small>data e melhorias implementadas</small></a>
 </nav>
-<nav style="margin-top:12px"><a class="b" href="clientes.html">Clientes<small>lista · senha gov.br · arquivos salvos</small></a><a class="b" href="financeiro.html">Financeiro<small>entradas cadastradas no mês</small></a><a class="b" href="changelog.html" style="grid-column:1/-1">Changelog<small>data e melhorias implementadas</small></a></nav>
 <footer>OAB/GO 73.211 · Piracanjuba/GO</footer>
 <script>const bc=document.getElementById('bc'),s=document.getElementById('sub');bc.onclick=()=>{const o=s.classList.toggle('on');bc.setAttribute('aria-expanded',o)}</script>
 </body></html>
