@@ -26,7 +26,7 @@ const decifraJSON=async r=>JSON.parse(dec.decode(await decifra(r)));
 async function lembra(){const raw=await crypto.subtle.exportKey('raw',chave);try{sessionStorage.setItem(SK,b64(raw))}catch(e){}}
 
 /* ----- histórico de alterações: resumo legível do que mudou ----- */
-const ROT={dpp:'Data provável do parto',nome:'Nome',cpf:'CPF',rg:'RG',tel:'Telefone',nac:'Nacionalidade',ec:'Estado civil',prof:'Profissão',sexo:'Sexo',end:'Endereço',cep:'CEP',cid:'Cidade/UF',nasc:'Nascimento',cond:'Condição',notas:'Observações'};
+const ROT={origem:'Origem',dpp:'Data provável do parto',nome:'Nome',cpf:'CPF',rg:'RG',tel:'Telefone',nac:'Nacionalidade',ec:'Estado civil',prof:'Profissão',sexo:'Sexo',end:'Endereço',cep:'CEP',cid:'Cidade/UF',nasc:'Nascimento',cond:'Condição',notas:'Observações'};
 const vz=v=>{v=v==null?'':String(v);return v.length>70?v.slice(0,70)+'…':(v||'—')};
 function diff(a,b){
   const r=[],g=(o,k)=>{const v=o&&o[k];return v==null?'':String(v)};
@@ -70,8 +70,11 @@ const COFRE={
   bloquear(){chave=null;try{sessionStorage.removeItem(SK)}catch(e){}},
 
   /* ----- clientes ----- */
-  async listar(){const r=await todos('clientes'),o=[];for(const x of r){if(x.apagado)continue;try{o.push(await decifraJSON(x))}catch(e){}}
+  async listar(){const r=await todos('clientes'),o=[];for(const x of r){if(x.apagado||String(x.id).startsWith('sys-'))continue;try{o.push(await decifraJSON(x))}catch(e){}}
     return o.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'))},
+  /* entradas financeiras avulsas (não ligadas a cliente): registro especial 'sys-avulsos' (sincroniza e entra no backup junto com os clientes) */
+  async avulsos(){const x=await get('clientes','sys-avulsos');if(!x||x.apagado)return[];try{return(await decifraJSON(x)).itens||[]}catch(e){return[]}},
+  async salvarAvulsos(itens){await put('clientes',{id:'sys-avulsos',u:Date.now(),...await cifraJSON({id:'sys-avulsos',itens})});avisa()},
   async obter(id){const x=await get('clientes',id);return x?decifraJSON(x):null},
   async salvar(c,o){o=o||{};if(!c.id)c.id=uid();
     const prev=await COFRE.obter(c.id);c.atualizado=Date.now();if(!c.criado)c.criado=c.atualizado;

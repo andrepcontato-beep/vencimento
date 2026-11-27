@@ -72,6 +72,7 @@ async function entra(){
     const r={};['nome','cpf','rg','tel','nac','ec','prof','sexo','end','cep','cid'].forEach(k=>{if(c[k])r[k]=c[k];delete c[k]});
     Object.assign(c,{repr:true,rep:r,nome:c.fnome||'',cpf:c.fcpf||'',nasc:c.fnasc||'',sexo:c.fsexo||'',cond:c.fcond||'menor'});['fnome','fcpf','fnasc','fsexo','fcond'].forEach(k=>delete c[k]);await COFRE.salvar(c,{semHistorico:true})}}
   for(const c of clientes){if(c.etapa!==undefined){if(c.etapa&&!(c.andamento||[]).length)c.andamento=[{e:c.etapa,t:c.atualizado||Date.now()}];delete c.etapa;delete c.fluxo;await COFRE.salvar(c,{semHistorico:true})}}
+  for(const c of clientes){let mud=false;(c.andamento||[]).forEach(x=>{const pd=padronizaAnd(x.e);if(pd.mapped&&pd.e!==x.e){x.e=pd.e;mud=true}});if(mud)await COFRE.salvar(c,{semHistorico:true})}
   clientes=await COFRE.listar();
   const q=new URLSearchParams(location.search).get('id');
   sel=q&&clientes.find(c=>c.id===q)?q:null;
@@ -176,7 +177,25 @@ $('#busca').oninput=lista;
 /* ---------- painel do cliente ---------- */
 const CAMPOS=[['nome','Nome completo'],['cpf','CPF (é o login do gov.br)'],['rg','RG nº (+ órgão)'],['tel','Telefone / WhatsApp'],['nac','Nacionalidade'],['ec','Estado civil'],['prof','Profissão'],['sexo','Sexo'],['end','Endereço'],['cep','CEP'],['cid','Cidade/UF']];
 /* andamentos possíveis (nem sempre acontecem em ordem: você adiciona conforme vão ocorrendo; dá para repetir e digitar outros) */
-const ANDAMENTOS=['Assinar contrato','Contrato assinado','Refazer senha','Atualizar dados cadastrais','Aguardando atualização cadastral','Aguardando docs do cliente','Aguardando agendamento médico','Aguardando laudo médico','Aguardando protocolar','Protocolado','Aguardando perícia','Entrar em contato com o cliente'];
+const ETAPAS=[['Contrato',['Assinar contrato','Contrato assinado']],['Documentos',['Aguardando docs do cliente','Documentos recebidos','Atualizar dados cadastrais','Aguardando atualização cadastral','Refazer senha']],['Protocolo',['Aguardando protocolar','Protocolado','Cumprimento de exigência','Aguardando análise do INSS']],['Perícia',['Aguardando agendamento médico','Perícia agendada','Aguardando perícia','Aguardando laudo médico']],['Decisão',['Deferido','Indeferido','Recurso protocolado','Aguardando recurso']],['Outros',['Entrar em contato com o cliente','Benefício implantado','Arquivado']]];
+const ANDAMENTOS=ETAPAS.flatMap(x=>x[1]);
+const ORIGENS=['Orgânico','Indicação','Escritório','Captação'];   /* lista fácil de parametrizar no futuro */
+const DOCS_PADRAO=['RG / CNH','CPF','Comprovante de endereço','Procuração assinada','Contrato assinado','Declaração de hipossuficiência','CNIS','Certidão de nascimento','Laudo / atestado médico','Documentos rurais (prova material)'];
+/* padroniza o texto digitado para o andamento padrão mais próximo (sem acento/maiúscula; sinônimos). Se não reconhecer, mantém o texto. */
+const semAc=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+const SINON=[[/^(assinar|colher assinatura|enviar contrato)|contrato.*(para|pra) assinar|falta assinar/,'Assinar contrato'],[/contrato.*(assinad|firmad)|assinou.*contrato/,'Contrato assinado'],
+ [/refaz.*senha|redefin.*senha|nova senha|recuperar senha|senha gov/,'Refazer senha'],[/aguard.*atualiz.*cadastr|atualiz.*cadastr.*aguard/,'Aguardando atualização cadastral'],[/atualiz.*(cadastr|dados)/,'Atualizar dados cadastrais'],
+ [/aguard.*(doc|document)|falta.*(doc|document)|pendente.*(doc|document)/,'Aguardando docs do cliente'],[/(doc|document).*(receb|entreg|ok)/,'Documentos recebidos'],
+ [/aguard.*laudo|laudo.*aguard/,'Aguardando laudo médico'],[/aguard.*agend|agendar.*(pericia|medic)|marcar.*(pericia|medic)/,'Aguardando agendamento médico'],
+ [/(pericia|consulta|medic).*(agendad|marcad)|agendou.*(pericia|medic)/,'Perícia agendada'],[/aguard.*pericia|pericia.*aguard/,'Aguardando perícia'],
+ [/aguard.*protoc|falta protoc|para protocolar/,'Aguardando protocolar'],[/exigencia/,'Cumprimento de exigência'],
+ [/aguard.*(analise|inss|resposta|resultado|decisao)/,'Aguardando análise do INSS'],[/recurso.*(protoc|interpost|apresent)|recorreu/,'Recurso protocolado'],[/aguard.*recurso/,'Aguardando recurso'],
+ [/protocolad|protocolou|deu entrada/,'Protocolado'],[/indeferid|negad|nao concedid/,'Indeferido'],[/deferid|aprovad|concedid/,'Deferido'],
+ [/implantad|pagamento liberad|beneficio liberad|comecou a receber/,'Benefício implantado'],[/arquiv|encerrad|concluid|finalizad/,'Arquivado'],[/contato|ligar|retornar|falar com/,'Entrar em contato com o cliente']];
+function padronizaAnd(txt){const o=String(txt||'').trim(),n=semAc(o);if(!n)return{e:'',mapped:false};
+  const ex=ANDAMENTOS.find(x=>semAc(x)===n);if(ex)return{e:ex,mapped:true};
+  for(const [re,v] of SINON)if(re.test(n))return{e:v,mapped:true};
+  return{e:o.charAt(0).toUpperCase()+o.slice(1),mapped:false}}
 const atualDe=c=>{const a=c.andamento||[];return a.length?a[a.length-1]:null};
 const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const numBR=t=>{t=String(t||'').replace(/[R$\s]/g,'');if(!t)return NaN;if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');return Number(t)};
@@ -238,15 +257,37 @@ async function painel(){
   <div class="card"><h2>Andamento <span class="esp"></span></h2>
     ${(()=>{const A=c.andamento||[];return A.length?`<div class="tlh">${A.map((x,i)=>`<div class="tl ${i===A.length-1?'atual':''}"><b>${esc(x.e)}</b><small>${i===A.length-1?'atual · ':''}${new Date(x.t).toLocaleDateString('pt-BR')}</small><button class="x" data-andx="${i}" title="Remover este andamento">×</button></div>`).join('')}</div>`:'<div class="vazio" style="padding:8px">Nenhum andamento registrado.</div>'})()}
     <details id="detAnd" ${andAberto?'open':''} style="margin-top:12px"><summary style="cursor:pointer;color:var(--ouro2);font-weight:600;font-size:13px">Adicionar andamento (na ordem em que acontecer)</summary>
-    <div class="cats" style="margin-top:8px">${ANDAMENTOS.map(n=>`<button class="cat" data-andadd="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>
-    <div class="linha" style="margin-top:8px"><input type="text" id="outroAnd" placeholder="Outro andamento (digitar)…" style="flex:1;min-width:200px"><button class="mini" id="bOutroAnd">+</button></div>
+    ${ETAPAS.map(([g,L])=>`<div style="margin-top:8px"><small style="color:var(--mut);font-weight:700">${g}</small><div class="cats" style="margin-top:3px">${L.map(n=>`<button class="cat" data-andadd="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div></div>`).join('')}
+    <div class="linha" style="margin-top:8px"><input type="text" id="outroAnd" placeholder="Outro andamento (digitar — é padronizado automaticamente)…" style="flex:1;min-width:200px"><button class="mini" id="bOutroAnd">+</button></div>
     </details>
+  </div>
+
+  <div class="card"><h2>Linha do tempo <span class="esp"></span></h2>
+    ${(()=>{const T=[];
+      const tD=d=>d===hoje()?Date.now()-1:new Date(d+'T12:00:00').getTime();
+      (c.andamento||[]).forEach(x=>T.push({t:x.t,i:'📌',x:x.e}));
+      ((c.honorarios&&c.honorarios.pagamentos)||[]).forEach(x=>{if(x.d)T.push({t:tD(x.d),i:'💰',x:'Pagamento recebido: '+brl(x.v)+(x.o?' ('+x.o+')':'')})});
+      (c.lembretes||[]).forEach(l=>{if(l.d)T.push({t:tD(l.d),i:l.ok?'✅':'🗓',x:l.t+(l.ok?' (feito)':'')})});
+      if(c.dpp)T.push({t:tD(c.dpp),i:'🤰',x:'Parto previsto'});
+      (c.tlNotas||[]).forEach(n=>T.push({t:tD(n.d||hoje()),i:'📝',x:n.t,nid:n.id}));
+      arqs.forEach(a=>T.push({t:a.data,i:'📎',x:'Arquivo: '+a.nome}));
+      if(c.criado)T.push({t:c.criado,i:'👤',x:'Cadastro criado'});
+      T.sort((a,b)=>b.t-a.t);const ag=Date.now();
+      return T.length?`<div class="tlh">${T.slice(0,60).map(x=>`<div class="tl"><b>${x.i} ${esc(x.x)}</b><small>${new Date(x.t).toLocaleDateString('pt-BR')}${x.t>ag+43200000?' · agendado':''}</small>${x.nid?`<button class="x" data-tlx="${x.nid}" title="Remover anotação">×</button>`:''}</div>`).join('')}</div>`:'<div class="vazio" style="padding:8px">Nada ainda.</div>'})()}
+    <div class="linha" style="margin-top:10px"><input type="text" id="tlTxt" placeholder="Anotar na linha do tempo (ligação, visita, observação…)" style="flex:2 1 200px;min-width:0"><input type="date" id="tlData" value="${hoje()}" style="flex:1 1 130px;min-width:0"><button class="mini" id="bTlAdd" title="Adicionar anotação">+</button></div>
+  </div>
+
+  <div class="card"><h2>Checklist de documentos <span class="esp"></span><span style="font-weight:400;color:var(--mut);text-transform:none;letter-spacing:0">${(()=>{const D=c.docs||[];return D.length?D.filter(x=>x.ok).length+' de '+D.length:''})()}</span></h2>
+    ${(()=>{const D=c.docs||[];return D.length?`<div class="bar" style="height:8px;background:var(--bd);border-radius:5px;overflow:hidden;margin-bottom:6px"><i style="display:block;height:100%;background:var(--ouro);width:${Math.round(D.filter(x=>x.ok).length/D.length*100)}%"></i></div>`+D.map(x=>`<div class="arq"><label style="flex:1;display:flex;gap:8px;align-items:center;cursor:pointer;${x.ok?'text-decoration:line-through;color:var(--mut)':''}"><input type="checkbox" data-docok="${x.id}" ${x.ok?'checked':''}> ${esc(x.t)}</label><button class="perigo mini" data-docx="${x.id}" title="Remover">−</button></div>`).join(''):'<div class="vazio" style="padding:8px">Nenhum documento na lista.</div>'})()}
+    <div class="cats" style="margin-top:8px">${DOCS_PADRAO.filter(n=>!(c.docs||[]).some(x=>x.t===n)).map(n=>`<button class="cat" data-docadd="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>
+    <div class="linha" style="margin-top:8px"><input type="text" id="docTxt" placeholder="Outro documento…" style="flex:1;min-width:200px"><button class="mini" id="bDocAdd">+</button></div>
   </div>
 
   <div class="card"><h2>Dados do cliente<span class="esp"></span><button id="bSalvar">Salvar alterações</button></h2>
     ${c.repr?`<div class="g2">${[['nome','Nome do(a) beneficiário(a) (representado(a))'],['cpf','CPF do(a) beneficiário(a) (é o login do gov.br)'],['nasc','Data de nascimento'],['sexo','Sexo'],['cond','Condição']].map(([k,r])=>campo(k,r,c)).join('')}</div>
     <h2 style="margin:16px 0 0">Representante legal</h2><div class="g2">${REP.map(([k,r])=>campo(k,r,c.rep||{},'rep.')).join('')}</div>`
     :`<div class="g2">${CAMPOS.map(([k,r])=>campo(k,r,c)).join('')}<div><label>Data provável do parto (DPP) — só gestante</label><input type="date" data-k="dpp" value="${esc(c.dpp||'')}"></div></div>`}
+    <div class="g2"><div><label>Origem do cliente</label><select data-k="origem"><option value="">—</option>${[...ORIGENS,...(c.origem&&!ORIGENS.includes(c.origem)?[c.origem]:[])].map(o=>`<option ${c.origem===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div></div>
     <label>Observações</label><textarea data-k="notas">${esc(c.notas)}</textarea>
   </div>
 
@@ -278,12 +319,20 @@ async function painel(){
   $('#bHonSalva').onclick=()=>{const v=numBR($('#honVal').value);if($('#honVal').value.trim()&&!(v>=0))return toast('Valor inválido');salvaHon(h=>{h.valor=v>=0?v:0;h.obs=$('#honObs').value.trim()});toast('Honorários salvos')};
   $('#bPagMais').onclick=()=>{const v=numBR($('#pagVal').value);if(!(v>0))return toast('Informe o valor pago');const d=$('#pagData').value||hoje(),o=$('#pagObs').value.trim();salvaHon(h=>{(h.pagamentos=h.pagamentos||[]).push({id:COFRE.uid(),v,d,o})});toast('Pagamento registrado')};
   P.querySelectorAll('[data-pagx]').forEach(b=>b.onclick=()=>{if(!confirm('Remover este pagamento?'))return;salvaHon(h=>{h.pagamentos.splice(+b.dataset.pagx,1)})});
-  const addAnd=async n=>{n=String(n||'').trim();if(!n)return;dados();(c.andamento=c.andamento||[]).push({e:n,t:Date.now()});await COFRE.salvar(c);clientes=await COFRE.listar();painel();toast('Andamento: '+n)};
+  const addAnd=async n=>{const pd=padronizaAnd(n);if(!pd.e)return;dados();(c.andamento=c.andamento||[]).push({e:pd.e,t:Date.now()});await COFRE.salvar(c);clientes=await COFRE.listar();painel();toast(pd.mapped&&semAc(n)!==semAc(pd.e)?'Padronizado como: '+pd.e:'Andamento: '+pd.e)};
   $('#detAnd').ontoggle=e=>{andAberto=e.target.open};
   P.querySelectorAll('[data-andadd]').forEach(b=>b.onclick=()=>addAnd(b.dataset.andadd));
   $('#bOutroAnd').onclick=()=>addAnd($('#outroAnd').value);$('#outroAnd').onkeydown=e=>{if(e.key==='Enter')addAnd(e.target.value)};
   P.querySelectorAll('[data-andx]').forEach(b=>b.onclick=async()=>{dados();c.andamento.splice(+b.dataset.andx,1);await COFRE.salvar(c);clientes=await COFRE.listar();painel()});
   $('#bGovAbre').onclick=()=>{const cpf=String(c.cpf).replace(/\D/g,'');if(document.documentElement.dataset.locGovbr==='1'&&c.govSenha){window.postMessage({loc:'govbr-entrar',cpf,senha:c.govSenha,alvo:'inss'},location.origin);toast('Abrindo o Meu INSS e preenchendo…')}else{window.open('https://meu.inss.gov.br/','_blank','noopener');copia(cpf,'CPF (cole no login; a senha está no botão Copiar)')}};
+  const salvaCl=async()=>{await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();lista();painel()};
+  $('#bTlAdd').onclick=async()=>{const t=$('#tlTxt').value.trim();if(!t)return toast('Escreva a anotação');dados();(c.tlNotas=c.tlNotas||[]).push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),t,d:$('#tlData').value||hoje()});await salvaCl()};
+  $('#tlTxt').onkeydown=e=>{if(e.key==='Enter')$('#bTlAdd').click()};
+  P.querySelectorAll('[data-tlx]').forEach(b=>b.onclick=async()=>{dados();c.tlNotas=(c.tlNotas||[]).filter(n=>n.id!==b.dataset.tlx);await salvaCl()});
+  const addDoc=async t=>{t=String(t||'').trim();if(!t)return;dados();c.docs=c.docs||[];if(c.docs.some(x=>x.t.toLowerCase()===t.toLowerCase()))return toast('Já está na lista');c.docs.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),t,ok:false});await salvaCl()};
+  P.querySelectorAll('[data-docadd]').forEach(b=>b.onclick=()=>addDoc(b.dataset.docadd));$('#bDocAdd').onclick=()=>addDoc($('#docTxt').value);$('#docTxt').onkeydown=e=>{if(e.key==='Enter')addDoc(e.target.value)};
+  P.querySelectorAll('[data-docok]').forEach(k=>k.onchange=async()=>{dados();const d=(c.docs||[]).find(x=>x.id===k.dataset.docok);if(d){d.ok=k.checked;await salvaCl()}});
+  P.querySelectorAll('[data-docx]').forEach(b=>b.onclick=async()=>{dados();c.docs=(c.docs||[]).filter(x=>x.id!==b.dataset.docx);await salvaCl()});
   $('#bLemAdd').onclick=async()=>{const t=$('#lemTxt').value.trim(),d=$('#lemData').value;if(!t)return toast('Escreva o lembrete');if(!d)return toast('Escolha a data');dados();(c.lembretes=c.lembretes||[]).push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),t,d});await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();lista();painel();toast('Lembrete agendado')};
   $('#lemTxt').onkeydown=e=>{if(e.key==='Enter')$('#bLemAdd').click()};
   P.querySelectorAll('[data-lemok]').forEach(k=>k.onchange=async()=>{dados();const l=(c.lembretes||[]).find(z=>z.id===k.dataset.lemok);if(l){l.ok=k.checked;await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();lista();painel()}});

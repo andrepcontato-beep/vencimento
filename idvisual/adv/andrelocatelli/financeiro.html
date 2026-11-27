@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Financeiro · André Locatelli</title>
+<title>Honorários · André Locatelli</title>
 <style>
 :root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc;--up:#fffdf7;--okbg:#f4faf0;--sel:#fffbef;--warn:#fff3cd;--warnbd:#e6c55a;--red:#b3261e}
 @media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b;--up:#27241a;--okbg:#1d2a1b;--sel:#2c2717;--warn:#3a3217;--warnbd:#8a7424;--red:#ff8a80}}
@@ -67,7 +67,7 @@ body.blur .sens{filter:blur(7px);user-select:none;-webkit-user-select:none}
 </style></head><body>
 <header>
  <img src="perfis/andrelocatelli/logo.png" alt="">
- <div><h1>Financeiro</h1><small>André Locatelli — Advocacia</small></div>
+ <div><h1>Honorários</h1><small>André Locatelli — Advocacia</small></div>
  <span class="esp"></span>
  <span id="barraCofre" class="linha" hidden>
   <button class="sec mini" id="bOlho" title="Mostrar / ocultar valores" aria-label="Mostrar ou ocultar valores" style="padding:5px 9px"></button>
@@ -84,25 +84,27 @@ body.blur .sens{filter:blur(7px);user-select:none;-webkit-user-select:none}
  <div class="linha" style="margin-top:12px"><button id="bTrava">Desbloquear</button></div>
 </section>
 <div id="app" hidden>
- <div class="card"><h2>Entradas do mês</h2><div class="nav"><button class="sec mini" id="mAnt" aria-label="Mês anterior">‹</button><span id="mNome"></span><button class="sec mini" id="mPro" aria-label="Próximo mês">›</button></div>
+ <div class="card"><h2>Entradas do mês <span class="esp"></span><button class="mini" id="bAv" title="Adicionar entrada que não está ligada a um cliente">+ Avulso</button></h2>
+  <div id="fAv" hidden class="linha" style="margin-bottom:10px;gap:8px"><input type="date" id="avD" style="flex:1 1 130px;min-width:0"><input type="text" id="avO" placeholder="Descrição (ex.: consultoria, reembolso…)" style="flex:3 1 200px;min-width:0"><input type="text" id="avV" inputmode="decimal" placeholder="Valor (R$)" style="flex:1 1 100px;min-width:0"><button class="mini" id="avOk">Adicionar</button></div><div class="nav"><button class="sec mini" id="mAnt" aria-label="Mês anterior">‹</button><span id="mNome"></span><button class="sec mini" id="mPro" aria-label="Próximo mês">›</button></div>
   <div class="tot sens" id="mTot"></div><div id="mSub" style="color:var(--mut);margin-bottom:10px"></div>
   <div id="mLista"></div></div>
  <div class="card" style="margin-top:14px"><h2>Últimos 6 meses</h2><div id="m6"></div></div>
- <p class="rod">Somente os pagamentos registrados em cada cliente (card “Honorários” → “Pagamentos recebidos”). Valores lidos do cofre deste navegador.</p>
+ <p class="rod">Pagamentos registrados em cada cliente (card “Honorários” → “Pagamentos recebidos”) + entradas avulsas lançadas aqui no “+ Avulso”. Valores lidos do cofre deste navegador.</p>
 </div>
 </main>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="cofre/cofre.js?v=202611271930"></script>
+<script src="cofre/cofre.js?v=202611272000"></script>
 <script>
 const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const EYE_ON='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>',EYE_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 let embaca=true;try{embaca=sessionStorage.getItem('cofre.olho')!=='0'}catch(e){}
 function aplicaOlho(){document.body.classList.toggle('blur',embaca);$('#bOlho').innerHTML=embaca?EYE_OFF:EYE_ON;$('#bOlho').title=embaca?'Valores ocultos — clique para mostrar':'Valores visíveis — clique para ocultar'}
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
-let ents=[],mes=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
+let avs=[],ents=[],mes=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
 const chv=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 async function carrega(){
-  ents=[];
+  ents=[];avs=await COFRE.avulsos();
+  for(const a of avs){const v=Number(a.v)||0;if(/^\d{4}-\d{2}-\d{2}$/.test(a.d||'')&&v)ents.push({d:a.d,v,o:'',n:a.o||'(avulso)',ex:false,id:null,av:a.id})}
   for(const c of await COFRE.listar()){
     const P=(c.honorarios&&c.honorarios.pagamentos)||[];
     for(const x of P){const d=/^\d{4}-\d{2}-\d{2}$/.test(x.d||'')?x.d:null,v=Number(x.v)||0;if(!d||!v)continue;
@@ -114,10 +116,11 @@ function desenha(){
   $('#mNome').textContent=cap(mes.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}));
   $('#mTot').textContent=brl(tot);
   $('#mSub').textContent=L.length?L.length+(L.length===1?' entrada cadastrada':' entradas cadastradas')+' neste mês':'Nenhuma entrada cadastrada neste mês.';
-  $('#mLista').innerHTML=L.length?`<table class="ent"><tr><th>Data</th><th>Cliente</th><th>Obs.</th><th class="v">Valor</th></tr>${L.map(e=>`<tr><td>${e.d.split('-').reverse().join('/')}</td><td class="sens"><a href="clientes.html?id=${encodeURIComponent(e.id)}" style="color:inherit">${esc(e.n)}</a>${e.ex?' <i style="color:var(--mut)">(excluído)</i>':''}</td><td class="sens">${esc(e.o)}</td><td class="v sens">${brl(e.v)}</td></tr>`).join('')}</table>`:'';
+  $('#mLista').innerHTML=L.length?`<table class="ent"><tr><th>Data</th><th>Cliente</th><th>Obs.</th><th class="v">Valor</th></tr>${L.map(e=>`<tr><td>${e.d.split('-').reverse().join('/')}</td><td class="sens">${e.av?esc(e.n)+' <span class="tag" style="border:1px solid var(--bd);border-radius:10px;padding:0 7px;font-size:11px">avulso</span>':`<a href="clientes.html?id=${encodeURIComponent(e.id)}" style="color:inherit">${esc(e.n)}</a>`}${e.ex?' <i style="color:var(--mut)">(excluído)</i>':''}</td><td class="sens">${esc(e.o)}</td><td class="v sens">${brl(e.v)}${e.av?` <button class="perigo mini" data-avx="${e.av}" title="Remover entrada avulsa">−</button>`:''}</td></tr>`).join('')}</table>`:'';
   const ms=[];for(let i=5;i>=0;i--)ms.push(new Date(mes.getFullYear(),mes.getMonth()-i,1));
   const vs=ms.map(d=>ents.filter(e=>e.d.startsWith(chv(d))).reduce((a,e)=>a+e.v,0)),mx=Math.max(...vs,1);
   $('#m6').innerHTML=ms.map((d,i)=>`<div class="mes6 ${chv(d)===k?'on':''}" data-m="${chv(d)}"><span>${cap(d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''))}/${String(d.getFullYear()).slice(2)}</span><div class="sens"><div class="bar" style="width:${Math.round(vs[i]/mx*100)}%"></div></div><span class="sens">${brl(vs[i])}</span></div>`).join('');
+  document.querySelectorAll('[data-avx]').forEach(b=>b.onclick=async()=>{if(!confirm('Remover esta entrada avulsa?'))return;await COFRE.salvarAvulsos(avs.filter(a=>a.id!==b.dataset.avx));await carrega();desenha()});
   document.querySelectorAll('.mes6').forEach(r=>r.onclick=()=>{const[a,m]=r.dataset.m.split('-').map(Number);mes=new Date(a,m-1,1);desenha()});
 }
 async function entra(){
@@ -125,6 +128,10 @@ async function entra(){
   $('#bOlho').onclick=()=>{embaca=!embaca;try{sessionStorage.setItem('cofre.olho',embaca?'1':'0')}catch(e){}aplicaOlho()};
   $('#bLock').onclick=()=>{COFRE.bloquear();location.reload()};
   $('#mAnt').onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()-1,1);desenha()};$('#mPro').onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()+1,1);desenha()};
+  const numBR=t=>{t=String(t||'').replace(/[R$\s]/g,'');if(!t)return NaN;if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');return Number(t)};
+  $('#bAv').onclick=()=>{$('#fAv').hidden=!$('#fAv').hidden;$('#avD').value=chv(new Date())===chv(mes)?new Date().toISOString().slice(0,10):chv(mes)+'-01'};
+  $('#avOk').onclick=async()=>{const v=numBR($('#avV').value),d=$('#avD').value,o=$('#avO').value.trim();if(!(v>0))return alert('Informe o valor.');if(!d)return alert('Informe a data.');if(!o)return alert('Descreva a entrada.');
+    await COFRE.salvarAvulsos([...avs,{id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),d,o,v}]);$('#avV').value='';$('#avO').value='';$('#fAv').hidden=true;await carrega();desenha()};
   await carrega();desenha();
 }
 (async()=>{
