@@ -33,7 +33,7 @@ button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
 .avs{font-size:13px;margin:0 0 10px;padding:8px 10px;border-radius:8px;background:rgba(184,134,11,.12)}.avs div{padding:2px 0}.avs a{color:inherit;cursor:pointer;text-decoration:underline}
 body.blur #cal .dppn{filter:blur(7px);user-select:none;-webkit-user-select:none}
 .fmk{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.fmk:empty{display:none}.mkf{all:unset;cursor:pointer;padding:4px;border:1px solid var(--bd);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;min-width:30px;min-height:30px;box-sizing:border-box}.mkf svg{display:block;width:22px;height:22px}.mkf:hover{border-color:var(--ouro)}.mkf.on{border-color:var(--ouro2);background:var(--sel);box-shadow:0 0 0 2px var(--ouro) inset}.mkf.lim{font-size:16px;color:var(--mut)}
-.itemw{position:relative}body.blur #lista .item span,body.blur #painel .card>*:not(h2):not(.mkw){filter:blur(7px);user-select:none;-webkit-user-select:none}
+.itemw{position:relative}body.blur #lista .item span,body.blur #painel .card:not(.fh)>*:not(h2):not(.mkw){filter:blur(7px);user-select:none;-webkit-user-select:none}
 .itemw{position:relative}.itemw .item{margin-bottom:7px}.mk{position:absolute;left:11px;top:9px;display:flex;gap:5px;align-items:center}.mk svg{display:block;width:20px;height:20px}.item.on+.mk{left:14px}body.blur .mk .mki{filter:blur(4px)}.mkop{padding:3px;border:1px solid transparent;border-radius:50%;background:none;cursor:pointer;display:inline-flex}.mkop:hover{border-color:var(--ouro2)}.mkop svg{width:34px;height:34px;display:block}#mkMenu{margin-top:4px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;}#mkMenu[hidden]{display:none}.mkc{position:relative;display:inline-flex}.mkc svg{width:30px;height:30px;display:block}.mkx{position:absolute;top:-6px;right:-6px;width:16px;height:16px;padding:0;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--red);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}body.blur .mkc svg{filter:blur(4px)}
 .zap{position:static;flex:none;width:20px;height:20px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}.item.cz b{padding-left:var(--pl)}.zap:hover{background:#1ebe5b}
 .item.on{border-color:var(--ouro);background:var(--sel);border-left:4px solid var(--ouro)}
@@ -104,7 +104,24 @@ body.blur .hrow:hover .t,body.blur .hrow .t:hover{filter:none}
 #hTray{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;padding:8px 12px;border:1px dashed var(--ouro);border-radius:10px}
 #hTray[hidden]{display:none}
 #bOrg.on{background:var(--ouro);color:#fff}
-</style></head><body>
+.fh{padding:14px 16px 0}.fh1{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.fnome{font-family:Georgia,'Times New Roman',serif;font-size:22px;margin:0;cursor:pointer;line-height:1.2}.fnome:hover{color:var(--ouro2)}.fseta{font-size:13px;color:var(--mut)}
+.fsub{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--mut);font-size:13px;margin-top:4px}.fmkh{display:inline-flex;gap:5px;align-items:center}.fmkh svg{width:18px;height:18px;display:block}.fsv2{color:var(--ouro2);font-weight:600}
+.fbt{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fsv{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:110px}.fsv button:disabled{opacity:.4;cursor:not-allowed}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;margin:14px -16px 0;padding:0 12px;border-top:1px solid var(--bd)}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:var(--mut);padding:10px 14px;font-weight:600;cursor:pointer}
+.tabs button.on{color:var(--ouro2);border-bottom-color:var(--ouro)}.tabs button:hover{color:var(--tx)}
+.tabp{display:none}.tabp.on{display:block}
+.ec.lock input:disabled,.ec.lock select:disabled,.ec.lock textarea:disabled{background:transparent;border-color:transparent;color:var(--tx);opacity:1;-webkit-text-fill-color:var(--tx)}
+.ec.lock button:disabled:not(.nolock){opacity:.35}
+body.blur .pnr,body.blur #lista .item b .pnr{filter:blur(6px);user-select:none;-webkit-user-select:none}
+body.blur #lista .item:hover b .pnr,body.blur .fnome:hover .pnr,body.blur .fsub .pnr:hover{filter:none}
+body.blur .fh .fsv2,body.blur #pDados input,body.blur #pDados textarea,body.blur .tlh,body.blur .arq .t{filter:blur(6px)}
+.fmk.fechado{display:none}
+html.alltabs .tabp{display:block}
+</style></head><script>try{if(localStorage.getItem("test.alltabs"))document.documentElement.classList.add("alltabs")}catch(e){}</script>
+<body>
 
 <section id="login" hidden>
  <img class="logo" src="perfis/andrelocatelli/logo.png" alt="André Locatelli">
@@ -161,7 +178,8 @@ body.blur .hrow:hover .t,body.blur .hrow .t:hover{filter:none}
   <div class="card">
    <h2>Lista de clientes <span class="esp"></span><button class="mini" id="bNovo">+ Novo</button></h2>
    <input type="search" id="busca" placeholder="Buscar por nome ou CPF…">
-   <div id="fMks" class="fmk"></div>
+   <button type="button" class="sec mini" id="bFiltro" hidden style="margin-top:8px">Filtrar ▾</button>
+   <div id="fMks" class="fmk fechado"></div>
    <div id="lista" style="margin-top:10px"></div>
   </div>
  </aside>
@@ -198,13 +216,13 @@ body.blur .hrow:hover .t,body.blur .hrow .t:hover{filter:none}
 <script src="gerador/ocr/tesseract.min.js"></script>
 <script src="gerador/ocr/pdf.min.js"></script>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="gerador/sexo.js?v=202611272125"></script>
-<script src="gerador/extrair.js?v=202611272125"></script>
-<script src="cofre/cofre.js?v=202611272125"></script>
-<script src="cofre/supabase-config.js?v=202611272125"></script>
-<script src="cofre/sync.js?v=202611272125"></script>
-<script src="clientes/marcas.js?v=202611272125"></script>
+<script src="gerador/sexo.js?v=202611272145"></script>
+<script src="gerador/extrair.js?v=202611272145"></script>
+<script src="cofre/cofre.js?v=202611272145"></script>
+<script src="cofre/supabase-config.js?v=202611272145"></script>
+<script src="cofre/sync.js?v=202611272145"></script>
+<script src="clientes/marcas.js?v=202611272145"></script>
 <script>window.SHELL=true</script>
-<script src="clientes/clientes.js?v=202611272125"></script>
-<script src="shell.js?v=202611272125"></script>
+<script src="clientes/clientes.js?v=202611272145"></script>
+<script src="shell.js?v=202611272145"></script>
 </body></html>
