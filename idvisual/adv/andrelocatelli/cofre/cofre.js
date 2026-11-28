@@ -2,7 +2,9 @@
    Nada é enviado a servidor nem ao GitHub. AES-256-GCM, chave derivada por PBKDF2 (SHA-256, 250 mil iterações).
    Se a senha mestra for esquecida, os dados NÃO podem ser recuperados (por isso existe o backup criptografado). */
 (function(){
-const DB='locatelli-clientes',ITER=250000,SK='cofre.chave';
+/* modo demonstração (index.html?demo=1): cofre próprio, separado do real; a marca vale só nesta aba */
+const DEMO=(()=>{try{if(window===window.top){if(/[?&]demo=1/.test(location.search))sessionStorage.setItem('demo','1');else sessionStorage.removeItem('demo')}return sessionStorage.getItem('demo')==='1'}catch(e){return false}})();
+const DB=DEMO?'locatelli-demo':'locatelli-clientes',ITER=250000,SK=DEMO?'cofre.chave.demo':'cofre.chave';
 let chave=null,db=null;
 const enc=new TextEncoder(),dec=new TextDecoder();
 const b64=b=>{let s='';new Uint8Array(b).forEach(x=>s+=String.fromCharCode(x));return btoa(s)};
@@ -47,6 +49,7 @@ function diff(a,b){
 
 const avisa=()=>{try{COFRE.aoMudar&&COFRE.aoMudar()}catch(e){}};
 const COFRE={
+  demo:DEMO,
   async configurado(){return !!(await get('meta','verif'))},
   /* primeira vez: cria a senha mestra */
   async criar(senha){

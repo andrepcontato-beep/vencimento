@@ -106,7 +106,7 @@ let T=null,rodando=false,agenda=null,ultima=0;const ouvintes=[];
 const emite=(tipo,x)=>ouvintes.forEach(f=>{try{f(tipo,x)}catch(e){}});
 const SYNC={
   sincronizar,
-  configurado:()=>!!window.SUPABASE_CONFIG,
+  configurado:()=>!!window.SUPABASE_CONFIG&&!(window.COFRE&&COFRE.demo),
   aoMudarEstado:f=>ouvintes.push(f),
   usarTransporte:t=>{T=t},
   ultima:()=>ultima,

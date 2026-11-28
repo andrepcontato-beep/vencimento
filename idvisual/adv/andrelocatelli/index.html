@@ -120,7 +120,12 @@ body.blur #lista .item:hover b .pnr,body.blur .fnome:hover .pnr,body.blur .fsub 
 body.blur .fh .fsv2,body.blur #pDados input,body.blur #pDados textarea,body.blur .tlh,body.blur .arq .t{filter:blur(6px)}
 .fmk.fechado{display:none}
 html.alltabs .tabp{display:block}
-</style></head><script>try{if(localStorage.getItem("test.alltabs"))document.documentElement.classList.add("alltabs")}catch(e){}</script>
+#demoBar{display:none}
+html.demo #demoBar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;background:#7a1f1f;color:#fff;padding:7px 12px;font-size:13px}
+html.demo #demoBar button{background:#fff;color:#7a1f1f;border:0;border-radius:6px;padding:3px 10px;font-weight:700;cursor:pointer}
+html.demo #bNuvem,html.demo #stNuvem,html.demo #bCfg,html.demo #bCl,html.demo #lgLnk{display:none!important}
+html.demo #lgBox .lemL,html.demo #lemL{display:none!important}
+</style></head><script>try{if(/[?&]demo=1/.test(location.search)||sessionStorage.getItem("demo")==="1"){document.documentElement.classList.add("demo");if(sessionStorage.getItem("cofre.olho")===null)sessionStorage.setItem("cofre.olho","0")}}catch(e){}try{if(localStorage.getItem("test.alltabs"))document.documentElement.classList.add("alltabs")}catch(e){}</script>
 <body>
 
 <section id="login" hidden>
@@ -216,13 +221,15 @@ html.alltabs .tabp{display:block}
 <script src="gerador/ocr/tesseract.min.js"></script>
 <script src="gerador/ocr/pdf.min.js"></script>
 <script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
-<script src="gerador/sexo.js?v=202611272145"></script>
-<script src="gerador/extrair.js?v=202611272145"></script>
-<script src="cofre/cofre.js?v=202611272145"></script>
-<script src="cofre/supabase-config.js?v=202611272145"></script>
-<script src="cofre/sync.js?v=202611272145"></script>
-<script src="clientes/marcas.js?v=202611272145"></script>
+<script src="gerador/sexo.js?v=202611272205"></script>
+<script src="gerador/extrair.js?v=202611272205"></script>
+<script src="cofre/cofre.js?v=202611272205"></script>
+<script src="cofre/supabase-config.js?v=202611272205"></script>
+<script src="cofre/sync.js?v=202611272205"></script>
+<script src="clientes/marcas.js?v=202611272205"></script>
 <script>window.SHELL=true</script>
-<script src="clientes/clientes.js?v=202611272145"></script>
-<script src="shell.js?v=202611272145"></script>
+<script src="clientes/clientes.js?v=202611272205"></script>
+<div id="demoBar"><span>🧪 <b>DEMONSTRAÇÃO</b> — todos os dados são fictícios; nada é enviado a lugar nenhum.</span><button type="button" id="demoReset">Reiniciar demonstração</button></div>
+<script src="demo.js"></script>
+<script src="shell.js?v=202611272205"></script>
 </body></html>

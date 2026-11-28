@@ -28,10 +28,11 @@ async function entrar(){
   const er=$('#erroTrava');er.textContent='';
   try{
     if(novo){if($('#pw').value!==$('#pw2').value)throw new Error('As senhas não conferem.');await COFRE.criar($('#pw').value)}
+    else if(COFRE.demo){await COFRE.abrir('demonstracao')}
     else if(salvo){
       if(!(await COFRE.retomar())){salvo=false;modo();throw new Error('Não consegui abrir com a chave deste dispositivo — digite a senha mestra.')}
     }else await COFRE.abrir($('#pw').value);
-    if(!(salvo&&!novo)){if($('#lem').checked)await COFRE.lembrarDispositivo();else await COFRE.esquecerDispositivo()}
+    if(!COFRE.demo&&!(salvo&&!novo)){if($('#lem').checked)await COFRE.lembrarDispositivo();else await COFRE.esquecerDispositivo()}
     await abreApp();
   }catch(e){er.textContent=e.message}
 }
@@ -50,7 +51,17 @@ $('#bNuvem0').onclick=async()=>{const er=$('#erroTrava');er.textContent='';
     throw new Error(st&&st.vazio?'Não há cofre na nuvem para esta conta (envie primeiro a partir do aparelho que já tem os clientes).':'Não foi possível baixar.')}
   catch(e){er.textContent=e.message==='SEM_CONFIG'?'A nuvem ainda não está configurada neste site.':e.message}};
 
+async function bootDemo(){
+  if(!(await COFRE.configurado())){await COFRE.criar('demonstracao');await window.DEMO_SEED()}
+  novo=false;salvo=true;
+  let entrou=false;try{entrou=sessionStorage.getItem('loc.entrou')==='1'}catch(e){}
+  if(entrou&&await COFRE.retomar())return abreApp();
+  $('#login').hidden=false;modo();
+  try{await COFRE.abrir('demonstracao')}catch(e){$('#erroTrava').textContent='Falha ao abrir a demonstração.';return}
+  await abreApp()
+}
 async function boot(){
+  if(COFRE.demo)return bootDemo();
   novo=!(await COFRE.configurado());salvo=false;
   let entrou=false;try{entrou=sessionStorage.getItem('loc.entrou')==='1'}catch(e){}
   if(!novo&&entrou&&await COFRE.retomar())return abreApp();
@@ -142,6 +153,8 @@ $('#bOlho').addEventListener('click',()=>setTimeout(avisaOlho,0));
 $$('iframe').forEach(f=>f.addEventListener('load',avisaOlho));
 
 function gerador(u){ir('modelos');$('#mdMenu').hidden=true;$('#mdFrWrap').hidden=false;$('#fr-md').src=u}
-window.SHELLAPI={ir,gerador,async sair(){salvo=await COFRE.temDispositivo();novo=false;mostraLogin(false)},toast};
+$('#demoReset').onclick=async()=>{if(!confirm('Reiniciar a demonstração? Os dados voltam ao estado inicial.'))return;try{COFRE.bloquear();sessionStorage.removeItem('loc.entrou')}catch(e){}
+  await new Promise(r=>{const q=indexedDB.deleteDatabase('locatelli-demo');q.onsuccess=q.onerror=q.onblocked=()=>r()});location.reload()};
+window.SHELLAPI={ir,gerador,async sair(){salvo=COFRE.demo||await COFRE.temDispositivo();novo=false;mostraLogin(false)},toast};
 boot();
 })();
