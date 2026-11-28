@@ -2,42 +2,209 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>André Locatelli · Advocacia</title>
 <style>
-:root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc}
-@media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b}}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,Segoe UI,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px}
-.logo{width:min(210px,52vw);height:auto;display:block;margin:0 auto 26px}
-.assin{text-align:center;margin:0 auto 64px;font-family:"Times New Roman","Liberation Serif",Georgia,serif}
-.assin .n{font-weight:700;font-size:clamp(15px,4vw,19px);letter-spacing:.2em;padding-left:.2em;color:var(--tx)}
-.assin .a{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:4px;color:var(--ouro);font-size:clamp(11px,2.9vw,13px);letter-spacing:.32em}
-.assin .a::before,.assin .a::after{content:"";height:1px;width:clamp(30px,8vw,50px);background:#b9b3a3}
-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:min(520px,100%)}
-@media(max-width:480px){nav{grid-template-columns:1fr}}
-.b{display:block;text-align:center;text-decoration:none;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-bottom:3px solid var(--ouro);border-radius:10px;padding:18px 12px;font:600 15px system-ui,sans-serif;cursor:pointer;width:100%}
-.b:hover{border-color:var(--ouro);background:var(--ouro);color:#fff}
-.b small{display:block;font-weight:400;font-size:12px;color:var(--mut);margin-top:3px}.b:hover small{color:#fff}
-#sub{display:none;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-#sub.on{display:grid}@media(max-width:480px){#sub{grid-template-columns:1fr}}
-#sub .b{border-bottom-color:var(--ouro2);background:var(--bg)}
-footer{margin-top:34px;font-size:12px;color:var(--mut)}
+:root{--ouro:#C6A253;--ouro2:#8a6b22;--bg:#f3f1ec;--card:#fff;--tx:#222;--mut:#6b6b66;--bd:#ddd8cc;--up:#fffdf7;--okbg:#f4faf0;--sel:#fffbef;--warn:#fff3cd;--warnbd:#e6c55a;--red:#b3261e}
+@media (prefers-color-scheme: dark){:root{--ouro2:#d9b866;--bg:#17160f;--card:#211f17;--tx:#ece8dc;--mut:#a39f90;--bd:#3a372b;--up:#27241a;--okbg:#1d2a1b;--sel:#2c2717;--warn:#3a3217;--warnbd:#8a7424;--red:#ff8a80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif}
+header img{height:38px}header h1{font-size:17px;margin:0}header small{display:block;color:var(--mut);font-size:12px}
+header .esp{flex:1}header a.vt{color:var(--ouro2);text-decoration:none;font-weight:600}
+main{padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1300px;margin:auto}
+.cols{display:grid;grid-template-columns:minmax(300px,460px) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:860px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ouro2);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.card h2 .esp{flex:1}
+.srvc:not(.aberto) .ed,.srvc:not(.aberto) .mkx{display:none!important}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 2px}
+input[type=text],input[type=password],input[type=date],input[type=search],select,textarea{width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:var(--card);color:var(--tx)}
+textarea{min-height:64px;resize:vertical}
+button,.btn{background:var(--ouro);color:#fff;border:0;border-radius:7px;padding:8px 13px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+button.sec,.btn.sec{background:var(--card);color:var(--ouro2);border:1px solid var(--ouro)}
+button.mini{padding:4px 9px;font-size:12px}button.perigo{background:var(--card);color:var(--red);border:1px solid var(--red)}
+button:disabled{opacity:.45;cursor:not-allowed}[hidden]{display:none!important}
+.linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}@media(max-width:560px){.g2{grid-template-columns:1fr}}
+/* lista */
+.item{display:block;width:100%;text-align:left;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:7px;font-weight:400;cursor:pointer}
+.item b{display:block;font-size:14px}.item span{font-size:12px;color:var(--mut)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}.cal .dw{font-size:11px;color:var(--mut);padding:2px 0}
+.cal button{all:unset;cursor:pointer;padding:6px 0;border-radius:6px;position:relative}.cal button:hover{background:rgba(0,0,0,.06)}
+.cal .hj{outline:1px solid var(--ouro2)}.cal .tem{background:var(--ouro2);color:#fff;font-weight:700}.cal .sel{box-shadow:0 0 0 2px #222 inset}.cal sup{font-size:9px;margin-left:1px}
+.calh{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:700}.calh span{flex:1;text-align:center}
+.avs{font-size:13px;margin:0 0 10px;padding:8px 10px;border-radius:8px;background:rgba(184,134,11,.12)}.avs div{padding:2px 0}.avs a{color:inherit;cursor:pointer;text-decoration:underline}
+body.blur #cal .dppn{filter:blur(7px);user-select:none;-webkit-user-select:none}
+.fmk{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.fmk:empty{display:none}.mkf{all:unset;cursor:pointer;padding:4px;border:1px solid var(--bd);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;min-width:30px;min-height:30px;box-sizing:border-box}.mkf svg{display:block;width:22px;height:22px}.mkf:hover{border-color:var(--ouro)}.mkf.on{border-color:var(--ouro2);background:var(--sel);box-shadow:0 0 0 2px var(--ouro) inset}.mkf.lim{font-size:16px;color:var(--mut)}
+.itemw{position:relative}body.blur #lista .item span,body.blur #painel .card>*:not(h2):not(.mkw){filter:blur(7px);user-select:none;-webkit-user-select:none}
+.itemw{position:relative}.itemw .item{margin-bottom:7px}.mk{position:absolute;left:11px;top:9px;display:flex;gap:5px;align-items:center}.mk svg{display:block;width:20px;height:20px}.item.on+.mk{left:14px}body.blur .mk .mki{filter:blur(4px)}.mkop{padding:3px;border:1px solid transparent;border-radius:50%;background:none;cursor:pointer;display:inline-flex}.mkop:hover{border-color:var(--ouro2)}.mkop svg{width:34px;height:34px;display:block}#mkMenu{margin-top:4px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;}#mkMenu[hidden]{display:none}.mkc{position:relative;display:inline-flex}.mkc svg{width:30px;height:30px;display:block}.mkx{position:absolute;top:-6px;right:-6px;width:16px;height:16px;padding:0;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--red);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}body.blur .mkc svg{filter:blur(4px)}
+.zap{position:static;flex:none;width:20px;height:20px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}.item.cz b{padding-left:var(--pl)}.zap:hover{background:#1ebe5b}
+.item.on{border-color:var(--ouro);background:var(--sel);border-left:4px solid var(--ouro)}
+.marca{position:relative;min-height:420px}.marca::before{content:'';position:absolute;inset:0;background:url(perfis/andrelocatelli/logo.png) center/auto 70% no-repeat;opacity:.10;pointer-events:none}
+.vazio{color:var(--mut);text-align:center;padding:26px 10px;font-size:13px}
+/* tela de senha */
+.trava{max-width:440px;margin:60px auto}
+.aviso{background:var(--warn);border:1px solid var(--warnbd);border-radius:8px;padding:9px 11px;font-size:13px;margin:10px 0}
+.erro{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
+/* gov */
+.gov{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center}
+.gov .k{font-size:12px;color:var(--mut)}.gov .v{font-family:ui-monospace,Consolas,monospace;font-size:15px;word-break:break-all}
+/* arquivos */
+.arq{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bd)}.arq:first-of-type{border-top:0}
+.arq .ic{width:28px;height:28px;flex:none}.arq .t{flex:1;min-width:0}.arq .t b{display:block;overflow-wrap:anywhere;font-weight:600}.arq .t span{font-size:12px;color:var(--mut)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:var(--sel);border:1px solid var(--ouro);color:var(--ouro2);margin-right:5px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:9}.toast.on{opacity:1}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 14px;align-items:start}.duo .card{min-width:0}@media(max-width:1000px){.duo{grid-template-columns:1fr}}
+.tlh{display:flex;flex-wrap:wrap;gap:10px 18px}
+.tl{position:relative;background:var(--sel);border:1px solid var(--ouro);border-radius:10px;padding:7px 26px 7px 11px;font-size:13px;line-height:1.25}.tl b{display:block;font-weight:600;color:var(--ouro2)}.tl small{color:var(--mut);font-size:11px}
+.tl:not(:last-child)::after{content:'›';position:absolute;right:-14px;top:50%;transform:translateY(-52%);color:var(--mut);font-size:18px}
+.tl.atual{background:var(--ouro);border-color:var(--ouro)}.tl.atual b,.tl.atual small{color:#fff}
+.tl .x{position:absolute;top:2px;right:2px;background:none;border:0;color:var(--mut);padding:0 6px;font-size:16px;line-height:1.2;font-weight:400}.tl.atual .x{color:#fff}
+.cats{display:flex;flex-wrap:wrap;gap:6px}.cat{background:var(--card);color:var(--ouro2);border:1px solid var(--bd);border-radius:16px;padding:5px 11px;font-size:12.5px;font-weight:500}.cat:hover{border-color:var(--ouro);background:var(--sel)}
+.hist{border-top:1px solid var(--bd);padding:8px 0;font-size:13px}.hist:first-of-type{border-top:0}.hist .quando{color:var(--mut);font-size:12px}
+.rod{margin:6px 0 30px;font-size:12px;color:var(--mut)}
+
+/* ===== casca (menu do topo, entrada, painel) ===== */
+html,body{min-height:100vh}
+#login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:max(24px,11vh) 16px 24px}
+#login .logo{width:min(210px,52vw);height:auto;display:block;margin:0 auto 26px}
+#login .assin{text-align:center;margin:0 auto 64px;font-family:"Times New Roman","Liberation Serif",Georgia,serif}
+#login .assin .n{font-weight:700;font-size:clamp(15px,4vw,19px);letter-spacing:.2em;padding-left:.2em;color:var(--tx)}
+#login .assin .a{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:4px;color:var(--ouro);font-size:clamp(11px,2.9vw,13px);letter-spacing:.32em}
+#login .assin .a::before,#login .assin .a::after{content:"";height:1px;width:clamp(30px,8vw,50px);background:#b9b3a3}
+.lg{width:min(520px,100%);display:flex;flex-direction:column}
+.lg input[type=password]{width:100%;padding:13px;border:1px solid var(--bd);border-radius:10px;font-size:15px;margin-bottom:10px}
+.lg label.ck{display:flex;gap:8px;align-items:center;color:var(--mut);margin:2px 0 14px;cursor:pointer;font-size:14px}
+.big{display:block;width:100%;text-align:center;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-bottom:3px solid var(--ouro);border-radius:10px;padding:18px 12px;font:600 15px system-ui,sans-serif;cursor:pointer}.big:hover{background:var(--ouro);color:#fff;border-color:var(--ouro)}
+.lg #pw,.lg #pw2{order:0}.lg #entrar{order:2}.lg #lemL{order:1}.lg.salvo #pw,.lg.salvo #pw2{display:none}.lg.salvo #entrar{order:1}.lg.salvo #lemL{order:2;opacity:0;transition:opacity .15s;justify-content:center;margin:10px 0 0}.lg.salvo:hover #lemL,.lg.salvo:focus-within #lemL{opacity:1}.lg #pw2{display:none}.lg.novo #pw2{display:block}.lg.novo #lemL{order:1}
+.lg .erro{order:3;text-align:center;margin-top:10px}.lg .lnk{order:4;text-align:center;margin-top:8px}.lg .lnk a,.lg .lnk label{color:var(--ouro2);cursor:pointer;font-size:13px;text-decoration:underline}
+.topo{background:#1f1d16;color:#e8e3d3;display:flex;align-items:center;gap:4px;padding:0 14px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.topo .lgb{all:unset;cursor:pointer;padding:8px 12px 8px 0;display:flex}.topo .lgb img{height:30px;display:block}.topo .lgb:hover{opacity:.8}
+.topo button.m{all:unset;cursor:pointer;padding:15px 14px;color:#d6d1c0;display:flex;gap:7px;align-items:center;border-bottom:3px solid transparent}.topo button.m:hover{background:rgba(255,255,255,.06)}.topo button.m.on{color:var(--ouro);border-bottom-color:var(--ouro);font-weight:700}.topo .sp{flex:1}
+.topo .ib{all:unset;cursor:pointer;padding:8px 10px;border-radius:8px;color:#d6d1c0;font-size:17px;display:inline-flex;align-items:center}.topo .ib:hover{background:rgba(255,255,255,.08)}.topo .ib svg{display:block}.topo .sair{font-size:12px;color:#a39f90}
+#bNuvem.gira{animation:gi .8s linear infinite}@keyframes gi{to{transform:rotate(360deg)}}#bNuvem.auto{position:relative}#bNuvem.auto::after{content:"";position:absolute;right:5px;top:6px;width:7px;height:7px;border-radius:50%;background:#4cd964}
+.shm{padding:18px max(16px,env(safe-area-inset-left,0px)) 70px;max-width:1300px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.fr{width:100%;border:0;height:calc(100vh - 56px);background:var(--bg)}
+.cl{position:fixed;left:12px;bottom:12px;z-index:30;background:#1f1d16;color:#d6d1c0;border:1px solid #3a372b;border-radius:10px;padding:9px 14px;cursor:pointer;display:flex;gap:8px;align-items:center;font:600 13px system-ui}.cl:hover{background:var(--ouro);color:#1f1d16}
+.ini{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}.ini .col{display:grid;gap:14px;min-width:0}@media(max-width:900px){.ini{grid-template-columns:1fr}}
+.g2k{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.kpi b{font-size:24px;display:block}.kpi span{color:var(--mut);font-size:12px}.kpi.red b{color:var(--red)}.kpi.ok b{color:#2e7d32}.kpi.warn b{color:#b26a00}
+.kpi{margin:0!important}.ini .card{margin:0}
+.relo{text-align:center;padding:6px 0 0}.relo #hora{font:700 54px/1.1 Georgia,serif;letter-spacing:.04em;color:#111}.relo #dia{margin-top:4px;color:#111;font-size:15px}@media (prefers-color-scheme: dark){.relo #hora,.relo #dia{color:#f2eee2}}
+.hrow{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--bd)}.hrow:first-of-type{border-top:0}.hrow .t{flex:1;min-width:0}.hrow small{display:block;color:var(--mut)}.hrow a{cursor:pointer}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}.d-r{background:var(--red)}.d-w{background:#b26a00}.d-o{background:#2e7d32}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}.cal .dw{font-size:11px;color:var(--mut);padding:2px 0}.cal button{all:unset;cursor:pointer;padding:7px 0;border-radius:6px;position:relative}.cal button:not(.tem):hover{background:var(--sel)}.cal .hj{outline:1px solid var(--ouro2)}.cal .tem{background:var(--ouro2);color:#fff;font-weight:700}.cal .sel{box-shadow:0 0 0 2px var(--tx) inset}.cal sup{font-size:9px;margin-left:1px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;display:grid;place-items:center;padding:16px}.modal .box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;width:min(520px,100%);max-height:90vh;overflow:auto}.modal h3{margin:0 0 4px}.sepa{border-top:1px solid var(--bd);margin-top:14px;padding-top:12px}.lb{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ouro2);margin-bottom:6px}
+.mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}.mods button,.mods a{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;background:var(--card);border:1px solid var(--bd);border-bottom:3px solid var(--ouro);border-radius:10px;padding:16px 12px;font-weight:600;display:block}.mods button:hover,.mods a:hover{background:var(--ouro);color:#fff}.mods small{display:block;font-weight:400;color:var(--mut);font-size:12px;margin-top:3px}.mods button:hover small{color:#fff}
+body.blur .hrow .t,body.blur .kpi b,body.blur #hAviso b,body.blur #cal .dppn{filter:blur(7px);user-select:none;-webkit-user-select:none}
+body.blur .hrow:hover .t,body.blur .hrow .t:hover{filter:none}
+.w{position:relative}
+.org .w{outline:2px dashed var(--ouro);outline-offset:3px;border-radius:12px;cursor:grab}
+.w .wc{display:none;position:absolute;top:6px;right:6px;z-index:5;gap:4px;background:var(--card);border:1px solid var(--ouro);border-radius:8px;padding:2px}
+.org .w>*:not(.wc){pointer-events:none}
+.org .w .wc{display:flex}.wc button{padding:2px 7px;font-size:13px}
+.org .w.arrasta{opacity:.4}.org .col{min-height:70px}
+#hTray{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;padding:8px 12px;border:1px dashed var(--ouro);border-radius:10px}
+#hTray[hidden]{display:none}
+#bOrg.on{background:var(--ouro);color:#fff}
 </style></head><body>
-<img class="logo" src="perfis/andrelocatelli/logo.png" alt="André Locatelli">
-<div class="assin"><div class="n">ANDRÉ LOCATELLI</div><div class="a">ADVOGADO</div></div>
-<nav>
- <button class="b" id="bc" aria-expanded="false">Modelos<small>procuração · hipossuficiência · contratos ▾</small></button>
- <a class="b" href="pecas.html">Identidade visual<small>peças / petições</small></a>
- <div id="sub">
-  <a class="b" href="gerador.html?doc=procuracao">Procuração<small>leitura de RG/CNH e comprovante</small></a>
-  <a class="b" href="gerador.html?doc=hipossuficiencia">Declaração de hipossuficiência</a>
-  <a class="b" href="gerador.html?doc=salario-maternidade">Contrato salário-maternidade</a>
-  <a class="b" href="gerador.html?doc=previdenciario">Contrato serviços previdenciários<small>50% / mínimo R$ 5 mil</small></a>
-  <a class="b" href="gerador.html?doc=previdenciario-generico">Contrato genérico previdenciário<small>30% / sem mínimo</small></a>
-  <a class="b" href="gerador.html?doc=previdenciario-incapaz">Contrato PREV incapaz<small>50% / mínimo R$ 5 mil · mãe representa o(a) filho(a)</small></a>
+
+<section id="login" hidden>
+ <img class="logo" src="perfis/andrelocatelli/logo.png" alt="André Locatelli">
+ <div class="assin"><div class="n">ANDRÉ LOCATELLI</div><div class="a">ADVOGADO</div></div>
+ <div class="lg salvo" id="lgBox">
+  <input type="password" id="pw" placeholder="Senha mestra" autocomplete="current-password">
+  <input type="password" id="pw2" placeholder="Repita a senha mestra (mínimo 8 caracteres)" autocomplete="new-password">
+  <label class="ck" id="lemL"><input type="checkbox" id="lem" checked> Lembrar senha neste dispositivo</label>
+  <button class="big" id="entrar">ENTRAR</button>
+  <div class="erro" id="erroTrava"></div>
+  <div class="lnk" id="lgLnk" hidden><label><a id="bNuvem0">☁ Já uso em outro aparelho — baixar da nuvem</a></label> · <label>Restaurar backup<input type="file" id="fImp0" accept=".json,application/json" hidden></label></div>
  </div>
- <a class="b" href="clientes.html">Clientes<small>lista · senha gov.br · arquivos salvos</small></a>
- <a class="b" href="financeiro.html">Honorários<small>entradas do mês · lançamentos avulsos</small></a>
- <a class="b" href="changelog.html" style="grid-column:1/-1">Changelog<small>data e melhorias implementadas</small></a>
-</nav>
-<footer>OAB/GO 73.211 · Piracanjuba/GO</footer>
-<script>const bc=document.getElementById('bc'),s=document.getElementById('sub');bc.onclick=()=>{const o=s.classList.toggle('on');bc.setAttribute('aria-expanded',o)}</script>
+ <div class="aviso" id="lgAviso" hidden style="max-width:520px;margin-top:18px"><b>Como funciona:</b> os dados dos clientes (inclusive a senha do gov.br e os arquivos) ficam criptografados, protegidos por uma senha mestra que você escolhe agora. <b>Se você esquecer a senha mestra, não há como recuperar.</b> Use o backup de vez em quando.</div>
+</section>
+
+<div id="shell" hidden>
+ <div class="topo" id="topo">
+  <button class="lgb" id="logoB" title="Tela inicial"><img src="perfis/andrelocatelli/logo.png" alt=""></button>
+  <button class="m on" data-v="painel">🏠 Painel</button>
+  <button class="m" data-v="clientes">👥 Meus clientes</button>
+  <button class="m" data-v="fin">💰 Financeiro</button>
+  <button class="m" data-v="modelos">📄 Modelos</button>
+  <span class="sp"></span>
+  <span id="barraCofre" style="display:contents">
+   <span id="stNuvem" style="font-size:11px;color:#a39f90;margin-right:2px"></span>
+   <button class="ib" id="bNuvem" title="Sincronizar com a nuvem agora">☁</button>
+   <button class="ib" id="bCfg" title="Configurações: senha, sincronização, backup">⚙</button>
+   <button class="ib" id="bOlho" title="Mostrar / ocultar dados dos clientes" aria-label="Mostrar ou ocultar dados"></button>
+   <button class="ib sair" id="bLock">Sair 🔒</button>
+  </span>
+ </div>
+ <div class="shm">
+  <section class="view on" id="v-painel">
+   <div class="card" id="hAviso" style="background:var(--sel);border-color:var(--ouro);display:flex;align-items:center;gap:10px"><span id="hAvTxt" style="flex:1">Carregando…</span><button type="button" class="sec mini" id="bOrg" title="Organizar o painel" aria-pressed="false">🔒</button></div>
+   <div id="hTray" hidden><b>Blocos fora do painel:</b> <span id="hTrayB"></span><button type="button" class="sec mini" id="bOrgPad" style="margin-left:auto">Restaurar padrão</button></div>
+   <div class="ini" id="hGrid">
+    <div class="col" id="colL" data-col="L"></div>
+    <div class="col" id="colR" data-col="R"></div>
+   </div>
+   <div id="hPool" hidden>
+    <div class="w" data-w="resumo" data-nome="Resumo"><div class="g2k" id="hKpis"></div></div>
+    <div class="w" data-w="agenda" data-nome="Agenda de hoje"><div class="card"><h2>Agenda de hoje <span class="esp"></span><span id="hHoje" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mut)"></span></h2><div id="hAgenda"></div></div></div>
+    <div class="w" data-w="partos" data-nome="Partos previstos"><div class="card"><h2>Partos previstos <span class="esp"></span><span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mut)">próximos 30 dias</span></h2><div id="hPartos"></div></div></div>
+    <div class="w" data-w="audiencias" data-nome="Audiências previstas"><div class="card"><h2>Audiências previstas <span class="esp"></span><span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mut)">próximos 60 dias</span></h2><div id="hAudi"></div></div></div>
+    <div class="w" data-w="parados" data-nome="Parados"><div class="card"><h2>Parados <span class="esp"></span><span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mut)">sem andamento há mais de 30 dias</span></h2><div id="hParados"></div></div></div>
+    <div class="w" data-w="lembretes" data-nome="Lembretes"><div class="card"><h2>Lembretes <span class="esp"></span><span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--mut)">próximos 30 dias</span></h2><div id="hLemb"></div></div></div>
+    <div class="w" data-w="relogio" data-nome="Relógio"><div class="relo"><div id="hora">--:--</div><div id="dia"></div></div></div>
+    <div class="w" data-w="calendario" data-nome="Calendário"><div class="card" id="cal"></div></div>
+   </div>
+  </section>
+  <section class="view" id="v-clientes">
+<div id="app" class="cols" hidden>
+ <aside>
+  <div class="card">
+   <h2>Lista de clientes <span class="esp"></span><button class="mini" id="bNovo">+ Novo</button></h2>
+   <input type="search" id="busca" placeholder="Buscar por nome ou CPF…">
+   <div id="fMks" class="fmk"></div>
+   <div id="lista" style="margin-top:10px"></div>
+  </div>
+ </aside>
+ <section id="painel"></section>
+</div>
+  </section>
+ </div>
+ <section class="view" id="v-fin"><iframe class="fr" id="fr-fin" data-src="financeiro.html?emb=1" title="Financeiro"></iframe></section>
+ <section class="view" id="v-modelos">
+  <div class="shm" id="mdMenu"><div class="mods">
+   <a href="gerador.html?doc=procuracao&emb=1" data-md>Procuração<small>leitura de RG/CNH e comprovante</small></a>
+   <a href="gerador.html?doc=hipossuficiencia&emb=1" data-md>Declaração de hipossuficiência</a>
+   <a href="gerador.html?doc=salario-maternidade&emb=1" data-md>Contrato salário-maternidade</a>
+   <a href="gerador.html?doc=previdenciario&emb=1" data-md>Contrato serviços previdenciários<small>50% / mínimo R$ 5 mil</small></a>
+   <a href="gerador.html?doc=previdenciario-generico&emb=1" data-md>Contrato genérico previdenciário<small>30% / sem mínimo</small></a>
+   <a href="gerador.html?doc=previdenciario-incapaz&emb=1" data-md>Contrato PREV incapaz<small>50% / mínimo R$ 5 mil · mãe representa o(a) filho(a)</small></a>
+   <a href="pecas.html?emb=1" data-md>Identidade visual<small>peças / petições</small></a>
+  </div></div>
+  <div id="mdFrWrap" hidden><div style="padding:8px 16px"><button class="sec mini" id="mdVolta">← Modelos</button></div><iframe class="fr" id="fr-md" style="height:calc(100vh - 100px)" title="Modelo"></iframe></div>
+ </section>
+ <section class="view" id="v-changelog"><iframe class="fr" id="fr-cl" data-src="changelog.html?emb=1" title="Changelog"></iframe></section>
+ <button class="cl" id="bCl" title="Changelog">🕘 Changelog</button>
+</div>
+
+<div class="modal" id="cfg" hidden><div class="box"><h3>⚙ Configurações</h3><small style="color:var(--mut)">Cofre criptografado</small>
+ <div class="sepa"><b class="lb">Alterar senha mestra</b><label>Senha atual</label><input type="password" id="pa" autocomplete="current-password"><label>Nova senha (mínimo 8 caracteres)</label><input type="password" id="pn1" autocomplete="new-password"><label>Repita a nova senha</label><input type="password" id="pn2" autocomplete="new-password"><div class="linha" style="margin-top:8px"><button id="bSenhaM">Alterar senha</button></div><small style="color:var(--mut)">Sem a senha mestra não há como recuperar os dados.</small><div class="erro" id="erroCfg"></div></div>
+ <div class="sepa"><b class="lb">Sincronizar (nuvem)</b><div class="linha"><button id="cfgSinc">☁ Sincronizar agora</button></div><label style="display:flex;gap:8px;align-items:center;margin-top:10px;cursor:pointer"><input type="checkbox" id="auto"> Sincronizar automaticamente (ao salvar e ao abrir)</label><small style="color:var(--mut)" id="ult"></small></div>
+ <div class="sepa"><b class="lb">Backup e restauração</b><div class="linha"><button class="sec" id="bExp">⬇ Baixar backup</button><label class="btn sec" style="margin:0;cursor:pointer">⬆ Restaurar backup<input type="file" id="fImp" accept=".json,application/json" hidden></label></div></div>
+ <div class="sepa"><b class="lb">Este dispositivo</b><div class="linha"><button class="sec" id="bEsq">Esquecer a senha neste dispositivo</button></div></div>
+ <div class="linha" style="margin-top:14px;justify-content:flex-end"><button class="sec" id="cfgX">Fechar</button></div></div></div>
+
+<div id="trava" hidden><span id="travaT"></span><div id="travaNovo"></div><div id="travaAbrir"></div><input id="s0"><input id="s1"><input id="s2"><button id="bTrava"></button><label id="lbImp0"></label></div>
+<div class="toast" id="toast"></div>
+<script src="gerador/ocr/tesseract.min.js"></script>
+<script src="gerador/ocr/pdf.min.js"></script>
+<script>const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));</script>
+<script src="gerador/sexo.js?v=202611272125"></script>
+<script src="gerador/extrair.js?v=202611272125"></script>
+<script src="cofre/cofre.js?v=202611272125"></script>
+<script src="cofre/supabase-config.js?v=202611272125"></script>
+<script src="cofre/sync.js?v=202611272125"></script>
+<script src="clientes/marcas.js?v=202611272125"></script>
+<script>window.SHELL=true</script>
+<script src="clientes/clientes.js?v=202611272125"></script>
+<script src="shell.js?v=202611272125"></script>
 </body></html>

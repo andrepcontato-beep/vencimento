@@ -7,12 +7,14 @@ const ab=x=>x instanceof ArrayBuffer?x:(x&&x.buffer?x.buffer.slice(x.byteOffset,
 
 /* ---------- algoritmo (independe do tipo de nuvem): T = transporte ---------- */
 async function sincronizar(T,prog){
-  const R=COFRE.raw,st={subiu:0,baixou:0},say=t=>prog&&prog(t);
+  const R=COFRE.raw,st={subiu:0,baixou:0},say=t=>prog&&prog(t);let forca=false;
   say('Conferindo o cofre…');
   const rm=await T.getMeta(),lm=await R.get('meta','sal'),lv=await R.get('meta','verif');
   if(lm&&lv){
     if(!rm)await T.setMeta({sal:lm.v,viv:lv.v.iv,vct:b64(lv.v.ct)});
-    else if(rm.sal!==lm.v)throw new Error('A nuvem tem um cofre criado com outra senha mestra. Para juntar, restaure o backup deste aparelho num navegador sem cofre.');
+    else if(rm.sal!==lm.v){
+      if(lm.trocada){await T.setMeta({sal:lm.v,viv:lv.v.iv,vct:b64(lv.v.ct)});forca=true}   /* senha mestra trocada aqui: a nuvem passa a usar a nova */
+      else throw new Error('A nuvem tem um cofre criado com outra senha mestra. Para juntar, restaure o backup deste aparelho num navegador sem cofre.');}
   }else if(rm){await COFRE.aplicarMeta(rm.sal,rm.viv,rm.vct);st.novoAparelho=true}
   else return Object.assign(st,{vazio:true});
 
@@ -42,12 +44,13 @@ async function sincronizar(T,prog){
   for(const l of await R.todos('arquivos')){
     if(!l.u){l.u=Date.now();await R.put('arquivos',l)}
     const r=remA.get(l.id);remA.delete(l.id);
-    if(!r){say('Enviando arquivo…');await T.blobPut(l.id,new Uint8Array(ab(l.d.ct)));await T.gravar('arquivos',{id:l.id,cid:l.cid,u:l.u,hiv:l.h.iv,hct:b64(l.h.ct),div:l.d.iv});st.subiu++}
-    else if((r.u||0)<l.u){await T.gravar('arquivos',{...r,u:l.u,hiv:l.h.iv,hct:b64(l.h.ct)});st.subiu++}
+    if(!r||forca){say('Enviando arquivo…');await T.blobPut(l.id,new Uint8Array(ab(l.d.ct)));await T.gravar('arquivos',{id:l.id,cid:l.cid,u:l.u,hiv:l.h.iv,hct:b64(l.h.ct),div:l.d.iv});st.subiu++}
+    else if((r.u||0)<l.u){await T.gravar('arquivos',{...r,u:l.u,hiv:l.h.iv,hct:b64(l.h.ct),div:l.d.iv});st.subiu++}
     else if((r.u||0)>l.u){await R.put('arquivos',{...l,u:r.u,h:{iv:r.hiv,ct:deb64(r.hct).buffer}});st.baixou++}
   }
   for(const r of remA.values()){say('Baixando arquivo…');const bytes=await T.blobGet(r.id);
     await R.put('arquivos',{id:r.id,cid:r.cid,u:r.u,h:{iv:r.hiv,ct:deb64(r.hct).buffer},d:{iv:r.div,ct:ab(bytes)}});st.baixou++}
+  if(forca)await R.put('meta',{k:'sal',v:lm.v});
   return st;
 }
 

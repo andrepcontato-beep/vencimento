@@ -62,10 +62,32 @@ const COFRE={
   /* reabre sem pedir senha de novo enquanto a aba estiver aberta (entre o gerador e a lista de clientes) */
   async retomar(){
     if(chave)return true;let s=null;try{s=sessionStorage.getItem(SK)}catch(e){}
-    if(!s)return false;
-    try{chave=await crypto.subtle.importKey('raw',deb64(s),'AES-GCM',true,['encrypt','decrypt']);
+    if(s){try{chave=await crypto.subtle.importKey('raw',deb64(s),'AES-GCM',true,['encrypt','decrypt']);
       const ver=await get('meta','verif');if(!ver){chave=null;return false}
-      await decifra(ver.v);return true}catch(e){chave=null;try{sessionStorage.removeItem(SK)}catch(x){}return false}},
+      await decifra(ver.v);return true}catch(e){chave=null;try{sessionStorage.removeItem(SK)}catch(x){}}}
+    /* "lembrar neste dispositivo": chave guardada como CryptoKey NÃO exportável (a senha nunca é guardada) */
+    try{const d=await get('meta','dev');if(d&&d.v){chave=d.v;const ver=await get('meta','verif');if(!ver){chave=null;return false}await decifra(ver.v);return true}}catch(e){chave=null}
+    return false},
+  /* troca a senha mestra: recifra tudo (clientes, arquivos, histórico) com a nova chave; a nuvem é atualizada na próxima sincronização */
+  async trocarSenha(atual,nova){
+    if(!nova||nova.length<8)throw new Error('A nova senha precisa ter pelo menos 8 caracteres.');
+    const sal0=await get('meta','sal'),ver=await get('meta','verif');if(!sal0||!ver)throw new Error('Cofre ainda não foi criado.');
+    const k0=await derivar(atual||'',deb64(sal0.v));
+    try{if(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:deb64(ver.v.iv)},k0,ver.v.ct))!=='cofre-locatelli-ok')throw 0}catch(e){throw new Error('Senha atual incorreta.')}
+    const sal=crypto.getRandomValues(new Uint8Array(16)),k1=await derivar(nova,sal);
+    const re=async r=>{const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:deb64(r.iv)},k0,r.ct),iv=crypto.getRandomValues(new Uint8Array(12));return{iv:b64(iv),ct:await crypto.subtle.encrypt({name:'AES-GCM',iv},k1,pt)}};
+    const agora=Date.now(),cs=[],as=[],hs=[];
+    for(const x of await todos('clientes'))cs.push(x.apagado||!x.ct?x:{...x,...await re(x),u:agora});
+    for(const a of await todos('arquivos'))as.push({...a,h:await re(a.h),d:await re(a.d),u:agora});
+    for(const h of await todos('historico'))hs.push({...h,...await re(h)});
+    const iv=crypto.getRandomValues(new Uint8Array(12)),vv={iv:b64(iv),ct:await crypto.subtle.encrypt({name:'AES-GCM',iv},k1,enc.encode('cofre-locatelli-ok'))};
+    for(const x of cs)await put('clientes',x);for(const x of as)await put('arquivos',x);for(const x of hs)await put('historico',x);
+    await put('meta',{k:'sal',v:b64(sal),trocada:agora});await put('meta',{k:'verif',v:vv});
+    chave=k1;await lembra();if(await COFRE.temDispositivo())await COFRE.lembrarDispositivo();
+    avisa();return true},
+  async lembrarDispositivo(){if(!chave)return false;try{const raw=await crypto.subtle.exportKey('raw',chave);const k=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);await put('meta',{k:'dev',v:k});return true}catch(e){return false}},
+  async esquecerDispositivo(){try{await del('meta','dev')}catch(e){}},
+  async temDispositivo(){try{const d=await get('meta','dev');return !!(d&&d.v)}catch(e){return false}},
   aberto(){return !!chave},
   bloquear(){chave=null;try{sessionStorage.removeItem(SK)}catch(e){}},
 
@@ -106,7 +128,7 @@ const COFRE={
 
   /* ----- backup (já sai criptografado; só abre com a mesma senha mestra) ----- */
   async exportar(){
-    const o={versao:1,meta:await todos('meta'),clientes:await todos('clientes'),arquivos:await todos('arquivos'),historico:await todos('historico')};
+    const o={versao:1,meta:(await todos('meta')).filter(m=>m.k!=='dev'),clientes:await todos('clientes'),arquivos:await todos('arquivos'),historico:await todos('historico')};
     const cv=r=>({...r,ct:r.ct?b64(r.ct):undefined});
     const j=JSON.stringify({versao:1,meta:o.meta.map(m=>m.k==='verif'?{k:m.k,v:{iv:m.v.iv,ct:b64(m.v.ct)}}:m),
       clientes:o.clientes.filter(c=>!c.apagado).map(c=>({id:c.id,u:c.u,iv:c.iv,ct:b64(c.ct)})),
@@ -117,7 +139,7 @@ const COFRE={
     const j=JSON.parse(await file.text());if(j.versao!==1)throw new Error('Arquivo de backup inválido.');
     const sal=j.meta.find(m=>m.k==='sal'),atual=await get('meta','sal');
     if(atual&&atual.v!==sal.v)throw new Error('Este backup foi feito com outra senha mestra. Importe-o num navegador ainda sem cofre.');
-    if(!atual){for(const m of j.meta)await put('meta',m.k==='verif'?{k:m.k,v:{iv:m.v.iv,ct:deb64(m.v.ct).buffer}}:m)}
+    if(!atual){for(const m of j.meta.filter(m=>m.k!=='dev'))await put('meta',m.k==='verif'?{k:m.k,v:{iv:m.v.iv,ct:deb64(m.v.ct).buffer}}:m)}
     for(const c of j.clientes)await put('clientes',{id:c.id,u:c.u,iv:c.iv,ct:deb64(c.ct).buffer});
     for(const a of j.arquivos)await put('arquivos',{id:a.id,cid:a.cid,u:a.u,h:{iv:a.h.iv,ct:deb64(a.h.ct).buffer},d:{iv:a.d.iv,ct:deb64(a.d.ct).buffer}});
     for(const h of (j.historico||[]))await put('historico',{id:h.id,cid:h.cid,t:h.t,iv:h.iv,ct:deb64(h.ct).buffer});

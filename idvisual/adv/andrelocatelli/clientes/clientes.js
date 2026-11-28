@@ -47,9 +47,10 @@ let embaca=true;try{embaca=sessionStorage.getItem('cofre.olho')!=='0'}catch(e){}
 function aplicaOlho(){document.body.classList.toggle('blur',embaca);const b=$('#bOlho');if(b){b.innerHTML=embaca?EYE_OFF:EYE_ON;b.title=embaca?'Dados ocultos — clique para mostrar':'Dados visíveis — clique para ocultar'}}
 function ligaOlho(){aplicaOlho();$('#bOlho').onclick=()=>{embaca=!embaca;try{sessionStorage.setItem('cofre.olho',embaca?'1':'0')}catch(e){}aplicaOlho()}}
 const ehBenef=r=>r==='Certidão de nascimento'||r==='Documento do(a) beneficiário(a)';
+const autoSync=()=>{try{return localStorage.getItem('sync.auto')!=='0'}catch(e){return true}};
 function ligaNuvem(){ligaOlho();
   if(ligaNuvem.ok)return;ligaNuvem.ok=true;
-  COFRE.aoMudar=()=>SYNC.agendar();
+  COFRE.aoMudar=()=>{if(autoSync())SYNC.agendar()};
   SYNC.aoMudarEstado(async(tipo,x)=>{
     if(tipo==='inicio')statusNuvem('Sincronizando…');
     else if(tipo==='prog')statusNuvem('Sincronizando… '+x);
@@ -62,8 +63,8 @@ function ligaNuvem(){ligaOlho();
   $('#bNuvem').onclick=async()=>{
     if(!SYNC.configurado()){toast('A nuvem ainda não está configurada neste site (falta o projeto Supabase)');return}
     try{await SYNC.executar(true)}catch(e){if(e&&e.message!=='SEM_CONFIG')toast('Erro: '+(e.message||e))}};
-  if(SYNC.configurado())SYNC.executar(false).catch(()=>{});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SYNC.configurado()&&Date.now()-SYNC.ultima()>60000)SYNC.executar(false).catch(()=>{})});
+  if(SYNC.configurado()&&autoSync())SYNC.executar(false).catch(()=>{});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SYNC.configurado()&&autoSync()&&Date.now()-SYNC.ultima()>60000)SYNC.executar(false).catch(()=>{})});
 }
 async function entra(){
   $('#trava').hidden=true;$('#barraCofre').hidden=false;$('#app').hidden=false;ligaNuvem();
@@ -111,6 +112,32 @@ function avisosDpp(){return dppLista().map(c=>({c,n:diasAte(c.dpp)})).filter(x=>
 /* lembretes agendados por cliente (perícia, visita…): c.lembretes=[{id,t,d,ok}] */
 const lembAtivos=()=>{const o=[];clientes.filter(c=>!c.excluido).forEach(c=>(c.lembretes||[]).forEach(l=>{if(/^\d{4}-\d{2}-\d{2}$/.test(l.d||''))o.push({c,l})}));return o};
 const lembAvisos=()=>lembAtivos().filter(x=>!x.l.ok).map(x=>({...x,n:diasAte(x.l.d)})).filter(x=>x.n<=3&&x.n>=-7).sort((a,b)=>a.n-b.n);
+const FINAIS=['Arquivado','Deferido','Indeferido','Benefício implantado'];
+async function homeRender(){
+  if(!$('#hKpis'))return;
+  const V=visiveis(),hj=isoD(new Date()),mes=hj.slice(0,7),nm=c=>esc(c.nome||'(sem nome)');
+  const at=c=>{const a=atualDe(c);return !a||!FINAIS.includes(a.e)};
+  const ativos=V.filter(at),aguard=V.filter(c=>{const a=atualDe(c);return a&&a.e==='Aguardando docs do cliente'});
+  let rec=0,aberto=0;V.forEach(c=>{const H=c.honorarios||{},P=H.pagamentos||[];P.forEach(x=>{if((x.d||'').startsWith(mes))rec+=Number(x.v)||0});aberto+=Math.max(0,(Number(H.valor)||0)-P.reduce((a,x)=>a+(Number(x.v)||0),0))});
+  try{(await COFRE.avulsos()).forEach(x=>{if((x.d||'').startsWith(mes))rec+=Number(x.v)||0})}catch(e){}
+  $('#hKpis').innerHTML=`<div class="card kpi"><b>${ativos.length}</b><span>casos ativos</span></div><div class="card kpi warn"><b>${aguard.length}</b><span>aguardando documentos</span></div><div class="card kpi ok"><b>${brl(rec)}</b><span>recebido neste mês</span></div><div class="card kpi red"><b>${brl(aberto)}</b><span>em aberto (honorários a receber)</span></div>`;
+  const ag=[];dppLista().filter(c=>c.dpp===hj).forEach(c=>ag.push({c,t:'Parto previsto hoje',cor:'d-r'}));lembAtivos().filter(x=>!x.l.ok&&x.l.d===hj).forEach(x=>ag.push({c:x.c,t:x.l.t,cor:'d-w'}));
+  lembAtivos().filter(x=>!x.l.ok&&x.l.d&&x.l.d<hj).forEach(x=>ag.push({c:x.c,t:x.l.t+' (atrasado)',cor:'d-r'}));
+  const lk=c=>`<a data-hc="${c.id}" style="text-decoration:underline">${nm(c)}</a>`;
+  $('#hHoje').textContent=brDia(hj).slice(0,5);
+  $('#hAgenda').innerHTML=ag.length?ag.map(x=>`<div class="hrow"><span class="dot ${x.cor}"></span><div class="t"><b>${esc(x.t)}</b><small>${lk(x.c)}</small></div></div>`).join(''):'<div class="vazio" style="padding:10px">Nada agendado para hoje.</div>';
+  const pr=dppLista().map(c=>({c,n:diasAte(c.dpp)})).filter(x=>(x.n>=0&&x.n<=30)||(x.n<0&&x.n>=-30&&x.c.dppVisto!==x.c.dpp)).sort((a,b)=>a.n-b.n);
+  $('#hPartos').innerHTML=pr.length?pr.map(x=>`<div class="hrow"><span class="dot ${x.n<=7?'d-r':'d-w'}"></span><div class="t"><b>${lk(x.c)}</b><small>${x.n===0?'parto previsto HOJE':x.n>0?'parto em '+x.n+' dia(s) · '+brDia(x.c.dpp):'parto previsto há '+(-x.n)+' dia(s)'}${x.n>=0&&x.n<=30?' · pedido liberado desde '+brDia(somaDias(x.c.dpp,-28)):''}</small></div></div>`).join(''):'<div class="vazio" style="padding:10px">Nenhum parto previsto nos próximos 30 dias.</div>';
+  const pa=V.filter(at).map(c=>{const a=atualDe(c);return a?{c,a,d:Math.floor((Date.now()-a.t)/864e5)}:null}).filter(x=>x&&x.d>30).sort((a,b)=>b.d-a.d);
+  $('#hParados').innerHTML=pa.length?pa.slice(0,12).map(x=>`<div class="hrow"><span class="dot ${x.d>60?'d-r':'d-w'}"></span><div class="t"><b>${lk(x.c)}</b><small>${esc(x.a.e)} · há ${x.d} dias</small></div>${zapDe(x.c)?`<a class="zap" href="https://wa.me/${zapDe(x.c)}" target="_blank" rel="noopener" title="WhatsApp" style="width:26px;height:26px">${ZAP_SVG}</a>`:''}</div>`).join('')+(pa.length>12?`<div class="vazio" style="padding:6px">+ ${pa.length-12} outros</div>`:''):'<div class="vazio" style="padding:10px">Nenhum caso parado.</div>';
+  const h=new Date().getHours(),sd=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+  $('#hAvTxt').innerHTML=`☀ ${sd}, André. Hoje: <b>${ag.length} compromisso(s)</b> · <b>${pa.length} caso(s) parado(s) há mais de 30 dias</b> · <b>${brl(aberto)}</b> a receber em honorários`;
+  const aud=lembAtivos().filter(x=>!x.l.ok&&/audi[eê]ncia/i.test(x.l.t||'')).map(x=>({...x,n:diasAte(x.l.d)})).filter(x=>x.n>=0&&x.n<=60).sort((a,b)=>a.n-b.n);
+  if($('#hAudi'))$('#hAudi').innerHTML=aud.length?aud.map(x=>`<div class="hrow"><span class="dot ${x.n<=7?'d-r':'d-w'}"></span><div class="t"><b>${esc(x.l.t)}</b><small>${lk(x.c)} · ${brDia(x.l.d)} · ${x.n===0?'HOJE':'em '+x.n+' dia(s)'}</small></div></div>`).join(''):'<div class="vazio" style="padding:10px">Nenhuma audiência prevista. (Cadastre como lembrete com "audiência" no título.)</div>';
+  const lb=lembAtivos().filter(x=>!x.l.ok).map(x=>({...x,n:diasAte(x.l.d)})).filter(x=>x.n>=0&&x.n<=30).sort((a,b)=>a.n-b.n);
+  if($('#hLemb'))$('#hLemb').innerHTML=lb.length?lb.slice(0,15).map(x=>`<div class="hrow"><span class="dot ${x.n<=3?'d-r':'d-w'}"></span><div class="t"><b>${esc(x.l.t)}</b><small>${lk(x.c)} · ${brDia(x.l.d)} · ${x.n===0?'HOJE':'em '+x.n+' dia(s)'}</small></div></div>`).join(''):'<div class="vazio" style="padding:10px">Nenhum lembrete nos próximos 30 dias.</div>';
+  document.querySelectorAll('[data-hc]').forEach(a=>a.onclick=()=>window.CLI.abre(a.dataset.hc));
+}
 function calendario(){
   const E=$('#cal');if(!E)return;
   const L=dppLista(),LM=lembAtivos().filter(x=>!x.l.ok),agd={};L.forEach(c=>(agd[c.dpp]=agd[c.dpp]||[]).push({c}));LM.forEach(x=>(agd[x.l.d]=agd[x.l.d]||[]).push(x));
@@ -127,7 +154,7 @@ function calendario(){
   E.innerHTML=h;
   $('#calAnt').onclick=()=>{calMes=new Date(y,m-1,1);calendario()};$('#calPro').onclick=()=>{calMes=new Date(y,m+1,1);calendario()};
   E.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{calDia=calDia===b.dataset.dia?null:b.dataset.dia;calendario()});
-  E.querySelectorAll('[data-calc]').forEach(a=>a.onclick=()=>{sel=a.dataset.calc;mostraSenha=false;srvAberto=false;lista();painel()});
+  E.querySelectorAll('[data-calc]').forEach(a=>a.onclick=()=>{sel=a.dataset.calc;mostraSenha=false;srvAberto=false;lista();painel();irCli()});
   if($('#calAvs'))$('#calAvs').onclick=()=>popupDpp(true);
   if($('#calNot'))$('#calNot').onclick=async()=>{try{await Notification.requestPermission()}catch(e){}calendario();notificaDpp()};
   if($('#calIcs'))$('#calIcs').onclick=()=>{
@@ -141,6 +168,7 @@ function calendario(){
       return `BEGIN:VEVENT\r\nUID:lem-${x.l.id}@locatelli\r\nDTSTAMP:${ts}\r\nDTSTART;VALUE=DATE:${d}\r\nDTEND;VALUE=DATE:${f}\r\nSUMMARY:${cl(x.l.t)} - ${cl(x.c.nome||'cliente')}\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Lembrete\r\nTRIGGER:-P1D\r\nEND:VALARM\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Lembrete\r\nTRIGGER:PT8H\r\nEND:VALARM\r\nEND:VEVENT`}).join('\r\n');
     const b=new Blob(['BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Locatelli//DPP//PT\r\nCALSCALE:GREGORIAN\r\n'+[ev,ev30,evL].filter(Boolean).join('\r\n')+'\r\nEND:VCALENDAR\r\n'],{type:'text/calendar'});
     const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='agenda-clientes.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Arquivo baixado: abra-o no celular para entrar na agenda')}
+  homeRender();
 }
 
 /* popup de avisos: abre uma vez por dia ao entrar (ou pelo botão "Ver avisos") */
@@ -158,7 +186,7 @@ function popupDpp(forca){
     ${la.length?`<div style="margin-top:12px"><b>Agenda</b>${la.map(x=>`<div style="padding:3px 0">${esc(x.l.t)} — ${nm(x.c)} — ${brDia(x.l.d)} (${t(x.n)})<label style="display:block;font-size:12px;color:var(--mut);cursor:pointer"><input type="checkbox" data-feito="${x.l.id}"> feito (não avisar mais)</label></div>`).join('')}</div>`:''}
     <div style="text-align:right;margin-top:14px"><button id="pdOk">Ok</button></div></div>`;
   document.body.appendChild(d);d.querySelector('#pdOk').onclick=()=>d.remove();
-  d.querySelectorAll('[data-pc]').forEach(a=>a.onclick=()=>{d.remove();sel=a.dataset.pc;mostraSenha=false;srvAberto=false;lista();painel()});
+  d.querySelectorAll('[data-pc]').forEach(a=>a.onclick=()=>{d.remove();sel=a.dataset.pc;mostraSenha=false;srvAberto=false;lista();painel();irCli()});
   d.querySelectorAll('[data-vis]').forEach(k=>k.onchange=async()=>{const c=clientes.find(x=>x.id===k.dataset.vis);if(!c)return;if(k.checked)c.dppVisto=c.dpp;else delete c.dppVisto;await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();calendario()});
   d.querySelectorAll('[data-feito]').forEach(k=>k.onchange=async()=>{const x=lembAtivos().find(y=>y.l.id===k.dataset.feito);if(!x)return;const c=clientes.find(z=>z.id===x.c.id),l=(c.lembretes||[]).find(z=>z.id===k.dataset.feito);if(!l)return;l.ok=k.checked;await COFRE.salvar(c,{semHistorico:true});clientes=await COFRE.listar();calendario();if(sel===c.id)painel()});
 }
@@ -350,7 +378,7 @@ async function painel(){
   P.querySelectorAll('[data-rest]').forEach(b=>b.onclick=async()=>{if(!confirm('Restaurar? O cadastro volta ao estado de antes dessa alteração, desfazendo também o que foi alterado depois dela. A restauração fica registrada no histórico, então dá para desfazer.'))return;try{const r=await COFRE.restaurar(b.dataset.rest);clientes=await COFRE.listar();histAberto=true;lista();painel();toast(r==='arquivo'?'Arquivo restaurado':'Versão restaurada')}catch(e){alert(e.message)}});
   if($('#bApagaCli'))$('#bApagaCli').onclick=async()=>{if(!confirm('APAGAR DEFINITIVAMENTE '+(c.nome||'este cliente')+'?\n\nOs dados, os arquivos e o histórico dele serão destruídos, aqui e na nuvem. Isso NÃO pode ser desfeito.'))return;await COFRE.apagarDefinitivo(c.id);clientes=await COFRE.listar();sel=null;if(!clientes.some(x=>x.excluido))verExcl=false;lista();painel();toast('Cliente apagado definitivamente')};
   if($('#bRestCli'))$('#bRestCli').onclick=async()=>{delete c.excluido;await COFRE.salvar(c);clientes=await COFRE.listar();verExcl=false;lista();painel();toast('Cliente restaurado')};
-  $('#bGerar').onclick=()=>{dados();try{sessionStorage.setItem('prefill',JSON.stringify(paraGerador(c)))}catch(e){}location.href='gerador.html?doc='+$('#selDoc').value+'&cliente='+c.id};
+  $('#bGerar').onclick=()=>{dados();try{sessionStorage.setItem('prefill',JSON.stringify(paraGerador(c)))}catch(e){}const u='gerador.html?doc='+$('#selDoc').value+'&cliente='+c.id;if(window.SHELLAPI&&SHELLAPI.gerador)SHELLAPI.gerador(u);else location.href=u};
   $('#bExcluir').onclick=async()=>{if(!confirm('Excluir '+(c.nome||'este cliente')+'? Ele vai para “Excluídos” e pode ser restaurado.'))return;dados();c.excluido=Date.now();await COFRE.salvar(c);clientes=await COFRE.listar();sel=visiveis()[0]?visiveis()[0].id:null;lista();painel();toast('Cliente excluído (pode ser restaurado em “Ver excluídos”)')};
 }
 /* ---------- novo cliente: documentos (lidos por OCR) ou digitação manual ---------- */
@@ -415,7 +443,11 @@ $('#bNovo').onclick=novoFluxo;
 $('#bExp').onclick=async()=>{const b=await COFRE.exportar(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='backup-clientes-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);toast('Backup criptografado baixado')};
 const importa=async f=>{if(!f)return;try{const r=await COFRE.importar(f);toast(`Restaurado: ${r.clientes} cliente(s), ${r.arquivos} arquivo(s)`);if(r.precisaAbrir||!COFRE.aberto()){COFRE.bloquear();inicia()}else entra()}catch(e){alert(e.message)}};
 $('#fImp').onchange=e=>importa(e.target.files[0]);$('#fImp0').onchange=e=>importa(e.target.files[0]);
-$('#bLock').onclick=()=>{COFRE.bloquear();location.href='clientes.html'};
+$('#bLock').onclick=()=>{COFRE.bloquear();if(window.SHELLAPI)SHELLAPI.sair();else location.href='index.html'};
 
-inicia();
+/* ---- ligação com a casca (index.html) ---- */
+const irCli=()=>{try{window.SHELLAPI&&SHELLAPI.ir('clientes')}catch(e){}};
+window.CLI={entra,inicia,abre:id=>{sel=id;mostraSenha=false;srvAberto=false;lista();painel();irCli()},recarrega:async()=>{clientes=await COFRE.listar();lista();painel();calendario()},avisos:()=>popupDpp(true)};
+window.addEventListener('message',e=>{if(e.data&&e.data.loc==='recarregar')window.CLI.recarrega()});
+if(!window.SHELL)inicia();
 })();
